@@ -1,0 +1,468 @@
+import { memo, useState } from 'react';
+
+import UserRoleBadge from '../../../components/common/UserRoleBadge';
+import RichTextContent from '../../../components/forum/RichTextContent';
+import type { Post, User, UserRole } from '../../../types';
+import PostAttachmentList from './PostAttachmentList';
+
+type ThreadPostCardProps = {
+  post: Post;
+  author: User | undefined;
+  authorRole: UserRole;
+  repliedPost?: Post | null;
+  repliedAuthorName?: string | null;
+  highlighted?: boolean;
+  searchQuery?: string;
+  replyContextHighlighted?: boolean;
+  isOwner: boolean;
+  canModerate: boolean;
+  hasLiked: boolean;
+  tipCount: number;
+  pollVoterId: string;
+  canClosePoll: boolean;
+  onLike: (postId: string) => void;
+  onVoteOnPoll: (postId: string, optionIds: string[]) => void;
+  onClosePoll: (postId: string) => void;
+  onReply: (post: Post) => void;
+  onShare: (post: Post) => void;
+  onSendTip: (post: Post) => void;
+  onJumpToPost?: (postId: string) => void;
+  onEdit: (post: Post) => void;
+  onDelete: (postId: string) => void;
+  onTogglePin: (post: Post) => void;
+};
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+const formatEditedDateTime = (value: string | null | undefined) =>
+  value ? formatDateTime(value) : null;
+
+const getInitials = (name: string) =>
+  name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+const ThreadPostCard = ({
+  post,
+  author,
+  authorRole,
+  repliedPost = null,
+  repliedAuthorName = null,
+  highlighted = false,
+  searchQuery = '',
+  replyContextHighlighted = false,
+  isOwner,
+  canModerate,
+  hasLiked,
+  tipCount,
+  pollVoterId,
+  canClosePoll,
+  onLike,
+  onVoteOnPoll,
+  onClosePoll,
+  onReply,
+  onShare,
+  onSendTip,
+  onJumpToPost,
+  onEdit,
+  onDelete,
+  onTogglePin,
+}: ThreadPostCardProps) => {
+  const displayName =
+    author?.displayName ?? author?.id ?? post.authorUserId ?? 'Unknown User';
+  const avatarColor = author?.avatarColor ?? 'bg-cyan-500';
+  const [isAvatarVisible, setIsAvatarVisible] = useState(true);
+  const [selectedPollOptionIds, setSelectedPollOptionIds] = useState<string[]>(
+    []
+  );
+  const existingPollVote = post.poll?.votes.find(
+    (vote) => vote.voterId === pollVoterId
+  );
+  const totalPollVotes = post.poll?.votes.length ?? 0;
+  const pollClosedByDate = Boolean(
+    post.poll?.closesAt && new Date(post.poll.closesAt).getTime() <= Date.now()
+  );
+  const isPollClosed = Boolean(post.poll?.closedAt || pollClosedByDate);
+  const pollClosedAt = post.poll?.closedAt ?? post.poll?.closesAt ?? null;
+  const canShowPollResults = Boolean(existingPollVote || isPollClosed);
+  const pollOptionStats =
+    post.poll?.options.map((option) => {
+      const voteCount =
+        post.poll?.votes.filter((vote) => vote.optionIds.includes(option.id))
+          .length ?? 0;
+      const percentage =
+        totalPollVotes > 0 ? Math.round((voteCount / totalPollVotes) * 100) : 0;
+
+      return {
+        ...option,
+        voteCount,
+        percentage,
+      };
+    }) ?? [];
+  const winningVoteCount = Math.max(
+    0,
+    ...pollOptionStats.map((option) => option.voteCount)
+  );
+  const winningOptions =
+    winningVoteCount > 0
+      ? pollOptionStats.filter(
+          (option) => option.voteCount === winningVoteCount
+        )
+      : [];
+
+  const togglePollOption = (optionId: string) => {
+    if (!post.poll || existingPollVote || isPollClosed) {
+      return;
+    }
+
+    setSelectedPollOptionIds((current) => {
+      if (post.poll?.mode === 'single') {
+        return current.includes(optionId) ? [] : [optionId];
+      }
+
+      return current.includes(optionId)
+        ? current.filter((id) => id !== optionId)
+        : [...current, optionId];
+    });
+  };
+
+  const submitPollVote = () => {
+    if (
+      !post.poll ||
+      existingPollVote ||
+      isPollClosed ||
+      selectedPollOptionIds.length === 0
+    ) {
+      return;
+    }
+
+    onVoteOnPoll(post.id, selectedPollOptionIds);
+  };
+
+  const actionButtonClass =
+    'rounded-md border border-cyan-200 bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-100 hover:shadow active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50';
+  const dangerButtonClass =
+    'rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-orange-800 shadow-sm transition hover:bg-orange-100 hover:shadow active:translate-y-px';
+
+  return (
+    <article
+      id={`post-${post.id}`}
+      className={[
+        'forum-card-accent p-4 transition',
+        highlighted
+          ? 'ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-50'
+          : '',
+      ].join(' ')}
+    >
+      <header className="flex items-start gap-4">
+        <div className="flex items-center gap-3">
+          {author?.avatarUrl && isAvatarVisible ? (
+            <img
+              src={author.avatarUrl}
+              alt={`${displayName} avatar`}
+              className="h-10 w-10 rounded-full object-cover"
+              onError={() => setIsAvatarVisible(false)}
+            />
+          ) : (
+            <div
+              className={`${avatarColor} flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold text-white`}
+              aria-hidden="true"
+            >
+              {getInitials(displayName)}
+            </div>
+          )}
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-ui-strong text-sm font-semibold">
+                {displayName}
+              </p>
+              <UserRoleBadge role={authorRole} />
+              {post.isPinned ? (
+                <span className="rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-amber-700">
+                  Pinned
+                </span>
+              ) : null}
+            </div>
+            <p className="text-ui-muted text-xs">
+              {formatDateTime(post.createdAt)}
+            </p>
+            {post.editedAt ? (
+              <p className="mt-0.5 text-xs font-semibold text-amber-700">
+                EDITED {formatEditedDateTime(post.editedAt)}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      {repliedPost ? (
+        <button
+          type="button"
+          onClick={() => onJumpToPost?.(repliedPost.id)}
+          className={[
+            'mt-3 w-full rounded-lg border-l-4 px-3 py-2 text-left transition',
+            replyContextHighlighted
+              ? 'border-cyan-400 bg-cyan-50 ring-1 ring-cyan-200'
+              : 'border-slate-300 bg-slate-50 hover:bg-slate-100',
+          ].join(' ')}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-ui-strong text-xs font-semibold">
+              Replying to {repliedAuthorName ?? 'Member'}
+            </p>
+            <span className="text-xs font-semibold text-cyan-700">
+              Jump to post
+            </span>
+          </div>
+          <RichTextContent
+            value={repliedPost.content}
+            highlightQuery={searchQuery}
+            className="text-ui-muted mt-1 text-xs leading-relaxed"
+          />
+        </button>
+      ) : null}
+      <RichTextContent
+        value={post.content}
+        highlightQuery={searchQuery}
+        className="text-ui-strong mt-3 text-sm leading-relaxed"
+      />
+      {post.poll ? (
+        <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50/60 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex rounded-md border border-cyan-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-cyan-800">
+              Poll / Voting
+            </span>
+            <span className="text-ui-muted text-xs">
+              {post.poll.mode === 'multiple'
+                ? 'Multiple answers allowed'
+                : 'Single answer only'}
+            </span>
+          </div>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {post.poll.closesAt ? (
+              <span className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700">
+                Closes {formatDateTime(post.poll.closesAt)}
+              </span>
+            ) : null}
+            {isPollClosed ? (
+              <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
+                Closed {pollClosedAt ? formatDateTime(pollClosedAt) : ''}
+              </span>
+            ) : null}
+            {canClosePoll && !isPollClosed ? (
+              <button
+                type="button"
+                onClick={() => onClosePoll(post.id)}
+                className="rounded-md border border-rose-200 bg-white px-2 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 active:translate-y-px"
+              >
+                Close Poll
+              </button>
+            ) : null}
+          </div>
+          <p className="text-ui-strong text-base font-semibold">
+            {post.poll.question}
+          </p>
+          {post.poll.description ? (
+            <p className="text-ui-muted mt-1 text-sm">
+              {post.poll.description}
+            </p>
+          ) : null}
+          <p className="mt-2 rounded-md border border-cyan-100 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700">
+            Poll results are shown after you vote or once the poll is closed.
+          </p>
+          <div className="mt-3 space-y-2">
+            {pollOptionStats.map((option) => {
+              const isSelected = existingPollVote
+                ? existingPollVote.optionIds.includes(option.id)
+                : selectedPollOptionIds.includes(option.id);
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => togglePollOption(option.id)}
+                  disabled={Boolean(existingPollVote || isPollClosed)}
+                  className={[
+                    'w-full rounded-md border px-3 py-2 text-left text-sm transition active:translate-y-px',
+                    isSelected
+                      ? 'border-cyan-500 bg-cyan-100 text-slate-950 shadow-sm'
+                      : 'border-cyan-100 bg-white/70 text-slate-700 hover:bg-white',
+                    existingPollVote ? 'cursor-default' : '',
+                  ].join(' ')}
+                >
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-semibold">{option.label}</span>
+                    {canShowPollResults ? (
+                      <span className="text-xs text-slate-600">
+                        {option.voteCount} vote
+                        {option.voteCount === 1 ? '' : 's'} •{' '}
+                        {option.percentage}%
+                      </span>
+                    ) : null}
+                  </span>
+                  {canShowPollResults ? (
+                    <span className="mt-2 block h-2 overflow-hidden rounded-full bg-cyan-100">
+                      <span
+                        className="block h-full rounded-full bg-cyan-500"
+                        style={{ width: `${option.percentage}%` }}
+                      />
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          {isPollClosed ? (
+            <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+              <p className="text-ui-strong text-sm font-semibold">
+                Poll statistics
+              </p>
+              <div className="mt-2 grid gap-1 text-xs text-slate-700 sm:grid-cols-3">
+                <span>Total votes: {totalPollVotes}</span>
+                <span>Options: {post.poll.options.length}</span>
+                <span>
+                  Result:{' '}
+                  {winningOptions.length > 0
+                    ? winningOptions.map((option) => option.label).join(', ')
+                    : 'No votes'}
+                </span>
+              </div>
+            </div>
+          ) : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-ui-muted text-xs">
+              {canShowPollResults
+                ? `${totalPollVotes} total vote${totalPollVotes === 1 ? '' : 's'}`
+                : 'Results hidden until you vote or the poll closes'}
+              {existingPollVote ? ' • You have voted' : ''}
+              {isPollClosed ? ' • Poll closed' : ''}
+            </p>
+            {!existingPollVote && !isPollClosed ? (
+              <button
+                type="button"
+                onClick={submitPollVote}
+                disabled={selectedPollOptionIds.length === 0}
+                className="rounded-md border border-cyan-300 bg-cyan-100 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-cyan-200 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Submit Vote
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      <PostAttachmentList attachments={post.attachments} />
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-orange-100 pt-3">
+        <button
+          type="button"
+          className={actionButtonClass}
+          disabled={hasLiked}
+          onClick={() => onLike(post.id)}
+        >
+          {hasLiked ? `Liked (${post.likes})` : `Like (${post.likes})`}
+        </button>
+        <button
+          type="button"
+          className={actionButtonClass}
+          onClick={() => onReply(post)}
+        >
+          Reply to Post
+        </button>
+        <button
+          type="button"
+          className={`${actionButtonClass} transition active:scale-95`}
+          onClick={() => onShare(post)}
+        >
+          Share
+        </button>
+        <button
+          type="button"
+          className={actionButtonClass}
+          onClick={() => onSendTip(post)}
+        >
+          Send Tip ({tipCount})
+        </button>
+        {isOwner ? (
+          <>
+            <button
+              type="button"
+              className={actionButtonClass}
+              onClick={() => onEdit(post)}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              className={dangerButtonClass}
+              onClick={() => onDelete(post.id)}
+            >
+              Delete
+            </button>
+          </>
+        ) : null}
+        {canModerate ? (
+          <button
+            type="button"
+            className={actionButtonClass}
+            onClick={() => onTogglePin(post)}
+          >
+            {post.isPinned ? 'Unpin Post' : 'Pin Post'}
+          </button>
+        ) : null}
+        {!isOwner && canModerate ? (
+          <button
+            type="button"
+            className={dangerButtonClass}
+            onClick={() => onDelete(post.id)}
+          >
+            Moderation Delete
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+};
+
+const areThreadPostCardPropsEqual = (
+  prev: ThreadPostCardProps,
+  next: ThreadPostCardProps
+) => {
+  return (
+    prev.post === next.post &&
+    prev.author === next.author &&
+    prev.authorRole === next.authorRole &&
+    prev.repliedPost === next.repliedPost &&
+    prev.repliedAuthorName === next.repliedAuthorName &&
+    prev.highlighted === next.highlighted &&
+    prev.searchQuery === next.searchQuery &&
+    prev.replyContextHighlighted === next.replyContextHighlighted &&
+    prev.isOwner === next.isOwner &&
+    prev.canModerate === next.canModerate &&
+    prev.hasLiked === next.hasLiked &&
+    prev.tipCount === next.tipCount &&
+    prev.pollVoterId === next.pollVoterId &&
+    prev.canClosePoll === next.canClosePoll &&
+    prev.onLike === next.onLike &&
+    prev.onVoteOnPoll === next.onVoteOnPoll &&
+    prev.onClosePoll === next.onClosePoll &&
+    prev.onReply === next.onReply &&
+    prev.onShare === next.onShare &&
+    prev.onSendTip === next.onSendTip &&
+    prev.onJumpToPost === next.onJumpToPost &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete &&
+    prev.onTogglePin === next.onTogglePin
+  );
+};
+
+export default memo(ThreadPostCard, areThreadPostCardPropsEqual);

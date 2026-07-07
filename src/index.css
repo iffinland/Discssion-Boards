@@ -1,0 +1,460 @@
+@import 'tailwindcss';
+@source "./index.html";
+@source "./src/**/*.{ts,tsx}";
+
+@layer base {
+  :root {
+    --brand-primary-500: #06b6d4;
+    --brand-primary-600: #0e99bc;
+    --brand-primary-700: #0e7490;
+    --brand-accent-500: #f97316;
+    --brand-accent-600: #ea580c;
+    --brand-accent-700: #c2410c;
+
+    --surface-app: #cfe5f1;
+    --surface-card: #d6ebf6;
+    --surface-card-strong: #cde4f1;
+    --surface-primary-soft: #d2eeff;
+    --surface-accent-soft: #ffeddc;
+    --surface-accent-pill: #ffe4c8;
+    --surface-button-end: rgb(255 255 255 / 92%);
+    --surface-overlay: rgb(15 23 42 / 45%);
+
+    --line-subtle: #bdd2de;
+    --line-primary: #67c7f3;
+    --line-accent: #fbab5a;
+
+    --text-strong: #1e293b;
+    --text-muted: #64748b;
+
+    --bg-glow-primary: rgb(6 182 212 / 30%);
+    --bg-glow-accent: rgb(249 115 22 / 12%);
+    --bg-wash-top: rgb(56 189 248 / 34%);
+    --bg-wash-mid: rgb(188 214 230);
+    --app-layer-top: rgb(118 186 222 / 64%);
+    --app-layer-bottom: rgb(177 206 224 / 95%);
+
+    --header-left: rgb(180 226 246 / 98%);
+    --header-mid: rgb(199 229 243 / 95%);
+    --header-right: rgb(252 223 188 / 86%);
+
+    --stats-left: rgb(179 226 245 / 98%);
+    --stats-mid: rgb(171 214 232 / 84%);
+    --stats-right: rgb(252 218 178 / 84%);
+
+    --footer-left: rgb(177 223 244 / 90%);
+    --footer-right: rgb(252 214 168 / 82%);
+
+    --shadow-soft: rgb(15 23 42 / 6%);
+    --shadow-button: rgb(15 23 42 / 8%);
+    --shadow-hover: rgb(14 116 144 / 14%);
+    --focus-outer: rgb(255 255 255 / 88%);
+    --focus-inner: rgb(14 116 144 / 35%);
+    --overlay-card: rgb(255 255 255 / 70%);
+    --selected-soft: #cffafe;
+  }
+
+  html.theme-dark-cyan {
+    --brand-primary-500: #22d3ee;
+    --brand-primary-600: #67e8f9;
+    --brand-primary-700: #a5f3fc;
+    --brand-accent-500: #fb923c;
+    --brand-accent-600: #fdba74;
+    --brand-accent-700: #fed7aa;
+
+    --surface-app: #071923;
+    --surface-card: #102a36;
+    --surface-card-strong: #0d2430;
+    --surface-primary-soft: #123847;
+    --surface-accent-soft: #3a2417;
+    --surface-accent-pill: #4a2a17;
+    --surface-button-end: rgb(22 48 61 / 94%);
+    --surface-overlay: rgb(2 6 23 / 72%);
+
+    --line-subtle: #284858;
+    --line-primary: #0891b2;
+    --line-accent: #c56c27;
+
+    --text-strong: #e8f7fb;
+    --text-muted: #a9c0cc;
+
+    --bg-glow-primary: rgb(34 211 238 / 20%);
+    --bg-glow-accent: rgb(251 146 60 / 12%);
+    --bg-wash-top: rgb(8 47 73 / 70%);
+    --bg-wash-mid: rgb(7 25 35);
+    --app-layer-top: rgb(8 47 73 / 58%);
+    --app-layer-bottom: rgb(7 25 35 / 97%);
+
+    --header-left: rgb(11 43 56 / 98%);
+    --header-mid: rgb(13 58 74 / 94%);
+    --header-right: rgb(65 38 19 / 88%);
+
+    --stats-left: rgb(10 38 50 / 98%);
+    --stats-mid: rgb(12 54 69 / 90%);
+    --stats-right: rgb(58 34 19 / 86%);
+
+    --footer-left: rgb(9 34 45 / 95%);
+    --footer-right: rgb(55 32 18 / 88%);
+
+    --shadow-soft: rgb(0 0 0 / 26%);
+    --shadow-button: rgb(0 0 0 / 30%);
+    --shadow-hover: rgb(34 211 238 / 18%);
+    --focus-outer: rgb(7 25 35 / 90%);
+    --focus-inner: rgb(34 211 238 / 48%);
+    --overlay-card: rgb(16 42 54 / 82%);
+    --selected-soft: #164e63;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 0% 0%, var(--bg-glow-primary), transparent 44%),
+      radial-gradient(
+        circle at 100% 0%,
+        var(--bg-glow-accent),
+        transparent 34%
+      ),
+      linear-gradient(180deg, var(--bg-wash-top) 0%, var(--bg-wash-mid) 55%),
+      var(--surface-app);
+    color: var(--text-strong);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button {
+    border-radius: 0.5rem;
+    border: 1px solid var(--line-subtle);
+    background-image: linear-gradient(
+      to bottom right,
+      var(--surface-card),
+      var(--surface-button-end)
+    );
+    color: var(--text-strong) !important;
+    box-shadow: 0 1px 1px var(--shadow-button);
+    transition:
+      transform 0.1s ease,
+      box-shadow 0.18s ease,
+      border-color 0.18s ease,
+      filter 0.18s ease;
+  }
+
+  button span {
+    color: inherit !important;
+  }
+
+  button:hover:not(:disabled) {
+    border-color: var(--line-primary);
+    box-shadow: 0 2px 6px var(--shadow-hover);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(1px) scale(0.985);
+    filter: saturate(1.06);
+  }
+
+  button:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--focus-outer),
+      0 0 0 4px var(--focus-inner);
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+  }
+}
+
+@layer utilities {
+  .text-brand-primary {
+    color: var(--brand-primary-600);
+  }
+
+  .text-brand-primary-strong {
+    color: var(--brand-primary-700);
+  }
+
+  .text-brand-accent {
+    color: var(--brand-accent-500);
+  }
+
+  .text-brand-accent-strong {
+    color: var(--brand-accent-700);
+  }
+
+  .text-ui-strong {
+    color: var(--text-strong);
+  }
+
+  .text-ui-muted {
+    color: var(--text-muted);
+  }
+
+  .border-brand-primary {
+    border-color: var(--line-primary);
+  }
+
+  .border-brand-accent {
+    border-color: var(--line-accent);
+  }
+
+  .bg-brand-primary-soft {
+    background-color: var(--surface-primary-soft);
+  }
+
+  .bg-brand-accent-soft {
+    background-color: var(--surface-accent-soft);
+  }
+
+  .bg-brand-primary-solid {
+    background-color: var(--brand-primary-500);
+  }
+
+  .bg-forum-header {
+    background-image: linear-gradient(
+      to right,
+      var(--header-left),
+      var(--header-mid),
+      var(--header-right)
+    );
+  }
+
+  .bg-forum-stats {
+    background-image: linear-gradient(
+      to right,
+      var(--stats-left),
+      var(--stats-mid),
+      var(--stats-right)
+    );
+  }
+
+  .bg-forum-footer {
+    background-image: linear-gradient(
+      to right,
+      var(--footer-left),
+      var(--footer-right)
+    );
+  }
+
+  .forum-card {
+    background-color: var(--surface-card-strong);
+    border: 1px solid var(--line-subtle);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px var(--shadow-soft);
+  }
+
+  .forum-card-primary {
+    background-image: linear-gradient(
+      to bottom right,
+      var(--surface-primary-soft),
+      var(--surface-card)
+    );
+    border: 1px solid var(--line-primary);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px var(--shadow-soft);
+  }
+
+  .forum-card-accent {
+    background-image: linear-gradient(
+      to bottom right,
+      var(--surface-accent-soft),
+      var(--surface-card)
+    );
+    border: 1px solid var(--line-accent);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px var(--shadow-soft);
+  }
+
+  .forum-pill-primary {
+    background-color: var(--surface-card);
+    border: 1px solid var(--line-primary);
+  }
+
+  .forum-pill-accent {
+    background-color: var(--surface-accent-pill);
+    border: 1px solid var(--line-accent);
+  }
+
+  .forum-link {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.5rem;
+    border: 1px solid var(--line-primary);
+    background-color: var(--surface-card);
+    color: var(--text-strong) !important;
+    padding: 0.3rem 0.65rem;
+    text-decoration: none;
+    transition:
+      transform 0.1s ease,
+      box-shadow 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .forum-link:hover {
+    border-color: var(--line-accent);
+    box-shadow: 0 2px 6px rgb(234 88 12 / 16%);
+    color: var(--text-strong) !important;
+    text-decoration: none;
+  }
+
+  .forum-link:active {
+    transform: translateY(1px) scale(0.985);
+  }
+
+  .forum-row-button {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .forum-row-button:hover:not(:disabled) {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .forum-row-button:active:not(:disabled) {
+    transform: none;
+    filter: none;
+  }
+
+  .forum-row-button:focus-visible {
+    box-shadow: none;
+  }
+
+  .bg-surface-card {
+    background-color: var(--surface-card);
+  }
+
+  .bg-surface-app {
+    background-color: var(--surface-app);
+    background-image:
+      radial-gradient(
+        circle at 14% -10%,
+        rgb(6 182 212 / 18%),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 92% -8%,
+        rgb(249 115 22 / 10%),
+        transparent 36%
+      ),
+      linear-gradient(
+        180deg,
+        var(--app-layer-top) 0%,
+        var(--app-layer-bottom) 58%,
+        var(--surface-app) 100%
+      );
+  }
+
+  html.theme-dark-cyan .bg-white,
+  html.theme-dark-cyan [class~='bg-white/70'] {
+    background-color: var(--overlay-card) !important;
+  }
+
+  html.theme-dark-cyan [class~='bg-slate-50'],
+  html.theme-dark-cyan [class~='bg-slate-100'],
+  html.theme-dark-cyan [class~='bg-slate-200/80'] {
+    background-color: var(--surface-card-strong) !important;
+  }
+
+  html.theme-dark-cyan [class~='bg-cyan-50'],
+  html.theme-dark-cyan [class~='bg-cyan-50/60'],
+  html.theme-dark-cyan [class~='bg-cyan-50/80'] {
+    background-color: var(--surface-primary-soft) !important;
+  }
+
+  html.theme-dark-cyan [class~='bg-cyan-100'],
+  html.theme-dark-cyan [class~='bg-cyan-200'] {
+    background-color: var(--selected-soft) !important;
+  }
+
+  html.theme-dark-cyan [class~='bg-orange-50'],
+  html.theme-dark-cyan [class~='bg-amber-50'],
+  html.theme-dark-cyan [class~='bg-rose-50'],
+  html.theme-dark-cyan [class~='bg-fuchsia-50'] {
+    background-color: var(--surface-accent-soft) !important;
+  }
+
+  html.theme-dark-cyan [class~='bg-emerald-50'] {
+    background-color: #12382f !important;
+  }
+
+  html.theme-dark-cyan [class~='border-slate-200'],
+  html.theme-dark-cyan [class~='border-slate-300'] {
+    border-color: var(--line-subtle) !important;
+  }
+
+  html.theme-dark-cyan [class~='border-cyan-100'],
+  html.theme-dark-cyan [class~='border-cyan-200'],
+  html.theme-dark-cyan [class~='border-cyan-300'],
+  html.theme-dark-cyan [class~='border-cyan-400'],
+  html.theme-dark-cyan [class~='border-cyan-500'] {
+    border-color: var(--line-primary) !important;
+  }
+
+  html.theme-dark-cyan [class~='border-orange-100'],
+  html.theme-dark-cyan [class~='border-orange-200'],
+  html.theme-dark-cyan [class~='border-orange-300'],
+  html.theme-dark-cyan [class~='border-amber-300'],
+  html.theme-dark-cyan [class~='border-rose-200'],
+  html.theme-dark-cyan [class~='border-rose-300'],
+  html.theme-dark-cyan [class~='border-fuchsia-300'] {
+    border-color: var(--line-accent) !important;
+  }
+
+  html.theme-dark-cyan [class~='text-slate-900'],
+  html.theme-dark-cyan [class~='text-slate-950'],
+  html.theme-dark-cyan [class~='text-slate-800'],
+  html.theme-dark-cyan [class~='text-slate-700'] {
+    color: var(--text-strong) !important;
+  }
+
+  html.theme-dark-cyan [class~='text-slate-600'],
+  html.theme-dark-cyan [class~='text-slate-500'],
+  html.theme-dark-cyan [class~='text-slate-400'] {
+    color: var(--text-muted) !important;
+  }
+
+  html.theme-dark-cyan [class~='text-cyan-700'],
+  html.theme-dark-cyan [class~='text-cyan-800'] {
+    color: var(--brand-primary-700) !important;
+  }
+
+  html.theme-dark-cyan [class~='text-orange-700'],
+  html.theme-dark-cyan [class~='text-orange-800'],
+  html.theme-dark-cyan [class~='text-amber-700'],
+  html.theme-dark-cyan [class~='text-rose-700'],
+  html.theme-dark-cyan [class~='text-fuchsia-700'] {
+    color: var(--brand-accent-700) !important;
+  }
+
+  html.theme-dark-cyan [class~='text-emerald-700'] {
+    color: #86efac !important;
+  }
+
+  html.theme-dark-cyan [class~='ring-cyan-100'],
+  html.theme-dark-cyan [class~='ring-cyan-200'],
+  html.theme-dark-cyan [class~='ring-cyan-300'] {
+    --tw-ring-color: var(--line-primary) !important;
+  }
+
+  html.theme-dark-cyan [class~='hover:from-cyan-50']:hover {
+    --tw-gradient-from: var(--selected-soft) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: rgb(22 78 99 / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops:
+      var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+
+  html.theme-dark-cyan [class~='hover:to-orange-50/60']:hover {
+    --tw-gradient-to: rgb(74 42 23 / 62%) var(--tw-gradient-to-position) !important;
+  }
+
+  html.theme-dark-cyan [class~='hover:bg-cyan-50/80']:hover,
+  html.theme-dark-cyan [class~='hover:bg-cyan-50']:hover,
+  html.theme-dark-cyan [class~='hover:bg-slate-100']:hover {
+    background-color: var(--selected-soft) !important;
+  }
+}
