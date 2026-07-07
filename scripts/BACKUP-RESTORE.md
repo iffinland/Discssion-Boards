@@ -4,7 +4,7 @@ This guide explains how to use the workspace backup and restore scripts.
 
 ## Location
 
-- Backups are stored in `~/VS-Code-Projects/REACT-PROJECTS/_workspace_backups/Discussion_Boards`
+- Backups are stored in `~/VS-Code-Projects/_workspace_backups/QORTIUM`
 - Backup filenames follow `discussion-boards-workspace-YYYY-MM-DD_HH-MM-SS.tar.gz`
 
 ## Create a backup
@@ -19,8 +19,9 @@ This command:
 
 - creates a `.tar.gz` backup of the workspace
 - adds a timestamp to the filename
-- keeps the 3 newest backups
+- keeps the newest backups automatically
 - removes older backups automatically
+- uses `BACKUP_RETENTION` if you want to change the default retention (default: 3)
 
 ## Restore from a backup
 
@@ -28,6 +29,12 @@ Run from the project root:
 
 ```bash
 npm run restore:workspace
+```
+
+You can also restore non-interactively by passing the backup number:
+
+```bash
+npm run restore:workspace -- 1
 ```
 
 Restore flow:

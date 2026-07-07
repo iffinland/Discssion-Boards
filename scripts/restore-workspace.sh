@@ -2,7 +2,8 @@
 set -euo pipefail
 
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKUP_DIR="${HOME}/VS-Code-Projects/REACT-PROJECTS/_workspace_backups/Discussion_Boards"
+BACKUP_DIR="${HOME}/VS-Code-Projects/_workspace_backups/QORTIUM"
+SELECTION="${1:-}"
 
 if [[ ! -d "${BACKUP_DIR}" ]]; then
   echo "Backup directory not found: ${BACKUP_DIR}"
@@ -21,7 +22,11 @@ for i in "${!backups[@]}"; do
   printf "%d) %s\n" "$((i + 1))" "$(basename "${backups[$i]}")"
 done
 
-read -r -p "Choose backup number to restore: " selection
+if [[ -n "${SELECTION}" ]]; then
+  selection="${SELECTION}"
+else
+  read -r -p "Choose backup number to restore: " selection
+fi
 
 if ! [[ "${selection}" =~ ^[0-9]+$ ]]; then
   echo "Invalid selection."
