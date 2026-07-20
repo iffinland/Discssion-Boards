@@ -38,9 +38,14 @@ targets.
 
 | Repository | Path | Verified commit |
 | --- | --- | --- |
-| Discussion Boards | this repository | `f20f93c833ef74dc83a22a59be2d1c6682e96bde` |
-| Qortium Core | `../../github-clones/qortium-core` | `c000a0cd4` |
-| Qortium Home | `../../github-clones/qortium-home` | `a41e5f9` |
+| Discussion Boards | this repository | `c3c9638da72e2ab529042cffd079d3e49be9fb51` |
+| Qortium Core | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` |
+| Qortium Home | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e` |
+
+The Discussion Boards production source reviewed by architecture issue #1
+remains commit `f20f93c833ef74dc83a22a59be2d1c6682e96bde`.
+The later Discussion Boards commit above adds this design document without
+changing production source.
 
 GitHub specification inspected:
 
@@ -634,50 +639,239 @@ Selecting:
 Current repository evidence is insufficient to choose a universal canonical
 V1 publisher safely.
 
-### 17.2 Candidate rules and risks
+### 17.2 Evidence inspected on 2026-07-20
+
+Read-only searches were run against the public QDN API used by the currently
+checked-out Home reference. The searches used the V1 `qdbm-topic-`,
+`qdbm-sub-`, and `qdbm-post-` identifier families with a result limit of 1,000.
+This is an evidence snapshot, not proof that discovery was complete.
+
+Within that snapshot:
+
+- 18 Topic identifiers had resources under more than one publisher;
+- 11 Thread/SubTopic identifiers had resources under more than one publisher;
+- 20 current partitioned Post identifiers had resources under more than one
+  publisher;
+- 12 logical Post IDs appeared under both the original
+  `qdbm-post-{postId}` identifier and the newer
+  `qdbm-post-{threadPartition}-{postId}` identifier.
+
+Representative live patterns included:
+
+- Topic `topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc` under
+  `Discussion_Boards`, `developer iffi`, and `iffi vaba mees`;
+- Thread `subtopic_01knr5h3881bzw_0y550zyta08et086` under
+  `iffi vaba mees`, `Discussion_Boards`, and `developer iffi`;
+- Thread `subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj` under
+  `Qortal-Video-Bridge`, `Discussion_Boards`, and `iffi vaba mees`;
+- Post `post_01kq7fvw3gywsq_r88c7gcd65zfn5vn` under four publishers, with
+  later available copies retaining embedded author `Discussion_Boards` while
+  carrying a changed poll-vote set;
+- Post `post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex` under six publishers, with
+  an available first-publisher copy retaining embedded author
+  `Qortal-Video-Bridge` and later copies changing reaction/poll state;
+- QDN deletion tombstones under publishers other than the embedded creator.
+
+Some discovered resources returned unavailable or non-forum QDN deletion
+payloads while their Core resource envelopes and other publishers' copies
+remained visible. This demonstrates why current payload availability cannot be
+a prerequisite for recognizing that a publisher/resource key existed.
+
+### 17.3 Historical publication paths
+
+The V1 source confirms the following full-snapshot publications:
+
+| Entity | Original creation | Legitimate later cross-publisher copies |
+| --- | --- | --- |
+| Topic | An authorized admin creates the ID and publishes the Topic under the current QDN name | Another admin can change settings; a Super Admin/SysOp reorder republishes every Topic under the reordering user's name |
+| Thread | An allowed user creates the ID and publishes the SubTopic under the current QDN name | Moderators/admins can publish lock/settings/visibility/pin/solved snapshots; pinned-thread reorder republishes affected Threads under the staff user's name |
+| Post | The author creates the ID and publishes the Post under the current QDN name | Likes, poll votes, poll closure, staff pinning, staff deletion, and tip-counter synchronization publish complete Post state under the actor's name; author edits republish under the author's current name |
+
+Indexes are also republished under every mutating user's name, but index
+publishers are never entity-owner candidates. Role registry duplicates are a
+separate authorization-domain problem and cannot establish Topic, Thread, or
+Post ownership.
+
+The current source does not show QDN publication of a Thread entity merely to
+update `lastPostAt`; post creation changes that field in the topic-directory
+index. That index change is derived evidence only.
+
+### 17.4 Verified Core metadata semantics
+
+At Core commit `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`:
+
+- a resource key is `(publisher name, service, identifier)`;
+- resource `created` is the minimum transaction timestamp Core has reduced for
+  that resource key;
+- resource `updated` is the latest resource transaction timestamp when it
+  differs from creation;
+- `latestSignature` identifies the latest resource transaction, not the first;
+- every named arbitrary-data transaction is valid only when its signer owns
+  the registered name at that transaction's validation point;
+- unconfirmed transaction timestamps are rejected when expired/too old or
+  beyond the configured future margin.
+
+Consequently, the QDN publisher name is chain-authenticated at each
+publication. The resource search envelope does not, however, expose the first
+transaction signature or its creator public key. A current name lookup proves
+current ownership, not historical wallet ownership.
+
+Historical wallet ownership can be proven if the exact first arbitrary
+transaction is retrieved and its creator address/signature is verified. The
+currently inspected public resource-search surface does not provide a
+resource-key-filtered history or first signature. Phase 1 must not infer the
+historical wallet from the current name owner.
+
+Core `created` is stronger evidence than payload `createdAt` or `updatedAt`,
+but it is still based on a transaction timestamp supplied by the signer within
+Core's validity window. It is not equivalent to an immutable block-order
+sequence number.
+
+### 17.5 Candidate rules and risks
 
 | Candidate | Benefit | Risk |
 | --- | --- | --- |
-| Earliest trusted QDN creation metadata for an embedded ID | Deterministic and resistant to future timestamps | Earliest discoverable resource may be a copy, malformed import, or unavailable |
-| Publisher whose resolved wallet matches embedded creator | Uses intended author signal plus external binding | Historical name transfer and forged embedded fields can misidentify ownership |
+| Earliest Core resource `created` for a logical entity across all identifier variants | Matches the observed create-before-mutate flow; resistant to payload future timestamps; preserves deleted/unavailable first resource keys | Incomplete discovery can omit the original; a transaction timestamp is signer-supplied within bounds; imports or failed multi-resource creation can make the first visible resource non-original |
+| Latest Core resource/payload | Preserves the most recent V1 UI result | Known live later publishers are voters, reactors, moderators, tippers, or reordering admins; grants ownership to an operation actor |
+| Publisher whose current wallet matches embedded creator | Easy with current name API | Current ownership is not historical ownership; embedded creator is forgeable; name transfer can produce a false match or mismatch |
+| Publisher named by the majority of embedded creator claims | Later legitimate copies often preserve creator fields | An attacker can mass-publish copies; unavailable records bias the sample; the claim remains untrusted |
 | Publisher/identifier found in earliest trusted index | May reflect live historical structure | Index is derived, replaceable, and sometimes newer than entities |
 | Known deployment/bootstrap authority for Topics only | May fit administrator-created top-level structure | Cannot safely generalize to user Threads/Posts |
-| Curated migration manifest signed/published by primary authority | Can resolve known live ambiguities explicitly | Centralizes migration judgment and requires transparent audit/evidence |
+| Reviewed migration manifest recording evidence and canonical publisher | Freezes an auditable result for the bounded legacy corpus and supports explicit exceptions | Requires complete fixture capture, governance, reproducibility, and a rule for newly discovered legacy records |
 | Quarantine every ambiguous entity pending review | Safest against takeover | Hides legitimate existing content and damages compatibility |
-| Hybrid per-entity rule with manifest exceptions | Balances automation and known anomalies | More complex; manifest governance and reproducibility must be defined |
+| Earliest-candidate algorithm plus reviewed manifest and quarantine | Uses the strongest observed general signal while refusing unsupported ownership | More complex; cannot unblock until full corpus fixtures and exceptions are reviewed |
 
-### 17.3 Required live-data fixtures and evidence
+No inspected live example proved that a later publisher was the original
+creator. Multiple examples proved that the latest publisher was not the
+creator. No verified counterexample to the earliest-resource candidate was
+found in the representative payloads that were available, but unavailable
+resources and incomplete history prevent treating this as proof of a universal
+rule.
+
+### 17.6 Proposed constrained canonicalization algorithm
+
+This is the evidence-backed candidate to validate against the complete fixture
+set. It is not yet approved for production:
+
+1. Establish a fixed V1 migration cutoff using a reviewed Core height and
+   timestamp. V1 records first appearing after the cutoff are not automatically
+   adoptable.
+2. Discover every V1 entity resource through complete pagination, including all
+   known legacy and partitioned identifier forms. Exclude indexes and role
+   resources from owner candidacy.
+3. Group records by validated logical entity type and ID. For Posts, group both
+   `qdbm-post-{postId}` and
+   `qdbm-post-{threadPartition}-{postId}` forms.
+4. Deduplicate exact resource envelopes and retain unavailable/tombstoned
+   resource keys.
+5. Select the **earliest-publisher candidate** from the minimum Core
+   `created` value across publisher/resource keys. Ties do not resolve by
+   payload time; they require first-transaction/block evidence or quarantine.
+6. Build an immutable fingerprint from every available valid copy:
+   - Topic: entity ID and creation display time;
+   - Thread: entity ID, parent Topic ID, creation display time, and embedded
+     creator claim;
+   - Post: entity ID, parent Thread ID, parent Post ID, creation display time,
+     and embedded creator claim.
+7. Require all available pre-cutoff copies used for adoption to agree on the
+   immutable fingerprint. Mutable content, moderation, reactions, votes, tips,
+   indexes, and client update times do not participate.
+8. Treat a normalized embedded creator equal to the earliest-publisher
+   candidate as corroboration only. A mismatch is an ambiguity requiring
+   transaction evidence or quarantine; a match cannot override earlier Core
+   evidence.
+9. Require the canonical parent entity to be known and the candidate resource
+   time to be plausible relative to the entity ID/creation display time.
+   Plausibility is a rejection signal, not ownership proof.
+10. Where the first transaction can be retrieved, verify its signature,
+    creator address, name, service, identifier, confirmation, and block
+    placement. Record the historical wallet only from that evidence.
+11. Materialize the reviewed result as a versioned migration fixture/manifest
+    containing the logical ID, entity type, canonical publisher name, all
+    considered resource keys, evidence fields, decision status, and rationale.
+12. At runtime, automatically adopt only manifest-approved mappings. A newly
+    discovered or changed ambiguous V1 record remains compatibility-only and
+    cannot publish V2 owner operations until reviewed.
+
+The general signal is the same for Topic, Thread, and Post, but validation is
+entity-type-specific because their legitimate duplicate causes and immutable
+fingerprints differ.
+
+### 17.7 Security and compatibility properties
+
+The constrained algorithm:
+
+- does not grant ownership to the latest voter/reactor/moderator/admin;
+- does not use client `updatedAt` as authority;
+- does not make an index authoritative;
+- preserves first resource keys whose latest content is deleted or
+  unavailable;
+- uses embedded author only as corroboration;
+- prevents incomplete or novel legacy data from silently gaining V2 authority;
+- supports explicit, auditable exceptions.
+
+It can still fail if the fixture omits an earlier resource, if the earliest
+transaction timestamp was adversarially manipulated within Core bounds, if an
+entity was imported without its original resource, or if the original
+multi-resource creation failed before publishing the entity. Those cases
+require transaction/block evidence or quarantine.
+
+### 17.8 Required live-data fixtures and evidence
 
 Before selecting the rule, collect a read-only fixture set containing:
 
-- every live publisher/resource envelope for representative duplicate Topics,
-  Threads, Posts, indexes, tombstones, reactions, votes, tips, and moderation
-  copies;
+- every live publisher/resource envelope for all pre-cutoff Topic, Thread, and
+  Post IDs, not only representative duplicates;
+- every known legacy and partitioned Post identifier for each logical Post;
+- paginated search diagnostics demonstrating whether the capture completed;
 - Core `created`, `updated`, and `latestSignature` metadata;
 - resource identifier, embedded ID, parent IDs, embedded author, and payload
   timestamps;
-- current and, if Core supports it, historical name-to-wallet ownership;
+- current payload availability and QDN deletion/tombstone status;
+- first arbitrary transaction and block evidence where accessible;
+- current and historical name-to-wallet ownership only when independently
+  verifiable;
 - known legitimate creator evidence supplied by maintainers;
 - publication sequence around known reactions, moderation, votes, and edits;
 - unavailable-resource cases where indexes remain readable;
-- at least one unambiguous entity per type and every known ambiguous pattern.
+- at least one unambiguous entity per type and every known ambiguous pattern;
+- explicit tests for import, failed entity-plus-index publication, timestamp
+  ties, and an omitted-original-resource simulation.
 
 The fixture must be sanitized only where doing so does not remove identity or
 ordering evidence. Expected canonical outcomes and rationale must be reviewed
 and checked into a test-fixture area before Phase 1 reducer implementation.
 
-### 17.4 Blocking decision
+### 17.9 Safe fallback
 
-**BLOCKING PHASE 1:** Phase 1 may build schema/parser scaffolding only after
-explicit approval, but it may not ship canonical legacy ownership selection or
-enable V2 adoption until:
+If discovery is partial, immutable fingerprints conflict, the earliest
+candidate ties, parent authority is unresolved, or required evidence is
+unavailable:
 
-1. the fixture evidence above is inspected;
-2. historical name-binding capability is verified;
-3. a deterministic rule and exception policy are approved;
-4. the rule is added to this document;
-5. tests demonstrate that legitimate live duplicates remain readable and
-   unauthorized replacements do not win.
+- retain parseable content as `legacy-v1` compatibility display where safe;
+- mark publisher authority `blocked`;
+- do not permit V2 adoption, owner edit, owner tombstone, or ownership transfer;
+- do not let a later publisher or index fill the authority gap;
+- expose a stable quarantine/diagnostic reason;
+- allow a later reviewed manifest revision to resolve the record.
+
+### 17.10 Blocking decision
+
+**BLOCKING PHASE 1:** the investigation narrows the likely solution to the
+constrained earliest-candidate algorithm plus a reviewed migration manifest,
+but does not yet prove the complete legacy corpus. Phase 1 may not ship
+canonical legacy ownership selection or enable V2 adoption until:
+
+1. a cutoff height/timestamp is approved;
+2. the complete paginated pre-cutoff fixture is captured and reviewed;
+3. first-transaction evidence is obtained for every ambiguity where the
+   earliest candidate is not sufficiently corroborated;
+4. the migration manifest format, signing/publication authority, and update
+   governance are approved;
+5. maintainers confirm or correct the representative canonical mappings;
+6. tests demonstrate that legitimate duplicates remain readable, operational
+   publishers do not gain ownership, and incomplete discovery quarantines
+   safely.
 
 ## 18. Legacy-to-V2 adoption
 
@@ -1000,9 +1194,12 @@ Each operation phase tests:
 
 ### Blocking Phase 1
 
-1. Canonical V1 publisher selection and exception policy.
-2. Availability and semantics of historical Qortium name-to-wallet binding.
-3. Confirmation that required trusted QDN ordering metadata is available
+1. Approval of the constrained earliest-candidate algorithm, V1 cutoff, and
+   migration-manifest governance after complete fixture review.
+2. Availability of first-transaction/block evidence and historical wallet
+   binding for ambiguous legacy resources. Current name ownership is
+   insufficient.
+3. Confirmation that required trusted QDN resource metadata is available
    through the current Home bridge.
 4. Final compact identifier grammar/hash after current Core constraints are
    re-verified.
@@ -1018,4 +1215,3 @@ Each operation phase tests:
 7. Large-file source-token behavior on every supported Home platform.
 
 Deferred decisions may not violate the invariants in section 3.
-
