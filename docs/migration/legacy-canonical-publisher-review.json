@@ -1,0 +1,3285 @@
+{
+  "capturedAt": "2026-07-20T17:25:04.419483+00:00",
+  "classificationPolicy": "No APPROVED entries; AUTO-CANDIDATE is expedited review only. Cross-family and >=4-publisher groups are quarantined.",
+  "entries": [
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775577710285,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knmavd0pywsq_p0gq5rj35kcgz189",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knmavd0pywsq_p0gq5rj35kcgz189",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knmavd0pywsq_p0gq5rj35kcgz189"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775577710285,
+          "coreStatus": null,
+          "coreUpdated": 1775848804233,
+          "identifier": "qdbm-post-010m716q-post_01knmavd0pywsq_p0gq5rj35kcgz189",
+          "identifierFamily": "partitioned",
+          "latestSignature": "WUXiGv4DmvfdrcDqru3apFQphqNeZViwu8BaKXSmDVSaRF8iLpE4mq6BSsuEYv6MNENetPGcyfbNAVG5TXV5Cbc",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775760813425,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-010m716q-post_01knmavd0pywsq_p0gq5rj35kcgz189",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4HMu1WD6Lge49cXDgE74WiwJ46xxzgFpPrqUw7cZ4vLwWpR4T2JVRttWCqmH4Px8PPEZRgfrXxXt5w7V77mHF6vi",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "free man",
+      "candidateCreated": 1775587639085,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knmmacwn1jrg_zkkn64nta1n7tbkg"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "free man"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775587639085,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2AKgoRnpzEy3jgDF1wbxqAypnFPRMfqJJNt4FtnqF9c3S57kDe2zhoDkUXzHWKojavepGAXiPwNdfhhY5VBfPDwG",
+          "publisher": "free man",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754648610,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+          "identifierFamily": "partitioned",
+          "latestSignature": "hxxw7iyiy1cykXxEH8tn6xUyg6SQwFSe2UW5wCAXgoUt9waHRPrCyB5uHk6drkeNMpw3jSKdHfTkWXNeAuqdoS8",
+          "publisher": "Q-Music",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754652456,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+          "identifierFamily": "legacy",
+          "latestSignature": "4WEGQ3CxYaWnk1ZZE92RUQq1jqC5kTiDEGnPW77GhupkCVotUDAVum2ibUZT7sy4o9grD85hu9iLfyXz8vLDxoRh",
+          "publisher": "Q-Music",
+          "tombstone": true
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775657182821,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knppmj2v1bzw_9rzkpz7wqdre6kye"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775657182821,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4EvNiy5W6QweDR8mfXN4SoigEfNhJ4camhJJ31DZy4ukxbx7e5pLXKb4gy4bSfbPobHgCbvJnuGWsoNjmuiMumuG",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754660294,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4VzZnRjdM2g3XocRHTSpjJcXmmTKMeEN5G5F4pM4ZyFC48QWzD8MSsGPWGfWftvwVZdVQL8caBxBWXbDQvWqKvbi",
+          "publisher": "Q-Music",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754663768,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+          "identifierFamily": "legacy",
+          "latestSignature": "vu1MpvN2fBSQ6EhcJ3mSYCP4Kby9yyj5cJ45GP6xqLE1rzNem3PstQvNvvpBhG3DM15AJiYgSuwjTtnUXPjw1Yz",
+          "publisher": "Q-Music",
+          "tombstone": true
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775663553321,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knpwpyteywsq_9wydyhpsrwjvfgfy"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Q-Music"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775663553321,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4y4rZJt9sFRLP4mHeCEzEpPsL38H6UwF79Cd6rdu3v1Kk39zHKrvDaqefCRdeTHuMN5TmszPQKzvgw9m8YKqUbaK",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754634341,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3nTXgYx53SfQQPGtaD59fw3AWf2BVLTkXVsLUWqCBrv1REWhEwXigVLVB2nvjmoqkgBP3QLB29pWEaLLxpm4sVBQ",
+          "publisher": "Q-Music",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754637770,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+          "identifierFamily": "legacy",
+          "latestSignature": "3AkR9QAkLmBmE4UG3su3tEdZFVE7vzJzm7toJt5Pd46gNdHzjznSbvhiGLKoxqLHMDsPmZPDpx2CaaoVEEV1aKTo",
+          "publisher": "Q-Music",
+          "tombstone": true
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775678382577,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knqavn6q1bzw_97ne0bf123e0x55e"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "iffi forest life",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775678382577,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2r3u7zgsvjDZmcEGa1ZFTVSk13EPiLou8H4SZ4UBVxhwsWsE2Sugjt4Bew94rHjLrHBf5bJYdBSp2GFo6UTgG1k4",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754613041,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5he4Nj9sCiBY9NB4jBhLegkT3e1bkB2fz8RNs2aqGFxGkUw7yNcVArLFL2oY3hGkSqiJS6duURiqtHeVFj8enSUr",
+          "publisher": "Q-Music",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754617498,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "legacy",
+          "latestSignature": "33ZaEbemFxZHkqFgVBcVoiwixg7WtnfsgKaYVgA2rYcGxd9UHD9xYY9ntwrEUBEVFMDY8D6nEc7edBD7S7hYk1BV",
+          "publisher": "Q-Music",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777301866869,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "partitioned",
+          "latestSignature": "233chcjFGvyT7TDT4FgsFHhksjU3aaHvtorGc5rjbGeVLQZXG2Tke7S5SJwgqjkqyQpjVCr4M2DhF5tUjsSuCLnQ",
+          "publisher": "iffi forest life",
+          "tombstone": false
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "AgoristMarket",
+      "candidateCreated": 1775685570154,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knqhq1re1472_4k5n4h6zgm1rj7ve",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knqhq1re1472_4k5n4h6zgm1rj7ve",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knqhq1re1472_4k5n4h6zgm1rj7ve"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "AgoristMarket",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775685570154,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-007ynzrt-post_01knqhq1re1472_4k5n4h6zgm1rj7ve",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5XM81zTYa46E7FFyUrXQYqUR5fggqhC26JdpjcJrHohDrHEsRC64ovpkyGJNcwAx31B4PpetG8R5UYbMSUnpgrDA",
+          "publisher": "AgoristMarket",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775704680126,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-007ynzrt-post_01knqhq1re1472_4k5n4h6zgm1rj7ve",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3NnxqQqnpAzd3DagMSD7HDxEAGVwfzvK3cCKGMFZTcL76JSBvbwph1rYFJbEKXBSTmLxVpR3WreRaktaWjVUng2Q",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775710819848,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knr9sjd31bzw_t0txpmtk2ywnb0dw"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "developer iffi",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775710819848,
+          "coreStatus": null,
+          "coreUpdated": 1775711425382,
+          "identifier": "qdbm-post-01wmyelq-post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4VSPvdzPccfaongFB4XTXFH4UJVdf9oBibH1dE9QpU3iWaPqDDy8QHykK3UyDbMPdF8SXLmH2JCaSq6dzeKLusHM",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776264934264,
+          "coreStatus": null,
+          "coreUpdated": 1776957409379,
+          "identifier": "qdbm-post-01wmyelq-post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4mp8uSxkhoazqphVTq6ierH4hEuKGqFhLJKjcPohez4Mt3QLjPzJ4VBHV7cYWz8EqCaXYfcoWu4Mw8YNJc7ktehM",
+          "publisher": "developer iffi",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776264938862,
+          "coreStatus": null,
+          "coreUpdated": 1776957407519,
+          "identifier": "qdbm-post-post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+          "identifierFamily": "legacy",
+          "latestSignature": "MMarENMfu1SH4UTHwHiazWWWWCTbe4hLPVjXRqPKNcaDPVm8nnUxDFpxz18mPjBXRkKe7npxXSrh5Zyy7m8CRRB",
+          "publisher": "developer iffi",
+          "tombstone": true
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775726064900,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knrrat4jywsq_devghy63ddyp4z0r",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knrrat4jywsq_devghy63ddyp4z0r",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knrrat4jywsq_devghy63ddyp4z0r"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Fanna"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775726064900,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-010r3rtz-post_01knrrat4jywsq_devghy63ddyp4z0r",
+          "identifierFamily": "partitioned",
+          "latestSignature": "37zha1NWyd9mTvMAwBkSeNWKHqB5gfB44X46P7dXpFpyJmMF7NcpqHHz8e7Kn8RM84uNKjCudd8oxJmpqWVLzPvL",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777428755791,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-010r3rtz-post_01knrrat4jywsq_devghy63ddyp4z0r",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4m6BrXM16J85xoGUipynX4ZBXLmPJU6p3EQ6cJiqkh6oxxVCcfDqic7pJK7n52wn8UqUTMviiXiTxzyDec5JCMxs",
+          "publisher": "Fanna",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "developer iffi",
+      "candidateCreated": 1775754058364,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knsk11p010yp_ffkf9zcyny67kvg1",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knsk11p010yp_ffkf9zcyny67kvg1",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knsk11p010yp_ffkf9zcyny67kvg1"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "developer iffi"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775754058364,
+          "coreStatus": null,
+          "coreUpdated": 1776957427216,
+          "identifier": "qdbm-post-00uhlmtc-post_01knsk11p010yp_ffkf9zcyny67kvg1",
+          "identifierFamily": "partitioned",
+          "latestSignature": "59nja8P4zpGnRNS34q2Syf3nE4bAoh95UYfvPvpzQY8MJ3BVgWuTBATyiAPqr8zgd8pW8s7nT9DuTuNvHmCZRk2X",
+          "publisher": "developer iffi",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754592308,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knsk11p010yp_ffkf9zcyny67kvg1",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4m1cGZohbAKHgi3mXoA4oqm4YgqULhhH4kb4ypxv4HhquG2keLJrnXt9wUWUMwkeoibDtRM8CgR3aEVw29hfFXHW",
+          "publisher": "Q-Music",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754598427,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knsk11p010yp_ffkf9zcyny67kvg1",
+          "identifierFamily": "legacy",
+          "latestSignature": "2nowSx7d3EG1XbBsw92BbpHrBC9ttThBABWAWbBU56myjXE4mShR9v8fRiRSzqy4pvTi8xdEHLHeJhFGnM4RCro",
+          "publisher": "Q-Music",
+          "tombstone": true
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Green say Bear",
+      "candidateCreated": 1776415313619,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kpd9n0ejj3px_fkd6x7ndtzmdehmn",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kpd9n0ejj3px_fkd6x7ndtzmdehmn",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kpd9n0ejj3px_fkd6x7ndtzmdehmn"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Green say Bear",
+        "Q-Music"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1776415313619,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-014l5gwq-post_01kpd9n0ejj3px_fkd6x7ndtzmdehmn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2jDNYfZ97g95SNFTrvNbf68TWDp5Eya7ZTL3bRDzBHf72kJoA3AgNpK7Vur3iNJXQEDXtH3shSAsjomL6SFB2Bs9",
+          "publisher": "Green say Bear",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776434227426,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-014l5gwq-post_01kpd9n0ejj3px_fkd6x7ndtzmdehmn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "pSsarLXEHA4NryHb7v7xdg38ep45undeCAzRQn3jo7SS81NiRbiX5CAEaXyLsj1A9gQoWRDcYCVv9UBCP9Q2tZA",
+          "publisher": "Q-Music",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1777229313844,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kq5hybbvywsq_g2hjtxnyb3836c30"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "four or more publishers; mutation sequence and creator cannot be inferred from envelopes",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "NodeFM",
+        "Q-Music",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777229313844,
+          "coreStatus": null,
+          "coreUpdated": 1777229341511,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3Aph1pYeec2diQNMLePVFqYLPA2x8akZp4BTfQqfP2aX9AsrPDuim3oQ5E2yR26hHEcaoSVyc7Dwpyw6yQDNKvvn",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777229697866,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3fsf6QDW24bbYcaShEX5K7RZY9KeiqMNFWMQVzXxKaGBTtQ3b7wC1EhHZH8arPZdoS8jgV7Yv9LXL7QcBvdzm79h",
+          "publisher": "Q-Music",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777273514069,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "58R55WJbkvo1aPhyALtKNeZrRHYPawH8YWDYnxoqw1cRmeA9dXDfkBFTUUEzqK5P8g9uiRCcev64ws3RxDSftCmH",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777289640933,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5HoYKkqGN8TR2wvtALDAihH4KBQCGkqFiHyPUK5Sb88B7LKK1Uv2omjd8SwmmVWMT3AVv6phzeKxnbCA4hWKjr8x",
+          "publisher": "NodeFM",
+          "tombstone": false
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1777229502555,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kq5j43tbywsq_k8gwaebq1354k7jb"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Q-Music",
+        "developer iffi"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777229502555,
+          "coreStatus": null,
+          "coreUpdated": 1777229518998,
+          "identifier": "qdbm-post-00zg3aas-post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+          "identifierFamily": "partitioned",
+          "latestSignature": "51eQZEPyJbykQGGosVbi8b9BvRW8DfRm17wxAVVKmA2ADuieauufnCciMTCAgTzqopp3Bjhd7gdCKmTDdVBiomDV",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777229770468,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00zg3aas-post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4aFrX3FWd4n2fFzi2L22erRk9UTKqLAS4cCW6YqcTMRvBe5NJ5bXzGwuCgzExc4k96b9eUkYaxCopUizrrhWrBBf",
+          "publisher": "Q-Music",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777232058059,
+          "coreStatus": null,
+          "coreUpdated": 1777287993425,
+          "identifier": "qdbm-post-00zg3aas-post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5v4VDGvM6HfWG5yyKjUfibiJeJSxkSyGu63ytxZc4TffWgVv8quToEpffo7VToEY9E3MBWhhi8YFp8recKshAxEq",
+          "publisher": "developer iffi",
+          "tombstone": true
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1777294245384,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kq7fvw3gywsq_r88c7gcd65zfn5vn"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "four or more publishers; mutation sequence and creator cannot be inferred from envelopes",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Counter Economy",
+        "Discussion_Boards",
+        "NodeFM",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777294245384,
+          "coreStatus": null,
+          "coreUpdated": 1777294275320,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2jASCSpbRu44wVAL4QmLXUhkANFRrKmaxNgNbcvgksYFRZaCgxHPCN9FT1yS9znUsMocqUc32LM6qBQj6DeKHdD8",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777294421635,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "61HvLYhSkHB1bPkcJRtZRW7jpAoCWS28iHEPErGE21LimtKijmMMVYUuLw2Cmjos2FWZWUD4Ge7jo2AT2vzMS6bV",
+          "publisher": "NodeFM",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777294613728,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "222gK7VhPJmeBq4mraEZAzvtD4iCfAUjzddXqhSujXPwoSJVhReFPFHECtczFhadCR2fHcrr7SjtPkang4edSr3k",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777349820324,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "39cGbUQCsgDuKMbk2TrfaieDgJTaejiXTykaSdJpMEuNWDeUiBEZLwcyjJLqHwghYFY9FQaqFYBYTYNfCHKTUXPy",
+          "publisher": "Counter Economy",
+          "tombstone": false
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1777386547480,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kqa7wqg21bzw_22190jm4ycr1qp1k",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kqa7wqg21bzw_22190jm4ycr1qp1k",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kqa7wqg21bzw_22190jm4ycr1qp1k"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Fanna",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777386547480,
+          "coreStatus": null,
+          "coreUpdated": 1777386590818,
+          "identifier": "qdbm-post-0131h9jj-post_01kqa7wqg21bzw_22190jm4ycr1qp1k",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2jSoef83c5se2zZh9kHcYtEnVCxSky76nxomUABXaATbTA1Ba9xYy6fHgG3biED3TTDzpvXix6EfePyRRidayGZZ",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777392416270,
+          "coreStatus": null,
+          "coreUpdated": 1777471043257,
+          "identifier": "qdbm-post-0131h9jj-post_01kqa7wqg21bzw_22190jm4ycr1qp1k",
+          "identifierFamily": "partitioned",
+          "latestSignature": "f45TFniYA8tpQAh8rY7ewsQc12yWHo8GmVuY2ZasBKLiN1Fh2h5ixJi1JsjUioSUHFzwk8K5c7cZTJkBLEWCJhe",
+          "publisher": "Fanna",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1777389075367,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kqaa9w491bzw_qcs48zh3egg3gvct",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kqaa9w491bzw_qcs48zh3egg3gvct",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kqaa9w491bzw_qcs48zh3egg3gvct"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Counter Economy",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777389075367,
+          "coreStatus": null,
+          "coreUpdated": 1777389547901,
+          "identifier": "qdbm-post-01yfi02b-post_01kqaa9w491bzw_qcs48zh3egg3gvct",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2QXjVjH9y7hF1xDC6gpeshiYWjw7EaTJ7AGqo2dxzrH3mcktirKVcYjrbaS8Yxx7ZgUL9vi1WgokRLkgHm8ck9an",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778074586918,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01yfi02b-post_01kqaa9w491bzw_qcs48zh3egg3gvct",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5crVwm7P3jJAaVLQDNxfEjuPW96zn7LFCBykYadj2Xstt4W5Xmho9ZAYD8Acus1Ta4UJ7Tt12gTQLJAf8tgoScav",
+          "publisher": "Counter Economy",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Fanna",
+      "candidateCreated": 1777428839590,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kqbg7dyc1wuf_8gbdseznc1athpaa",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kqbg7dyc1wuf_8gbdseznc1athpaa",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kqbg7dyc1wuf_8gbdseznc1athpaa"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Fanna"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777428839590,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-010r3rtz-post_01kqbg7dyc1wuf_8gbdseznc1athpaa",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3Ljim9KNMpdmS6hss8g1uawEdfKThCkHr1iLMG4Nn6fYSXgMLJhMwbG4aXjnR3fJiNpCygDsr6SUqcaiVbBZMwGk",
+          "publisher": "Fanna",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777435377835,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-010r3rtz-post_01kqbg7dyc1wuf_8gbdseznc1athpaa",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2gQjf8F7zFKxwCm8g3HHVoghUyu7UaCth1rzzb9Ypc9FLFHL9UN5T7WC6ciDY4stCdEpNwJauoj8ew1rLH1UFwvK",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Fanna",
+      "candidateCreated": 1777471216037,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kqcrmmy81wuf_mzf8aqxa05prk4yj",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kqcrmmy81wuf_mzf8aqxa05prk4yj",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kqcrmmy81wuf_mzf8aqxa05prk4yj"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Fanna",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777471216037,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-010r3rtz-post_01kqcrmmy81wuf_mzf8aqxa05prk4yj",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4ev3m2XZvaZFStyUjyjTeWdV1XpCkW9NQQFpqikiaAvCxJU4L3QKy2AacYVsYhx9QTPpLukWbtRuFMhUbeLFcZ1K",
+          "publisher": "Fanna",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777557825830,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-010r3rtz-post_01kqcrmmy81wuf_mzf8aqxa05prk4yj",
+          "identifierFamily": "partitioned",
+          "latestSignature": "ySjpjk6Fd8FeGsAcxiLYfszD2yHg4mXj9YQpdihccsTneh3Q1NgENGrnsWEbPW4UnGVthViz7XzZVuy9F4PDnh5",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Simon James",
+      "candidateCreated": 1778542696350,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01krcpfkqv18r2_c8wd7rd1rzd3qcky"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Simon James",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1778542696350,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01km00kf-post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+          "identifierFamily": "partitioned",
+          "latestSignature": "55NqmwXkcn6fq6C9jGnDPf28sDdHoH2VNN7P5wcCeAkY1A6LKc7JzMRuaxefMkgRWby94HBPDhoksfnMvdB3RcVa",
+          "publisher": "Simon James",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778758187220,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01km00kf-post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+          "identifierFamily": "partitioned",
+          "latestSignature": "54jKijpi9DVPkHP7RfosnXkroYkPVCEXxbjrtWxwoTaYokWCFXFYi5SqvtZoSqMnb7VnZtbCidw15htavRh6SQmR",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778929084685,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01km00kf-post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4iJaGEq8RR551tEQAYTuuA2Byi2BVKC51Yy9cxFMQNa22cDD3q7D31KVDWNcoAGFG76FjSnkp53t8MFiQo3Dcipa",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Qortal-Video-Bridge",
+      "candidateCreated": 1778830121589,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "four or more publishers; mutation sequence and creator cannot be inferred from envelopes",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Qortal-Video-Bridge",
+        "Shadow Archives",
+        "Stonecrow",
+        "iffi vaba mees",
+        "russian"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1778830121589,
+          "coreStatus": null,
+          "coreUpdated": 1778920960924,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "A7gTXr73v6iwxRRwkLAZpKrrkW6ufCxx2unLsw75QAKjcJpPCuJVJA3x8nddnasF3trK1dEceuxAAP4TMneYLzd",
+          "publisher": "Qortal-Video-Bridge",
+          "tombstone": false
+        },
+        {
+          "availability": "unavailable",
+          "coreCreated": 1778830680750,
+          "coreStatus": null,
+          "coreUpdated": 1778922243580,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3m6SuMDBkjLEPNeHFo9oCL1iDYFVXyfHFgbBfKzSo8VtQi3GLeEjgzVVBsuKJ1XpHtVRtWjTxh1angCbKhwqdgdC",
+          "publisher": "Shadow Archives",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778876780389,
+          "coreStatus": null,
+          "coreUpdated": 1778920819015,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4UD2fraW353GjdbsMAUF2AQFBKAbEBChhRMsxdjnoJqU6evmbvjJfERNmsSyYpNuvY3nUCvebTwWT1N5TXSnTiw2",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778909938092,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "56CtxV5TwHhebMzT9ZuWdugTHea3LkSBgfLZhCLZC7etVUb8ii27XNxBjfMufWHqhSpcrcFY34NuKi48fQVfaoDP",
+          "publisher": "russian",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778926153138,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4njbS19ZbYc7MpApJk6tyzdCbtYGsiG3FfqDdH7xBgoN4DqcVBuNt3TjQNXNVFUFPPmKDEF1v8WatcxCBf7GoGCG",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778984902795,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2bFj9EtaHTkv5Qxs3y3cqPYgebGo4npdTs5uEBonptE5NZob1ZXC5ABc1Mwjp6MwsZdJmSjQZHMYUWv7JXswgZu8",
+          "publisher": "Stonecrow",
+          "tombstone": false
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Simon James",
+      "candidateCreated": 1778966080154,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01krsa88gd18r2_mef7y4c8gfd7607p",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01krsa88gd18r2_mef7y4c8gfd7607p",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01krsa88gd18r2_mef7y4c8gfd7607p"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Simon James",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1778966080154,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01mwsctq-post_01krsa88gd18r2_mef7y4c8gfd7607p",
+          "identifierFamily": "partitioned",
+          "latestSignature": "aS1gRC3Cf94xiW4axKAsq84sVm4yNY6CLx65xeDLQZns2zDCMJymxmavJuWxQiwqbbpH2c9ndJ3u8xQLv133246",
+          "publisher": "Simon James",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1779033416718,
+          "coreStatus": null,
+          "coreUpdated": 1779033737725,
+          "identifier": "qdbm-post-01mwsctq-post_01krsa88gd18r2_mef7y4c8gfd7607p",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2UUZbh2afxwEC3QfR7kWF9qfJA4quqcaJqFXRbpioj4RhHbBT4fpN3NR9LyiXZoLhC5M8rfVnQHBeuBGVynXCpMn",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775577595026,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knmaqvwpywsq_axpddrvbc104126f",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knmaqvwpywsq_axpddrvbc104126f",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knmaqvwpywsq_axpddrvbc104126f"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "developer iffi"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775577595026,
+          "coreStatus": null,
+          "coreUpdated": 1775847892972,
+          "identifier": "qdbm-sub-subtopic_01knmaqvwpywsq_axpddrvbc104126f",
+          "identifierFamily": "native",
+          "latestSignature": "zEUSBWZLbuJxggfVcoHuqHMhtRCLMhKJ6wAef83XvfGi9JWp5n39N5GKXF6NtwixF969mDerGmxSmCFxgHUDDoU",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777233153886,
+          "coreStatus": null,
+          "coreUpdated": 1777287976034,
+          "identifier": "qdbm-sub-subtopic_01knmaqvwpywsq_axpddrvbc104126f",
+          "identifierFamily": "native",
+          "latestSignature": "e3G1hprf5nLv4nc195vRbBS5xFHD9cpW5KmFeas6qWfmXSHhwse7WnVCHb9c3HuvuepQSxPdB2ddqiqTnznVHfP",
+          "publisher": "developer iffi",
+          "tombstone": true
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775578891062,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knmbzdd8ywsq_qdeys16vkxmvr17s",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knmbzdd8ywsq_qdeys16vkxmvr17s",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knmbzdd8ywsq_qdeys16vkxmvr17s"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775578891062,
+          "coreStatus": null,
+          "coreUpdated": 1775753625649,
+          "identifier": "qdbm-sub-subtopic_01knmbzdd8ywsq_qdeys16vkxmvr17s",
+          "identifierFamily": "native",
+          "latestSignature": "2AQ8AsH9sjSChJgpaxLAMbNoCUhsWPtUYW7aCWr8MSNrdzdujJfUsFww6TpWQFQVsvqPBiDAn6TbTowZ9eutDmqg",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775582907171,
+          "coreStatus": null,
+          "coreUpdated": 1775675128241,
+          "identifier": "qdbm-sub-subtopic_01knmbzdd8ywsq_qdeys16vkxmvr17s",
+          "identifierFamily": "native",
+          "latestSignature": "3RryFkKYmCKgGnBMG7zeJxk72UDy42hwnMk3NALZbU4xDfVMq5GvaNyuMXwJK1w71NCjbT6Bb4wZQGUazeAgJn1u",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775582860645,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knmfrjp51bzw_6akjdr51y7tgmqs7",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knmfrjp51bzw_6akjdr51y7tgmqs7",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knmfrjp51bzw_6akjdr51y7tgmqs7"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775582860645,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01knmfrjp51bzw_6akjdr51y7tgmqs7",
+          "identifierFamily": "native",
+          "latestSignature": "27dgVaKVGJuAo8UuFsYZ6eXJzrCabcehnWdX3xVK6XeV1ApLa1QRysWwjsHW2uGzACqcRYHedFrmH7ozXFH7j32N",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775726114498,
+          "coreStatus": null,
+          "coreUpdated": 1777293837555,
+          "identifier": "qdbm-sub-subtopic_01knmfrjp51bzw_6akjdr51y7tgmqs7",
+          "identifierFamily": "native",
+          "latestSignature": "5UzB8spuS4ukgZkSUCKP97QAMuMhmvVey1D9XJB5Q12qC5nHz1ezzeQbCjhxYB2Lp5Zzsga4Wdjpy63Yey1dqiuy",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775586954498,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knmknfpb1bzw_7nw4gsb28721pfn4",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knmknfpb1bzw_7nw4gsb28721pfn4",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knmknfpb1bzw_7nw4gsb28721pfn4"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775586954498,
+          "coreStatus": null,
+          "coreUpdated": 1775755939704,
+          "identifier": "qdbm-sub-subtopic_01knmknfpb1bzw_7nw4gsb28721pfn4",
+          "identifierFamily": "native",
+          "latestSignature": "5M25A7hmun2M3BRHJz52sW7mjWDQJdhi3CiNK5wgbqPZYsuqBCypT2F5ajcULLQSCDDgckb4dwqunth336hTwJBF",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775665474798,
+          "coreStatus": null,
+          "coreUpdated": 1776432964533,
+          "identifier": "qdbm-sub-subtopic_01knmknfpb1bzw_7nw4gsb28721pfn4",
+          "identifierFamily": "native",
+          "latestSignature": "2Y43ngDUcnsR4g8iX6YG8HeDFbrWjQ83UxGHpn34TxtsuwNV3YWcTzvVhpJooV6itsLpwwP887Geji7X9pg2sY3",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775681816497,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knqe4f7h1bzw_kcyzdnjgqp31gsmd",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knqe4f7h1bzw_kcyzdnjgqp31gsmd",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knqe4f7h1bzw_kcyzdnjgqp31gsmd"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775681816497,
+          "coreStatus": null,
+          "coreUpdated": 1777430995131,
+          "identifier": "qdbm-sub-subtopic_01knqe4f7h1bzw_kcyzdnjgqp31gsmd",
+          "identifierFamily": "native",
+          "latestSignature": "2ssECQssu7L2gh5SKp1q8pw4h74RgGxzLD4hnM2ChPeojvBWiZRpP1nbrsFePscW4psUuGG9osMgbXucgn4Px6HR",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775725911286,
+          "coreStatus": null,
+          "coreUpdated": 1775725973123,
+          "identifier": "qdbm-sub-subtopic_01knqe4f7h1bzw_kcyzdnjgqp31gsmd",
+          "identifierFamily": "native",
+          "latestSignature": "3qwXnmokAWD29Umwgtsuc5V2XDmia4UosWK9c6hFVh1qPPGf8NUK7L9gA9e5ZewQsAHwFiNLbavFC7wdraEFfyVW",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775706348580,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knr5h3881bzw_0y550zyta08et086",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knr5h3881bzw_0y550zyta08et086",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knr5h3881bzw_0y550zyta08et086"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "developer iffi",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775706348580,
+          "coreStatus": null,
+          "coreUpdated": 1777312056965,
+          "identifier": "qdbm-sub-subtopic_01knr5h3881bzw_0y550zyta08et086",
+          "identifierFamily": "native",
+          "latestSignature": "qtxtweExPFVg5AGpJ8Lt6RnYC2izYcUW1KULNqHJhaDsAUwENxk8Wv8qTfkP7jhF56FJXR3miWFAPHCYZ8WTmvV",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775753640407,
+          "coreStatus": null,
+          "coreUpdated": 1776434087660,
+          "identifier": "qdbm-sub-subtopic_01knr5h3881bzw_0y550zyta08et086",
+          "identifierFamily": "native",
+          "latestSignature": "STgccmYycLY27BQj1Aiv3JWF1uzjtsC7K94iuxwEs8aySkUqgjxoBiRQHBXdamJfBZSjmcWLZTFpmrj2T43HYUM",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776264981964,
+          "coreStatus": null,
+          "coreUpdated": 1776957403275,
+          "identifier": "qdbm-sub-subtopic_01knr5h3881bzw_0y550zyta08et086",
+          "identifierFamily": "native",
+          "latestSignature": "36JSLdY3DxTE3jMaKU2FhCaEL5Txu4sziDQUTCvCp2SQGJkjvwgsFXqpfNsHvVWSNw9Jw8ExSNWD2GCoSfnZXByS",
+          "publisher": "developer iffi",
+          "tombstone": true
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Qortal-Video-Bridge",
+      "candidateCreated": 1775879582339,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Qortal-Video-Bridge",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775879582339,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+          "identifierFamily": "native",
+          "latestSignature": "42sDqtDpRYoeK2QSuYChEzGbv86UfwMYgpWrSZnauqsePJJvm6HBNV8nY5L96MfE3sozmF6SWfYypkwiVtj21WuM",
+          "publisher": "Qortal-Video-Bridge",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776263408822,
+          "coreStatus": null,
+          "coreUpdated": 1777602843252,
+          "identifier": "qdbm-sub-subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+          "identifierFamily": "native",
+          "latestSignature": "3HFnR5DsK725tmjLqFgo5ttotTufB3PTdpYhEPa4YJLx8sGHbUYw3ow7W2zdrbK8Hm8U4Cbb6rqtk63hDsSmHDTU",
+          "publisher": "Discussion_Boards",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776263621847,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+          "identifierFamily": "native",
+          "latestSignature": "41qLsNaBLeB9V745oXNnBjcoxBb67Vpo1pgSBLpDRUV3Jgy5GmQDq2AjbQPEkAZse6zwbKi9gaVX3tCvy24UdjHH",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1776258792286,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01kp8mcaf6ywsq_gr8422gv3fp19q6y",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01kp8mcaf6ywsq_gr8422gv3fp19q6y",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01kp8mcaf6ywsq_gr8422gv3fp19q6y"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1776258792286,
+          "coreStatus": null,
+          "coreUpdated": 1777602851053,
+          "identifier": "qdbm-sub-subtopic_01kp8mcaf6ywsq_gr8422gv3fp19q6y",
+          "identifierFamily": "native",
+          "latestSignature": "658TJfZ1n6T52TR1MwZXZBnLZjNU6SfmwKPkvHNXdSfVPXQkr2kucryVZuT4bnmTGofdqDFNi9SrbDBLHDt38BVj",
+          "publisher": "Discussion_Boards",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776263657095,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01kp8mcaf6ywsq_gr8422gv3fp19q6y",
+          "identifierFamily": "native",
+          "latestSignature": "4L8A3c2UzVwFPvHFE2nDJ6dJxiuZSqGu37KM5uVfZovdvUDH5EGC1uZCd5jzhpb7s9d6gcswTJkTWNfDqrP6cwag",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1776258978441,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01kp8mj06wywsq_62fks0v3s5e5y55z",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01kp8mj06wywsq_62fks0v3s5e5y55z",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01kp8mj06wywsq_62fks0v3s5e5y55z"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1776258978441,
+          "coreStatus": null,
+          "coreUpdated": 1777602848781,
+          "identifier": "qdbm-sub-subtopic_01kp8mj06wywsq_62fks0v3s5e5y55z",
+          "identifierFamily": "native",
+          "latestSignature": "3QGWFMib3eeZgeoZYbku16PQ4wsnSGjgSGjMMPpxGiNBHcxV52bREf2pEtWdrK54DCZz6tCjdx1ic2Sv8w3iDPFS",
+          "publisher": "Discussion_Boards",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776263673579,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01kp8mj06wywsq_62fks0v3s5e5y55z",
+          "identifierFamily": "native",
+          "latestSignature": "5DH3zAzoX8w1PPKNduhbcZpmCQT61Qao7oWBmYoaeVdb6bMnr1YPeJaZNVTYooBLJXQRC6hbd4D4WugjdrTcvUUZ",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1776261748246,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01kp8q6j95ywsq_2sk5av20x6thv1nr",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01kp8q6j95ywsq_2sk5av20x6thv1nr",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01kp8q6j95ywsq_2sk5av20x6thv1nr"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1776261748246,
+          "coreStatus": null,
+          "coreUpdated": 1777602845498,
+          "identifier": "qdbm-sub-subtopic_01kp8q6j95ywsq_2sk5av20x6thv1nr",
+          "identifierFamily": "native",
+          "latestSignature": "n3VBRS5FS689LJ3Em4ZGMAh1BppnW5YR3G87NnWL8M53uizdBGZtccQzPqL9nPUnAEFhvYxZLGM6DbdUqZq8e1w",
+          "publisher": "Discussion_Boards",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776263689657,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01kp8q6j95ywsq_2sk5av20x6thv1nr",
+          "identifierFamily": "native",
+          "latestSignature": "5v7K8JGDzuDzZiSweVXnBsciLF73Jvvx3Jh8Awt51bmhDTKatnw2ausFn1hT9ppgreY19t126ErUJuoCgMG6e7vo",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1777314471907,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01kq8353n91bzw_b0t4hsf4g11bcyga",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01kq8353n91bzw_b0t4hsf4g11bcyga",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01kq8353n91bzw_b0t4hsf4g11bcyga"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777314471907,
+          "coreStatus": null,
+          "coreUpdated": 1777314555837,
+          "identifier": "qdbm-sub-subtopic_01kq8353n91bzw_b0t4hsf4g11bcyga",
+          "identifierFamily": "native",
+          "latestSignature": "PXEXJ1A5Xg4dfybxNDKqbo4SXb4srbR1UVyZrAZfqX8BMoXnWK6ueytyUmBug6EAeger9fLR9mUHMmgH2uPxFdm",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777314757463,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01kq8353n91bzw_b0t4hsf4g11bcyga",
+          "identifierFamily": "native",
+          "latestSignature": "f4ohANawbvJdTaVxnF6AEoGRrtWahefE3rDm2sr36z9D6rLjkmtiZXWc4ZuzPP6u1SSX83mFrR17Qc5QBRsDKVk",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775577397190,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knmahst7ywsq_rp0vq4vw59smcp57",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knmahst7ywsq_rp0vq4vw59smcp57",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knmahst7ywsq_rp0vq4vw59smcp57"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775577397190,
+          "coreStatus": null,
+          "coreUpdated": 1775753528165,
+          "identifier": "qdbm-topic-topic_01knmahst7ywsq_rp0vq4vw59smcp57",
+          "identifierFamily": "native",
+          "latestSignature": "LBHEabDhjdErY2V2BCW6rft1iCEQwuT6wLe15kPAxQ85vsQHUYQVpSunFse8v5kRmYX6jyHrMLCutxqY6z1j99j",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846925019,
+          "coreStatus": null,
+          "coreUpdated": 1777285588880,
+          "identifier": "qdbm-topic-topic_01knmahst7ywsq_rp0vq4vw59smcp57",
+          "identifierFamily": "native",
+          "latestSignature": "2amaLVk2AkGuzMGexiRhyBkbmdqTDLXag4Uu4rR3z1N9ujrqsKBHxLeuz2wtet1mKAULVeGxUyywcuReLFp5iDi7",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775577442895,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knmak783ywsq_aptj3yb7h244k7q4",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knmak783ywsq_aptj3yb7h244k7q4",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knmak783ywsq_aptj3yb7h244k7q4"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775577442895,
+          "coreStatus": null,
+          "coreUpdated": 1775753515296,
+          "identifier": "qdbm-topic-topic_01knmak783ywsq_aptj3yb7h244k7q4",
+          "identifierFamily": "native",
+          "latestSignature": "2f3Z7693XcdHarxV1v4QCXN7hmewnTR9kVYhJyWxouVfyLxaSKM1HeafXXBuUeuzT7jQvQSKrpwaNGsMvGsYboSd",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775582894292,
+          "coreStatus": null,
+          "coreUpdated": 1775846968981,
+          "identifier": "qdbm-topic-topic_01knmak783ywsq_aptj3yb7h244k7q4",
+          "identifierFamily": "native",
+          "latestSignature": "JzRjWTN9n6x1TbDqUfA1r88m1i64Vn67VmNwUZuZSCi4jDPGP3qqBP6Wv38jbCLESsxWAKjLVNygNtj17Jm68ns",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775578541415,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "developer iffi",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775578541415,
+          "coreStatus": null,
+          "coreUpdated": 1775753518136,
+          "identifier": "qdbm-topic-topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+          "identifierFamily": "native",
+          "latestSignature": "5sHJVmgjwsNmLMMiR8d72Hxt4YAzzPq5bhnoUUT3p2DmvjWJocMEwpAQJk6P25eWJde1PQdMYd3dL8Hsci8SURSH",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775845061060,
+          "coreStatus": null,
+          "coreUpdated": 1776957420709,
+          "identifier": "qdbm-topic-topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+          "identifierFamily": "native",
+          "latestSignature": "3GFtQ3Azk9cbqGfXdpKL8vv8sVLyVKiQT5vpC8p96HRNWNAmbqyvARMuprN7L5qwsjUo9UkprB5uPadisnLojjxZ",
+          "publisher": "developer iffi",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846900338,
+          "coreStatus": null,
+          "coreUpdated": 1775847002019,
+          "identifier": "qdbm-topic-topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+          "identifierFamily": "native",
+          "latestSignature": "42GiEQraSXDfjjrrhamvNWnUZM627BNFQV6uvAmZ8ockZEMWLzzg634zf76gsrSmeUuLor71dtdLiUorQdyoMv1S",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775580226923,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knmd86gfywsq_qztjbgf1m4t1635f",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knmd86gfywsq_qztjbgf1m4t1635f",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knmd86gfywsq_qztjbgf1m4t1635f"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775580226923,
+          "coreStatus": null,
+          "coreUpdated": 1775753532894,
+          "identifier": "qdbm-topic-topic_01knmd86gfywsq_qztjbgf1m4t1635f",
+          "identifierFamily": "native",
+          "latestSignature": "2vnTSN22pR3XJNM99chqPEnqeXVcazfXwFBeHAdy7a6CsC1AZSWuVftCnzgNNzKowrwnqE1CixzmgUFAmqjeFx3P",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846931550,
+          "coreStatus": null,
+          "coreUpdated": 1775847048184,
+          "identifier": "qdbm-topic-topic_01knmd86gfywsq_qztjbgf1m4t1635f",
+          "identifierFamily": "native",
+          "latestSignature": "3ESZvtn6kMCmcAxfnfWf8xJ5grkjo54CueDExx5zD6mNUVXXX747pA9AoZ3BmEpVUdMbgpG8En86F4cUrKhzeYZT",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775621597601,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knnmpfntywsq_f1axpvcrvq56jxtg",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knnmpfntywsq_f1axpvcrvq56jxtg",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knnmpfntywsq_f1axpvcrvq56jxtg"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775621597601,
+          "coreStatus": null,
+          "coreUpdated": 1775753520984,
+          "identifier": "qdbm-topic-topic_01knnmpfntywsq_f1axpvcrvq56jxtg",
+          "identifierFamily": "native",
+          "latestSignature": "54e5BdyQRWkmzMXNLkrysc9ahEyk4Lk9qeADKHnRpX5sfVTsAqJrP9ayUbPGiohfXQpBQJkdDpF1Nq66zijLGDDN",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846913624,
+          "coreStatus": null,
+          "coreUpdated": 1777430962200,
+          "identifier": "qdbm-topic-topic_01knnmpfntywsq_f1axpvcrvq56jxtg",
+          "identifierFamily": "native",
+          "latestSignature": "5Q9vQskkUmbFzqWTU1riZS1ewbRyrgPsaiF3fC2xKZS32KutwAeTFwsJHLxgRmZkefmoQxyFb4zWpEUGFqSk5ANR",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775621838133,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knnmy1n6ywsq_e4020n0cs9rhg2q9",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knnmy1n6ywsq_e4020n0cs9rhg2q9",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knnmy1n6ywsq_e4020n0cs9rhg2q9"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775621838133,
+          "coreStatus": null,
+          "coreUpdated": 1775753525103,
+          "identifier": "qdbm-topic-topic_01knnmy1n6ywsq_e4020n0cs9rhg2q9",
+          "identifierFamily": "native",
+          "latestSignature": "42uvRkVi2ZkAvcCfsGHpj3rfXTaYH1f8ZcD94SrnSqbd8tn8gNyfYAuNSDpJwYoRkZ9dzXifcCCbD2niwpD5wbFk",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846920619,
+          "coreStatus": null,
+          "coreUpdated": 1775847019087,
+          "identifier": "qdbm-topic-topic_01knnmy1n6ywsq_e4020n0cs9rhg2q9",
+          "identifierFamily": "native",
+          "latestSignature": "1WwvCEHpMim4835zCbdRC6djhtQGgBXbscgQ6ZpaUs3q9Km6AD91o5oNnkgPPwrT7qhb4EXTniBRRSa7n1nCAzH",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775622236135,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knnna6ddywsq_t213kfsg3xcgsrp1",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knnna6ddywsq_t213kfsg3xcgsrp1",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knnna6ddywsq_t213kfsg3xcgsrp1"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775622236135,
+          "coreStatus": null,
+          "coreUpdated": 1775753536173,
+          "identifier": "qdbm-topic-topic_01knnna6ddywsq_t213kfsg3xcgsrp1",
+          "identifierFamily": "native",
+          "latestSignature": "2j1NRyZdjQuTMMtf6SVyMRiGphtAPKyKnwmRdYoiJdG5U9HLfWhY12hyS8DSbDrMb8BviiPRfMNqYtzQV5JrRGa1",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846935688,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knnna6ddywsq_t213kfsg3xcgsrp1",
+          "identifierFamily": "native",
+          "latestSignature": "5nEWB64bbxWs1X6tTp5a1SFVZEPv1Rmhsorxx2CuLGQ34k2PpyKHedEq2ehsfH5S1BFAbrweSNovwyNTY2UruBbR",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775652073619,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knphrrrrywsq_6pw18mweq6dyze3t",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knphrrrrywsq_6pw18mweq6dyze3t",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knphrrrrywsq_6pw18mweq6dyze3t"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775652073619,
+          "coreStatus": null,
+          "coreUpdated": 1775753538826,
+          "identifier": "qdbm-topic-topic_01knphrrrrywsq_6pw18mweq6dyze3t",
+          "identifierFamily": "native",
+          "latestSignature": "3FhZ8PJgWB3GrNQYUqPetAKnvZYUE8ruZWL14axwqNb5wkidZjD2Pn2CQUHb219NLuQ9PWWUnwbcrGM5vGss5qgv",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846941935,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knphrrrrywsq_6pw18mweq6dyze3t",
+          "identifierFamily": "native",
+          "latestSignature": "SsTkU2o1kJ2zkQUgEofkGKEg5wEM6Rxtfz6evxBUjGf1jyFu6PCjwC1ZP6E6UNwFjx1qyhBruDJNCZiJ17p1kNG",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775652718334,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpjcdp4ywsq_kj3x20et07e88e19",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpjcdp4ywsq_kj3x20et07e88e19",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpjcdp4ywsq_kj3x20et07e88e19"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775652718334,
+          "coreStatus": null,
+          "coreUpdated": 1775753542405,
+          "identifier": "qdbm-topic-topic_01knpjcdp4ywsq_kj3x20et07e88e19",
+          "identifierFamily": "native",
+          "latestSignature": "4VWJLk7ohiqYMuAou9RpJxitS6vJWPguD6UKR3FJdt8uiwakC7GSTbStvkNcwX9on6sQULSLc3eiTvcLyKFvRoUT",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846949258,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knpjcdp4ywsq_kj3x20et07e88e19",
+          "identifierFamily": "native",
+          "latestSignature": "5T2jeGg4u5gmf9XW5tnoMDRgqDRuzgkbZBFVQem3XziosdGSa3WWiFiurZx4ZQkdWGpFmhrmoJZsiKDAhvyXaShe",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775652932263,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpjjymcywsq_v3a4t5p5y1vmmzj1",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpjjymcywsq_v3a4t5p5y1vmmzj1",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpjjymcywsq_v3a4t5p5y1vmmzj1"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775652932263,
+          "coreStatus": null,
+          "coreUpdated": 1775753545788,
+          "identifier": "qdbm-topic-topic_01knpjjymcywsq_v3a4t5p5y1vmmzj1",
+          "identifierFamily": "native",
+          "latestSignature": "41N5xAucrutbPtCbBGxUuaCC5AWtW6C9HrTf9uUDXeYu12PSC9yn7S3dUwUVywRVmVSAptQ1CrCHqseXmoazyRdP",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846992285,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knpjjymcywsq_v3a4t5p5y1vmmzj1",
+          "identifierFamily": "native",
+          "latestSignature": "5Uq4CUEGfHRRLaBzbBfnPGm2X2JTykFkcbQPWZUtzkeWJKKVk16nTfqnwCDPM3Ref3qfUjUrQ76tvUckEsrK1cZP",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775653841662,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpkeqcyywsq_ffssbq0a39hx2h80",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpkeqcyywsq_ffssbq0a39hx2h80",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpkeqcyywsq_ffssbq0a39hx2h80"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775653841662,
+          "coreStatus": null,
+          "coreUpdated": 1775753548860,
+          "identifier": "qdbm-topic-topic_01knpkeqcyywsq_ffssbq0a39hx2h80",
+          "identifierFamily": "native",
+          "latestSignature": "2KXc8WHzTFrvEmVmaoS6uAS6ifweTSnjkzqe7raVdCsL1SgXGg7ikfs6GncMp7Ggw2g8ucjcfJJD6WvWwyZAqkz6",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846998592,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knpkeqcyywsq_ffssbq0a39hx2h80",
+          "identifierFamily": "native",
+          "latestSignature": "24tDKZVYgJfd2MfqvnFkPjzc9aLynF1qWaT9CwdW2pigMcWXMaCdeJEwVf6Egs8MtRi8mTTF4iHY8VTjZ26QHAip",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775654925653,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpmftdpywsq_b326dzajc9bmvrv7",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpmftdpywsq_b326dzajc9bmvrv7",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpmftdpywsq_b326dzajc9bmvrv7"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775654925653,
+          "coreStatus": null,
+          "coreUpdated": 1775753553981,
+          "identifier": "qdbm-topic-topic_01knpmftdpywsq_b326dzajc9bmvrv7",
+          "identifierFamily": "native",
+          "latestSignature": "5Ej8Ubx63dQGdkvV2ch8RJeb1gTV84DuV8VGCoANhsSNz9BGG6ZRkwHctLz7nDLkq3iYzpLaKiihTzicCd6Nf99y",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775847008701,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knpmftdpywsq_b326dzajc9bmvrv7",
+          "identifierFamily": "native",
+          "latestSignature": "2ui7hM5HQjZonChBw9TrDfW5wXeWbcVGifvBzAriv5nsKNraohsUfaqzWS826BymZBjpvg6baGbzfzxU2y4n3aym",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775655094822,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpmmz6rywsq_am0kcvf197454h9f",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpmmz6rywsq_am0kcvf197454h9f",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpmmz6rywsq_am0kcvf197454h9f"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775655094822,
+          "coreStatus": null,
+          "coreUpdated": 1775753557174,
+          "identifier": "qdbm-topic-topic_01knpmmz6rywsq_am0kcvf197454h9f",
+          "identifierFamily": "native",
+          "latestSignature": "2gwUns1B3D7GnPGH1xYKaoot7HJ5u2xUk8nWTnsskCYxrRX3rHUA7Vnnpw6YFosgnTAXyY5jAQmBCYhXVBdgpptN",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775847016202,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knpmmz6rywsq_am0kcvf197454h9f",
+          "identifierFamily": "native",
+          "latestSignature": "PRgRvBv8bc2iTTMzHNaXeGqax7SuohoFyTaxJLZTfvVKPuRB7Cik1d1KqQ4R97B3TA95YWpdDWrCrGE23V2kSn5",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775655239824,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpmschaywsq_cvv8bxsd2f8hdtsj",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpmschaywsq_cvv8bxsd2f8hdtsj",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpmschaywsq_cvv8bxsd2f8hdtsj"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775655239824,
+          "coreStatus": null,
+          "coreUpdated": 1775753559251,
+          "identifier": "qdbm-topic-topic_01knpmschaywsq_cvv8bxsd2f8hdtsj",
+          "identifierFamily": "native",
+          "latestSignature": "bxwDiLVgp7T6JhVbGjFvPKC8BseCst9pNSAgxadqwVEGyt8KvSCdHKWrzXmwveLZ4ojxe3BK37qpqE92ctTZNL6",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775847020291,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knpmschaywsq_cvv8bxsd2f8hdtsj",
+          "identifierFamily": "native",
+          "latestSignature": "48QAqKLjfimiHXXTRtzKRbHTRrpLFi5qiqJpSsawCUSF47gAfgZYm1J9MxYx6mQDXz5ZnatMfw6RZzxBXu7XtUMT",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775655529614,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpn27whywsq_1sffebkyev4rfz9v",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpn27whywsq_1sffebkyev4rfz9v",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpn27whywsq_1sffebkyev4rfz9v"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775655529614,
+          "coreStatus": null,
+          "coreUpdated": 1775753564486,
+          "identifier": "qdbm-topic-topic_01knpn27whywsq_1sffebkyev4rfz9v",
+          "identifierFamily": "native",
+          "latestSignature": "5u4Z9mpNdz6J2JUSMfFbm8cWPAfCSRdqNHJvD5NimzSSJkrsgYccGeBGPVXEnbqCADNgi9FMJpPHgZchLkks3erf",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775847026155,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knpn27whywsq_1sffebkyev4rfz9v",
+          "identifierFamily": "native",
+          "latestSignature": "61kDSaxLWJBWeGLxZQGZYmyEk3Ujrt6yzB47Wm7jtqsvZjLsDRyFZtpkosnE3cyMMsT2658MXQkq6AbNKqE4fxcR",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775655785223,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpna089ywsq_tbqk19kh4y6sd0r9",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpna089ywsq_tbqk19kh4y6sd0r9",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpna089ywsq_tbqk19kh4y6sd0r9"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775655785223,
+          "coreStatus": null,
+          "coreUpdated": 1775753567573,
+          "identifier": "qdbm-topic-topic_01knpna089ywsq_tbqk19kh4y6sd0r9",
+          "identifierFamily": "native",
+          "latestSignature": "2aWY8dehUuxg7zvNCYCuDqXfbboM22PhgmYLysSn37GgyoTSDkG3BzazPHbbgCFTA1KPKsYNcAuRSsqn9oEm3gSz",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775711331228,
+          "coreStatus": null,
+          "coreUpdated": 1775847030630,
+          "identifier": "qdbm-topic-topic_01knpna089ywsq_tbqk19kh4y6sd0r9",
+          "identifierFamily": "native",
+          "latestSignature": "3fPi5Bdd1Ld6Mambn5kqTE9XwN1iSk2uRCJa3RMb1Tfbcmm3bK1E8pUXByZ8gBXobvfS3rAP2K8xxsHyqcmvGMrx",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775656012530,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knpngzj41bzw_2an7p7er9mnfet6e",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knpngzj41bzw_2an7p7er9mnfet6e",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knpngzj41bzw_2an7p7er9mnfet6e"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775656012530,
+          "coreStatus": null,
+          "coreUpdated": 1775847036345,
+          "identifier": "qdbm-topic-topic_01knpngzj41bzw_2an7p7er9mnfet6e",
+          "identifierFamily": "native",
+          "latestSignature": "2YWdFyw95aZfB7kTosznG3acQXy1VDseW9KeTSpT92CBvUkiz7JsdAmaxq3BeaGatF3z4iYZyeXdvHxpWHNFijd9",
+          "publisher": "iffi vaba mees",
+          "tombstone": false
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775662700558,
+          "coreStatus": null,
+          "coreUpdated": 1775753569212,
+          "identifier": "qdbm-topic-topic_01knpngzj41bzw_2an7p7er9mnfet6e",
+          "identifierFamily": "native",
+          "latestSignature": "PkcRrEAdAcyHbZmRnYZ3hQBeKV24NjFwUHrLeUyeGWeNwJh9jUj1hFWXYqLvYAmvE9TsJQiPqb1NLQGcDNVDWSE",
+          "publisher": "Discussion_Boards",
+          "tombstone": false
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775727707375,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "confidence": "medium",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knrswx5kywsq_4fmxjp0f7wgcw7h9",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knrswx5kywsq_4fmxjp0f7wgcw7h9",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knrswx5kywsq_4fmxjp0f7wgcw7h9"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "AUTO-CANDIDATE"
+      },
+      "manualReviewReason": "two same-family publishers with a unique earliest Core-created candidate; payload and first-transaction review still required",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775727707375,
+          "coreStatus": null,
+          "coreUpdated": 1775753570893,
+          "identifier": "qdbm-topic-topic_01knrswx5kywsq_4fmxjp0f7wgcw7h9",
+          "identifierFamily": "native",
+          "latestSignature": "3fHFtUjFTtY7AYxLVyeebEG8QD2y8Nr1voBB2AQfTSApdKACdtuzzHf3s2wG4p1HkPEUhRrqDPSmooXePz1akzE4",
+          "publisher": "Discussion_Boards",
+          "tombstone": true
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775847041122,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-topic-topic_01knrswx5kywsq_4fmxjp0f7wgcw7h9",
+          "identifierFamily": "native",
+          "latestSignature": "2f4zAamrJ2MJ1D8Y5jzFMUxZZeX3D4MAaumUDoWnWeMSUPJV8fUy6gp52JeQqydxRczb544S5s4dghunzswagj22",
+          "publisher": "iffi vaba mees",
+          "tombstone": true
+        }
+      ],
+      "status": "AUTO-CANDIDATE"
+    }
+  ],
+  "schemaVersion": "qortium.discussion-boards.maintainer-review/v1",
+  "sourceInventory": "legacy-fixture-inventory.json",
+  "totals": {
+    "AUTO-CANDIDATE": 35,
+    "QUARANTINE": 9,
+    "REVIEW-REQUIRED": 5
+  }
+}

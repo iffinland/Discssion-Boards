@@ -642,19 +642,21 @@ V1 publisher safely.
 ### 17.2 Evidence inspected on 2026-07-20
 
 Read-only searches were run against the public QDN API used by the currently
-checked-out Home reference. The searches used the V1 `qdbm-topic-`,
-`qdbm-sub-`, and `qdbm-post-` identifier families with a result limit of 1,000.
-This is an evidence snapshot, not proof that discovery was complete.
+checked-out Home reference. The migration fixture capture now uses complete
+identifier-prefix queries with `limit=0` (unbounded), rather than the V1
+reader's fixed 1,000-result assumption. This remains a dated evidence
+snapshot, not a permanent capability target; the raw review artifact is
+`docs/migration/legacy-fixture-inventory.json`.
 
 Within that snapshot:
 
-- 18 Topic identifiers had resources under more than one publisher;
-- 11 Thread/SubTopic identifiers had resources under more than one publisher;
-- 20 current partitioned Post identifiers had resources under more than one
-  publisher;
-- 12 logical Post IDs appeared under both the original
-  `qdbm-post-{postId}` identifier and the newer
-  `qdbm-post-{threadPartition}-{postId}` identifier.
+- 39 Topic resources represented 20 logical IDs, with 18 duplicate groups;
+- 62 Thread/SubTopic resources represented 49 logical IDs, with 11 duplicate
+  groups;
+- 212 Post resources represented 169 logical IDs, with 20 duplicate groups;
+- the capture preserves both legacy and partitioned Post identifier families;
+  cross-family equivalence remains a review classification, not an automatic
+  authority decision.
 
 Representative live patterns included:
 
@@ -872,6 +874,15 @@ canonical legacy ownership selection or enable V2 adoption until:
 6. tests demonstrate that legitimate duplicates remain readable, operational
    publishers do not gain ownership, and incomplete discovery quarantines
    safely.
+
+The current maintainer-review package classifies all 49 duplicate groups
+without granting authority: 35 are `AUTO-CANDIDATE` (unique earliest
+same-family envelope, expedited review only), 5 are `REVIEW-REQUIRED`, and 9
+are `QUARANTINE` (legacy/partitioned identifier conflict or four-or-more
+publishers). The per-group evidence and blank human decision fields are in
+`docs/migration/legacy-canonical-publisher-review.json`. This classification
+does not resolve the blocker: payload immutable-field checks, tombstone and
+unavailable-payload enrichment, and maintainer decisions remain required.
 
 ## 18. Legacy-to-V2 adoption
 
