@@ -18,7 +18,6 @@ type ThreadPostCardProps = {
   isOwner: boolean;
   canModerate: boolean;
   hasLiked: boolean;
-  tipCount: number;
   pollVoterId: string;
   canClosePoll: boolean;
   onLike: (postId: string) => void;
@@ -65,7 +64,6 @@ const ThreadPostCard = ({
   isOwner,
   canModerate,
   hasLiked,
-  tipCount,
   pollVoterId,
   canClosePoll,
   onLike,
@@ -460,8 +458,20 @@ const ThreadPostCard = ({
           className={actionButtonClass}
           onClick={() => onSendTip(post)}
         >
-          Send Tip ({tipCount})
+          {post.tipSummary?.verifiedCount
+            ? `Send Tip (${post.tipSummary.verifiedCount} verified · ${post.tipSummary.verifiedTotalQort} QORT)`
+            : 'Send Tip'}
         </button>
+        {post.tipSummary?.legacyCount ? (
+          <span className="text-ui-muted text-[11px]">
+            Legacy counter: {post.tipSummary.legacyCount} (unverified)
+          </span>
+        ) : null}
+        {post.tipSummary?.status === 'unavailable' ? (
+          <span className="text-[11px] text-amber-700">
+            Verified tip data unavailable
+          </span>
+        ) : null}
         {isOwner ? (
           <>
             <button
@@ -519,7 +529,6 @@ const areThreadPostCardPropsEqual = (
     prev.isOwner === next.isOwner &&
     prev.canModerate === next.canModerate &&
     prev.hasLiked === next.hasLiked &&
-    prev.tipCount === next.tipCount &&
     prev.pollVoterId === next.pollVoterId &&
     prev.canClosePoll === next.canClosePoll &&
     prev.onLike === next.onLike &&

@@ -10,11 +10,23 @@ export type ForumMutationResult = {
       | 'poll-reference'
       | 'poll-result-refresh'
       | 'moderation-operations'
-      | 'role-state-refresh';
+      | 'role-state-refresh'
+      | 'tip-transaction-verification'
+      | 'tip-reference-publication'
+      | 'tip-reference-refresh'
+      | 'tip-derived-cache';
     retryable: true;
   };
   nativePollRecovery?: import('../../services/architectureV2/types').NativePollRecovery;
   transactionSignature?: string;
+  tipRecovery?: import('../../services/qdn/forumTipsService').TipRecovery;
+};
+
+export type ForumTipRecipientResult = {
+  ok: boolean;
+  error?: string;
+  recipientName?: string;
+  recipientAddress?: string;
 };
 
 export type ForumPollDraft = {

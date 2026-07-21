@@ -66,6 +66,11 @@ import {
   type TrustedRoleAuthorizationState,
 } from '../architectureV2/moderation.js';
 import { forumRolesService } from './forumRolesService.js';
+import {
+  finalizeTipDerivedState,
+  forumTipsService,
+  type TipRecovery,
+} from './forumTipsService.js';
 
 const FORUM_SERVICE = import.meta.env?.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_IMAGE_SERVICE =
@@ -539,12 +544,16 @@ const sanitizePostPoll = (value: unknown): Post['poll'] => {
   };
 };
 
-const toPersistedPost = (post: Post): Post => ({
-  ...post,
-  poll: isNativePostPoll(post.poll)
-    ? toPersistedNativePollReference(post.poll)
-    : (post.poll ?? null),
-});
+const toPersistedPost = (post: Post): Post => {
+  const persisted = { ...post };
+  delete persisted.tipSummary;
+  return {
+    ...persisted,
+    poll: isNativePostPoll(post.poll)
+      ? toPersistedNativePollReference(post.poll)
+      : (post.poll ?? null),
+  };
+};
 
 const sanitizeTopic = (value: unknown): Topic | null => {
   if (!isObject(value)) {
@@ -1140,13 +1149,73 @@ export const forumQdnService = {
     );
   },
 
+  async loadPostTipState(authority?: V2RuntimeState) {
+    return forumTipsService.load(
+      authority ?? (await this.loadV2AuthorityState())
+    );
+  },
+
+  async applyPostTipState(posts: Post[]) {
+    try {
+      const authority = await this.loadV2AuthorityState();
+      return await forumTipsService.apply(posts, authority);
+    } catch {
+      return posts.map((post) => ({
+        ...post,
+        tipSummary: {
+          status: 'unavailable' as const,
+          verifiedCount: 0,
+          verifiedTotalQort: '0.00000000',
+          legacyCount:
+            Number.isSafeInteger(post.tips) && post.tips > 0 ? post.tips : 0,
+          legacyIsUnverified: true as const,
+          diagnostics: [
+            {
+              code: 'TIP_VERIFICATION_UNAVAILABLE',
+              detail: 'verified tip references are temporarily unavailable',
+            },
+          ],
+        },
+      }));
+    }
+  },
+
+  async resolvePostTipRecipient(postId: string) {
+    const authority = await this.loadV2AuthorityState();
+    return forumTipsService.resolveRecipient(authority, postId);
+  },
+
+  async submitPostTip(
+    input: {
+      postId: string;
+      amountQort: string;
+      senderName: string;
+      senderAddress: string;
+      recovery?: TipRecovery;
+    },
+    refreshDerived?: (
+      state: Awaited<ReturnType<typeof forumTipsService.load>>
+    ) => Promise<void>
+  ) {
+    const authority = await this.loadV2AuthorityState();
+    const result = input.recovery
+      ? forumTipsService.retry(input.recovery, authority)
+      : forumTipsService.submit({ ...input, authority });
+    const resolved = await result;
+    return finalizeTipDerivedState(resolved, refreshDerived);
+  },
+
   async applyPostOperationState(
     posts: Post[],
     currentWalletAddress?: string | null
   ) {
     const moderated = await this.applyPostModerationState(posts);
     const reactions = await this.applyPostReactionState(moderated);
-    return this.applyNativePollState(reactions, currentWalletAddress);
+    const polls = await this.applyNativePollState(
+      reactions,
+      currentWalletAddress
+    );
+    return this.applyPostTipState(polls);
   },
 
   async publishV2OwnerEdit(

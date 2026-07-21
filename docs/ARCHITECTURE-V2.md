@@ -1,6 +1,6 @@
 # Discussion Boards Architecture V2
 
-Status: **Implemented through Phase 4 and delegated-role persistence issue #7**
+Status: **Implemented through Phase 5 and delegated-role persistence issue #7**
 
 This document defines the Architecture V2 state, authority, validation, and
 migration model for Discussion Boards. It is the prerequisite deliverable for
@@ -38,14 +38,14 @@ targets.
 
 | Repository        | Path                               | Verified commit                                                     |
 | ----------------- | ---------------------------------- | ------------------------------------------------------------------- |
-| Discussion Boards | this repository                    | `1919e97f5e7415a7b8852bd6e6e158f0411756ae` (issue #7 worktree base) |
+| Discussion Boards | this repository                    | `1f82bf2c7d8e249a1d60f7ca16936aacdc72f265` (issue #8 worktree base) |
 | Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                          |
 | Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                          |
 
 The Discussion Boards production source reviewed by architecture issue #1
 remains commit `f20f93c833ef74dc83a22a59be2d1c6682e96bde`.
-The later Discussion Boards commit above adds this design document without
-changing production source.
+The later Discussion Boards commit above is the clean Phase 5 implementation
+base and includes the completed earlier Architecture V2 phases.
 
 GitHub specification inspected:
 
@@ -56,6 +56,7 @@ GitHub specification inspected:
 - issue #5, Phase 3 native polls;
 - issue #6, Phase 4 moderation and role authorization;
 - issue #7, delegated role-registry persistence;
+- issue #8, verified transaction-reference tips;
 - the dependent phased issue workflow through issue #14.
 
 ### 2.2 Three classes of platform statement
@@ -1241,24 +1242,152 @@ independent proof. Mutable Post tip counters are never authoritative.
 
 ### 22.2 Currently verified capability
 
-At the recorded Home commit, native `SEND_COIN`/`PAYMENT` handling returns a
-`transactionSignature` with recipient and amount after an approved processed
-transaction. The current app uses `SEND_COIN` but discards that signature and
-increments `Post.tips`.
+Phase 5 re-verified Core commit
+`c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` and Home commit
+`a41e5f9678d7f20d7fb77a223c45fddc0096632e` on 2026-07-21. They are
+traceability points, not frozen capability targets.
 
-### 22.3 Phase 5 re-verification
+At the recorded Home commit, `SEND_COIN` with `coin: 'QORT'` selects the native
+asset transfer path. Home builds and processes a `TRANSFER_ASSET` transaction
+with `assetId: 0`; it does **not** produce the older `PAYMENT` transaction type.
+The successful bridge response contains `accepted`, action, recipient, amount,
+asset metadata, processed result, and `transactionSignature`. This newer
+verified behavior supersedes older issue wording that used “PAYMENT” as the
+expected Core type. Cancellation and processing failure reject the bridge
+request and do not yield a usable signature.
 
-Before implementation, inspect the current:
+At the recorded Core commit,
+`GET /transactions/signature/{signature}` returns the transaction type,
+signature, creator address, recipient, atomic QORT amount exposed through the
+amount adapter, `assetId`, timestamp, block height/sequence, and approval
+status. `blockHeight` is absent for an unconfirmed transaction. Approval status
+is one of `NOT_REQUIRED`, `PENDING`, `APPROVED`, `REJECTED`, `EXPIRED`, or
+`INVALID`. Phase 5 accepts only a positive block height and `NOT_REQUIRED` or
+`APPROVED`; pending/unconfirmed evidence remains retryable and rejected,
+expired, invalid, missing, or structurally inconsistent evidence is not
+counted. These response fields and confirmation semantics must be re-verified
+against then-current Core/Home before any later tip migration.
 
-- preferred native-QORT bridge action;
-- response and cancellation/error shape;
-- Core transaction lookup endpoint and confirmation semantics;
-- transaction type/asset representation;
-- sender, recipient, amount, fee, timestamp, and signature fields;
-- reorg/unconfirmed behavior and duplicate-reference handling.
+### 22.3 Reference schema and publication authority
 
-The V2 tip reducer accepts only confirmed transaction references meeting the
-verified target-owner recipient and amount rules.
+The independent operation is:
+
+```ts
+interface TipReference {
+  schema: 'qdb-v2';
+  schemaVersion: 2;
+  kind: 'operation';
+  recordType: 'tip-reference';
+  recordId: string;
+  targetId: string;
+  body: {
+    operation: 'tip-reference';
+    targetType: 'post';
+    targetId: string;
+    transactionSignature: string;
+    senderName: string;
+    senderAddress: string;
+    recipientName: string;
+    recipientAddress: string;
+    amountQort: string; // canonical positive decimal with eight places
+  };
+  clientCreatedAt?: string;
+}
+```
+
+The body contains claims and a transaction locator, not payment authority. Only
+the verified payment sender may publish the canonical reference. On reload,
+the reference's immutable `ARBITRARY`/`PUT` publication transaction must match
+the QDN latest signature, resource creation time, name, identifier, and claimed
+sender wallet. Current name ownership is used only as a write-time safety check;
+the immutable transaction creator address is the reload-time publisher-wallet
+evidence. Historical name ownership is neither available nor inferred.
+
+The canonical identifier is
+`qdbm-v2-tip-{sha256(transactionSignature)[0:40]}`. It is independent of Post,
+publisher, and client timestamp, stays within the currently verified
+64-character QDN constraint, and gives one global identity to one payment.
+Before a retry publishes, exact sender/identifier discovery checks whether the
+immutable reference already exists. An existing resource is reloaded, never
+overwritten merely because its transaction or payload is still propagating.
+
+### 22.4 Verification, reduction, and deduplication
+
+A reference participates only when all of the following hold:
+
+1. strict envelope and trusted QDN metadata validation succeeds;
+2. the identifier is the canonical hash of the referenced signature;
+3. the resource is immutable (`updated` is null) and its confirmed publication
+   transaction proves sender publication;
+4. the target is an authoritative V2 Post;
+5. the reference recipient name/address exactly matches that Post's immutable
+   publisher/wallet authority;
+6. Core returns the exact signature as a confirmed native-QORT
+   `TRANSFER_ASSET` with `assetId: 0`;
+7. transaction creator, recipient, and canonical eight-decimal amount exactly
+   match the reference.
+
+The signature is deduplicated globally. Identical rediscovery counts once;
+conflicting independently valid target/metadata claims quarantine the signature
+instead of selecting one. Unauthorized or invalid duplicates cannot suppress a
+valid reference. Multiple distinct payment signatures for one Post are
+independent and cannot overwrite the Post or one another.
+
+Verified activity orders by trusted block height, block sequence, signed
+payment timestamp, then transaction signature. QDN creation/signature/identifier provide
+deterministic reference diagnostics and tie-break evidence. `clientCreatedAt`,
+Post `updatedAt`, mutable counters, indexes, and discovery order never rank a
+payment or establish authority.
+
+Derived state contains unique verified count, exact total QORT, and individual
+verified references. It is rebuilt from reference and Core transaction evidence
+on reload. Index/cache data is optional display acceleration only and cannot
+create, redirect, alter, or count a tip. Phase 5 uses bounded paged discovery
+for this security-sensitive operation family; the general index and pagination
+redesign remains Phase 6.
+
+### 22.5 Command order, recovery, and compatibility
+
+The runtime order is fixed:
+
+1. load the authoritative V2 Post and its immutable owner wallet;
+2. verify the selected sender account and a fresh current sender name/wallet
+   binding;
+3. submit `SEND_COIN` once and preserve its signature immediately;
+4. verify the confirmed Core transaction;
+5. publish the independent reference;
+6. rediscover, reverify, reduce, and refresh derived display/cache state.
+
+No failure after step 3 automatically repeats `SEND_COIN`. Structured outcomes
+distinguish payment failure, payment success with transaction verification
+pending, verified payment with reference publication pending, reference refresh
+pending, and derived-cache refresh pending. The recovery record retains target,
+signature, sender, recipient, amount, and canonical record ID; retry executes
+only verification/reference/cache work. A reference already found under the
+sender's canonical identifier is never republished.
+Retryable recovery records are also retained in non-authoritative local storage
+by Post ID so a UI reload does not discard the payment signature. Corrupt local
+recovery data is ignored, and local storage never proves a payment or reference.
+
+Tips do not modify or republish Post content, publisher/ownership, reactions,
+poll state, moderation, roles, or entity timestamps. The active V1
+`Post.tips + 1` snapshot/index publication path is removed. Existing `Post.tips`
+integers remain readable as **legacy historical, unverified counters**. The UI
+shows them separately from verified count/total; the two values are never
+summed and no historical QORT amount is fabricated. A legacy/unavailable Post
+without authoritative V2 owner-wallet state cannot select a tip recipient.
+
+Stable diagnostics are `TIP_MALFORMED_REFERENCE`, `TIP_MISSING_SIGNATURE`,
+`TIP_TRANSACTION_NOT_FOUND`, `TIP_WRONG_TRANSACTION_TYPE`,
+`TIP_TRANSACTION_INVALID`, `TIP_SENDER_MISMATCH`, `TIP_RECIPIENT_MISMATCH`,
+`TIP_AMOUNT_MISMATCH`, `TIP_TARGET_MISMATCH`, `TIP_TARGET_UNAVAILABLE`,
+`TIP_DUPLICATE_REFERENCE`, `TIP_REFERENCE_CONFLICT`,
+`TIP_UNAUTHORIZED_PUBLISHER`, `TIP_WALLET_NAME_UNAVAILABLE`,
+`TIP_VERIFICATION_UNAVAILABLE`, `TIP_REFERENCE_PUBLICATION_FAILED`,
+`TIP_DERIVED_CACHE_FAILED`, `TIP_LEGACY_UNVERIFIED`,
+`TIP_IDENTIFIER_MISMATCH`, `TIP_REFERENCE_TRANSACTION_MISMATCH`,
+`TIP_REFERENCE_REPUBLISHED`, `TIP_REFERENCE_UNAVAILABLE`,
+`TIP_MISSING_TRUSTED_METADATA`, and `TIP_DISCOVERY_INCOMPLETE`.
 
 ## 23. Moderation and role boundaries
 
@@ -1568,7 +1697,7 @@ The GitHub dependency graph remains authoritative. Current planned order:
 3. **Phase 2 (#4):** independent authenticated reactions.
 4. **Phase 3 (#5):** native Core polls and Home bridge writes.
 5. **Phase 4 (#6):** moderation operations and role authorization redesign.
-6. **Phase 5:** verified transaction-based tips.
+6. **Phase 5 (#8):** verified transaction-based tips (implemented).
 7. **Phase 6:** paginated QDN discovery and rebuildable indexes.
 8. Correct restricted-access/privacy terminology.
 9. **Delegated-role persistence (#7):** append-only authenticated role
@@ -1689,9 +1818,8 @@ Each operation phase tests:
 1. Native poll UI result model and create-signature-to-poll-ID resolution.
 2. A future, explicitly reviewed SysOp-transfer mechanism. The fixed trust root
    is intentionally immutable in the current role-operation model.
-3. Core confirmation threshold and exact validation fields for tips.
-4. Pagination safety budgets and index partition sizes.
-5. Encryption design, if true confidentiality is ever required.
-6. Large-file source-token behavior on every supported Home platform.
+3. Pagination safety budgets and index partition sizes.
+4. Encryption design, if true confidentiality is ever required.
+5. Large-file source-token behavior on every supported Home platform.
 
 Deferred decisions may not violate the invariants in section 3.

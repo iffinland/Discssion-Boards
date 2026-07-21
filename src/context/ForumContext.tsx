@@ -17,6 +17,7 @@ import {
 import type {
   ForumMutationResult,
   ForumPollDraft,
+  ForumTipRecipientResult,
   ForumUploadAttachmentResult,
   ForumUploadImageResult,
   ForumUploadVideoResult,
@@ -172,7 +173,12 @@ type ForumActionsContextValue = {
     reason?: string | null;
   }) => Promise<ForumMutationResult>;
   likePost: (postId: string) => void;
-  tipPost: (postId: string) => Promise<ForumMutationResult>;
+  resolvePostTipRecipient: (postId: string) => Promise<ForumTipRecipientResult>;
+  tipPost: (input: {
+    postId: string;
+    amountQort: string;
+    recovery?: import('../services/qdn/forumTipsService').TipRecovery;
+  }) => Promise<ForumMutationResult>;
   loadThreadPosts: (subTopicId: string) => Promise<ForumMutationResult>;
 };
 
@@ -210,6 +216,7 @@ const applyLoadedReactionFields = (posts: Post[], loaded: Post[]) => {
         likes: post.likes,
         likedByAddresses: post.likedByAddresses,
         poll: post.poll ?? null,
+        tipSummary: post.tipSummary,
       },
     ])
   );
@@ -272,6 +279,7 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
     closePoll,
     deletePost,
     likePost,
+    resolvePostTipRecipient,
     tipPost,
   } = useForumCommands({
     currentUser,
@@ -492,6 +500,7 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       closePoll,
       deletePost,
       likePost,
+      resolvePostTipRecipient,
       tipPost,
       loadThreadPosts,
     }),
@@ -520,6 +529,7 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       closePoll,
       deletePost,
       likePost,
+      resolvePostTipRecipient,
       tipPost,
       loadThreadPosts,
     ]

@@ -4,15 +4,13 @@ import {
   buildPostShareLink,
   copyToClipboard,
 } from '../../../services/qortium/share';
-import { requestQortium } from '../../../services/qortium/qortiumClient';
-import {
-  getQortBalance,
-  resolveNameWalletAddress,
-} from '../../../services/qortium/walletService';
+import { getQortBalance } from '../../../services/qortium/walletService';
+import { tipRecoveryStore } from '../../../services/forum/tipRecoveryStore';
 import type { Post, PostAttachment } from '../../../types';
 import type {
   ForumMutationResult,
   ForumPollDraft,
+  ForumTipRecipientResult,
   ForumUploadAttachmentResult,
   ForumUploadImageResult,
   ForumUploadVideoResult,
@@ -43,7 +41,12 @@ type UseThreadActionsParams = {
     postId: string;
     reason?: string | null;
   }) => Promise<ForumMutationResult>;
-  tipPost: (postId: string) => Promise<ForumMutationResult>;
+  resolvePostTipRecipient: (postId: string) => Promise<ForumTipRecipientResult>;
+  tipPost: (input: {
+    postId: string;
+    amountQort: string;
+    recovery?: import('../../../services/qdn/forumTipsService').TipRecovery;
+  }) => Promise<ForumMutationResult>;
   resolveAuthorDisplayName: (authorUserId: string) => string;
 };
 
@@ -55,6 +58,7 @@ export const useThreadActions = ({
   uploadPostVideo,
   updatePost,
   deletePost,
+  resolvePostTipRecipient,
   tipPost,
   resolveAuthorDisplayName,
 }: UseThreadActionsParams) => {
@@ -79,6 +83,9 @@ export const useThreadActions = ({
   const [qortBalance, setQortBalance] = useState<number | null>(null);
   const [isTipBalanceLoading, setIsTipBalanceLoading] = useState(false);
   const [tipTargetPostId, setTipTargetPostId] = useState<string | null>(null);
+  const [tipRecovery, setTipRecovery] = useState<
+    import('../../../services/qdn/forumTipsService').TipRecovery | null
+  >(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const handleSubmitReply = useCallback(async () => {
@@ -194,49 +201,50 @@ export const useThreadActions = ({
     [threadId]
   );
 
-  const resolveTipRecipient = useCallback(async (recipientName: string) => {
-    const normalizedName = recipientName.trim();
-    if (!normalizedName) {
-      setTipRecipientAddress(null);
-      setTipResolveError('Recipient name is missing.');
-      return null;
-    }
+  const resolveTipRecipient = useCallback(
+    async (postId: string) => {
+      setIsResolvingTipRecipient(true);
+      setTipResolveError(null);
 
-    setIsResolvingTipRecipient(true);
-    setTipResolveError(null);
-
-    try {
-      const address = await resolveNameWalletAddress(normalizedName);
-      if (!address) {
+      try {
+        const result = await resolvePostTipRecipient(postId);
+        if (!result.ok || !result.recipientName || !result.recipientAddress) {
+          setTipRecipientAddress(null);
+          setTipRecipientName('');
+          setTipResolveError(
+            result.error ?? 'Authoritative Post owner could not be resolved.'
+          );
+          return null;
+        }
+        setTipRecipientName(result.recipientName);
+        setTipRecipientAddress(result.recipientAddress);
+        return result.recipientAddress;
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : 'Recipient wallet address lookup failed.';
         setTipRecipientAddress(null);
-        setTipResolveError('Recipient wallet address could not be resolved.');
+        setTipResolveError(message);
         return null;
+      } finally {
+        setIsResolvingTipRecipient(false);
       }
-
-      setTipRecipientAddress(address);
-      return address;
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : 'Recipient wallet address lookup failed.';
-      setTipRecipientAddress(null);
-      setTipResolveError(message);
-      return null;
-    } finally {
-      setIsResolvingTipRecipient(false);
-    }
-  }, []);
+    },
+    [resolvePostTipRecipient]
+  );
 
   const handleSendTip = useCallback(
     async (post: Post) => {
-      const recipientName = post.authorUserId.trim();
+      const preserveRecovery = tipTargetPostId === post.id ? tipRecovery : null;
+      const storedRecovery = preserveRecovery ?? tipRecoveryStore.read(post.id);
       setTipTargetPostId(post.id);
-      setTipRecipientName(recipientName);
-      setTipAmount('0');
+      setTipRecipientName(storedRecovery?.body.recipientName ?? '');
+      setTipAmount(storedRecovery?.body.amountQort ?? '0');
       setTipRecipientAddress(null);
       setTipResolveError(null);
       setIsTipModalOpen(true);
+      setTipRecovery(storedRecovery);
 
       setIsTipBalanceLoading(true);
       try {
@@ -248,9 +256,9 @@ export const useThreadActions = ({
         setIsTipBalanceLoading(false);
       }
 
-      void resolveTipRecipient(recipientName);
+      void resolveTipRecipient(post.id);
     },
-    [resolveTipRecipient]
+    [resolveTipRecipient, tipRecovery, tipTargetPostId]
   );
 
   const closeTipModal = useCallback(() => {
@@ -262,6 +270,11 @@ export const useThreadActions = ({
   }, [isSendingTip]);
 
   const submitTip = useCallback(async () => {
+    const targetPostId = tipTargetPostId;
+    if (!targetPostId) {
+      setFeedback('Tip target Post is missing.');
+      return;
+    }
     const parsedAmount = Number(tipAmount);
     const trimmedRecipientName = tipRecipientName.trim();
 
@@ -270,18 +283,22 @@ export const useThreadActions = ({
       return;
     }
 
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    if (!tipRecovery && (!Number.isFinite(parsedAmount) || parsedAmount <= 0)) {
       setFeedback('Enter a QORT amount greater than 0.');
       return;
     }
 
-    if (typeof qortBalance === 'number' && parsedAmount > qortBalance) {
+    if (
+      !tipRecovery &&
+      typeof qortBalance === 'number' &&
+      parsedAmount > qortBalance
+    ) {
       setFeedback('Entered amount is higher than your wallet balance.');
       return;
     }
 
     const resolvedAddress =
-      tipRecipientAddress ?? (await resolveTipRecipient(trimmedRecipientName));
+      tipRecipientAddress ?? (await resolveTipRecipient(targetPostId));
     if (!resolvedAddress) {
       setFeedback('Recipient wallet address could not be resolved.');
       return;
@@ -289,26 +306,31 @@ export const useThreadActions = ({
 
     try {
       setIsSendingTip(true);
-      await requestQortium({
-        action: 'SEND_COIN',
-        coin: 'QORT',
-        recipient: resolvedAddress,
-        amount: parsedAmount,
+      const tipPersistResult = await tipPost({
+        postId: targetPostId,
+        amountQort: tipAmount,
+        ...(tipRecovery ? { recovery: tipRecovery } : {}),
       });
-
-      if (tipTargetPostId) {
-        const tipPersistResult = await tipPost(tipTargetPostId);
-        if (!tipPersistResult.ok) {
-          setFeedback(
-            tipPersistResult.error ??
-              `Tip sent to @${trimmedRecipientName}, but counter sync failed.`
-          );
-          return;
-        }
+      if (!tipPersistResult.ok) {
+        setFeedback(
+          tipPersistResult.error ?? 'Unable to verify and publish the tip.'
+        );
+        return;
+      }
+      if (tipPersistResult.partial && tipPersistResult.tipRecovery) {
+        setTipRecovery(tipPersistResult.tipRecovery);
+        tipRecoveryStore.write(tipPersistResult.tipRecovery);
+        setFeedback(
+          tipPersistResult.error ??
+            `QORT was sent to @${trimmedRecipientName}; tip reference synchronization is pending. Retry will not resend QORT.`
+        );
+        return;
       }
 
       setIsTipModalOpen(false);
       setTipAmount('0');
+      setTipRecovery(null);
+      tipRecoveryStore.remove(targetPostId);
       setFeedback(`Tip sent to @${trimmedRecipientName}.`);
       try {
         const balance = await getQortBalance();
@@ -331,6 +353,7 @@ export const useThreadActions = ({
     tipAmount,
     tipRecipientAddress,
     tipRecipientName,
+    tipRecovery,
     tipPost,
     tipTargetPostId,
   ]);
@@ -391,6 +414,7 @@ export const useThreadActions = ({
     isResolvingTipRecipient,
     isSendingTip,
     isTipBalanceLoading,
+    isTipRecoveryPending: Boolean(tipRecovery),
     formattedTipBalance:
       typeof qortBalance === 'number' ? qortBalance.toFixed(8) : '0.00000000',
     handleSubmitReply,

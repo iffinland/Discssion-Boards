@@ -114,6 +114,14 @@ export interface Post {
   pinnedByUserId?: string | null;
   likes: number;
   tips: number;
+  tipSummary?: {
+    status: 'verified' | 'unavailable';
+    verifiedCount: number;
+    verifiedTotalQort: string;
+    legacyCount: number;
+    legacyIsUnverified: true;
+    diagnostics: Array<{ code: string; detail: string }>;
+  };
   likedByAddresses: string[];
   moderationHidden?: boolean;
   moderationRemoved?: boolean;

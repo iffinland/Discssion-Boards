@@ -80,6 +80,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     closePoll,
     deletePost,
     likePost,
+    resolvePostTipRecipient,
     tipPost,
     loadThreadPosts,
   } = useForumActions();
@@ -149,6 +150,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     isResolvingTipRecipient,
     isSendingTip,
     isTipBalanceLoading,
+    isTipRecoveryPending,
     formattedTipBalance,
     handleSubmitReply,
     handleReplyToPost,
@@ -172,6 +174,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     uploadPostVideo,
     updatePost,
     deletePost,
+    resolvePostTipRecipient,
     tipPost,
     resolveAuthorDisplayName,
   });
@@ -1233,6 +1236,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
         recipientName={tipRecipientName}
         recipientAddress={tipRecipientAddress}
         resolveError={tipResolveError}
+        isRecoveryPending={isTipRecoveryPending}
         onClose={closeTipModal}
         onAmountChange={setTipAmount}
         onSend={() => void submitTip()}
@@ -1299,7 +1303,6 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
                   ? post.likedByAddresses.includes(likeActorId)
                   : false
               }
-              tipCount={post.tips}
               pollVoterId={pollVoterId}
               canClosePoll={Boolean(
                 isNativePostPoll(post.poll) &&
@@ -1351,7 +1354,6 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
             hasLiked={
               likeActorId ? post.likedByAddresses.includes(likeActorId) : false
             }
-            tipCount={post.tips}
             pollVoterId={pollVoterId}
             canClosePoll={Boolean(
               isNativePostPoll(post.poll) &&

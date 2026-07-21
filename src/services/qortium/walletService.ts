@@ -172,6 +172,23 @@ export const resolveNameWalletAddress = async (
   return requestPromise;
 };
 
+export const resolveNameWalletAddressUncached = async (
+  name: string
+): Promise<string | null> => {
+  const trimmedName = name.trim();
+  if (!trimmedName) return null;
+  const response = await requestQortium<NameDataResponse | null>({
+    action: 'GET_NAME_DATA',
+    name: trimmedName,
+  });
+  if (!response || typeof response !== 'object') return null;
+  return (
+    normalizeAddress(response.owner) ||
+    normalizeAddress(response.ownerAddress) ||
+    normalizeAddress(response.address)
+  );
+};
+
 export const clearWalletLookupCaches = () => {
   accountNamesCache.clear();
   accountNamesInflight.clear();

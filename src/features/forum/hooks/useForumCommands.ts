@@ -33,6 +33,7 @@ import {
 } from '../../../services/architectureV2/polls.js';
 import type { NativePollRecovery } from '../../../services/architectureV2/types.js';
 import type { ModerationAction } from '../../../services/architectureV2/moderation.js';
+import { resolveTipDisplay } from '../../../services/architectureV2/tips.js';
 import {
   closeNativePoll,
   loadNativePostPoll,
@@ -51,6 +52,7 @@ import type {
 import type {
   ForumMutationResult,
   ForumPollDraft,
+  ForumTipRecipientResult,
   ForumUploadAttachmentResult,
   ForumUploadImageResult,
   ForumUploadVideoResult,
@@ -2682,74 +2684,126 @@ export const useForumCommands = ({
     ]
   );
 
-  const tipPost = useCallback(
-    async (postId: string): Promise<ForumMutationResult> => {
+  const resolvePostTipRecipient = useCallback(
+    async (postId: string): Promise<ForumTipRecipientResult> => {
       if (!isAuthenticated) {
         return { ok: false, error: 'Authenticate with Qortium first.' };
       }
-
       const target = posts.find((post) => post.id === postId);
-      if (!target) {
-        return { ok: false, error: 'Post not found.' };
-      }
-
-      const updatedPost: Post = {
-        ...target,
-        updatedAt: new Date().toISOString(),
-        tips: target.tips + 1,
-      };
-
+      if (!target) return { ok: false, error: 'Post not found.' };
       try {
-        const nextPosts = posts.map((post) =>
-          post.id === postId ? updatedPost : post
-        );
-        const postResource = forumQdnService.buildPostPublishResource(
-          updatedPost,
-          currentUser.username
-        );
-        const threadIndexResource = buildThreadIndexResource(
-          updatedPost.subTopicId,
-          nextPosts
-        );
-        await publishMultipleQortiumResources([
-          postResource.resource,
-          threadIndexResource.resource,
-        ]);
-
-        recordRecentPostMutation(updatedPost);
-        setPosts((current) => {
-          const next = current.map((post) =>
-            post.id === postId ? updatedPost : post
-          );
-          threadPostCache.write(
-            updatedPost.subTopicId,
-            next.filter((post) => post.subTopicId === updatedPost.subTopicId)
-          );
-          return next;
-        });
-        setThreadSearchIndexes((current) => ({
-          ...current,
-          [updatedPost.subTopicId]: threadIndexResource.snapshot,
-        }));
-
-        return { ok: true };
+        const recipient = await forumQdnService.resolvePostTipRecipient(postId);
+        return recipient
+          ? {
+              ok: true,
+              recipientName: recipient.name,
+              recipientAddress: recipient.address,
+            }
+          : {
+              ok: false,
+              error:
+                'This legacy or unavailable Post has no approved V2 owner authority, so its tip recipient cannot be verified.',
+            };
       } catch (error) {
         return {
           ok: false,
           error:
             error instanceof Error
               ? error.message
-              : 'Failed to persist tip counter.',
+              : 'Failed to resolve the authoritative Post owner.',
         };
       }
     },
+    [isAuthenticated, posts]
+  );
+
+  const tipPost = useCallback(
+    async (input: {
+      postId: string;
+      amountQort: string;
+      recovery?: import('../../../services/qdn/forumTipsService').TipRecovery;
+    }): Promise<ForumMutationResult> => {
+      if (!isAuthenticated)
+        return { ok: false, error: 'Authenticate with Qortium first.' };
+      if (!authenticatedAddress?.trim())
+        return { ok: false, error: 'Authenticated wallet is unavailable.' };
+      const target = posts.find((post) => post.id === input.postId);
+      if (!target) return { ok: false, error: 'Post not found.' };
+      let result: Awaited<ReturnType<typeof forumQdnService.submitPostTip>>;
+      try {
+        result = await forumQdnService.submitPostTip(
+          {
+            ...input,
+            senderName: currentUser.username,
+            senderAddress: authenticatedAddress,
+          },
+          async (state) => {
+            const tipSummary = resolveTipDisplay(target.id, target.tips, state);
+            const nextPosts = posts.map((post) =>
+              post.id === input.postId ? { ...post, tipSummary } : post
+            );
+            threadPostCache.write(
+              target.subTopicId,
+              nextPosts.filter((post) => post.subTopicId === target.subTopicId)
+            );
+            setPosts((current) =>
+              current.map((post) =>
+                post.id === input.postId
+                  ? {
+                      ...post,
+                      tipSummary: resolveTipDisplay(post.id, post.tips, state),
+                    }
+                  : post
+              )
+            );
+          }
+        );
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Verified tip workflow failed before payment submission.',
+        };
+      }
+      if (!result.ok)
+        return {
+          ok: false,
+          error: result.paymentCommitted
+            ? `QORT payment succeeded, but its verified tip reference was rejected: [${result.code}] ${result.detail}`
+            : `[${result.code}] ${result.detail}`,
+          transactionSignature:
+            'transactionSignature' in result
+              ? result.transactionSignature
+              : undefined,
+        };
+      if (result.status === 'PARTIAL') {
+        const pending = {
+          'transaction-verification': 'tip-transaction-verification',
+          'reference-publication': 'tip-reference-publication',
+          'reference-refresh': 'tip-reference-refresh',
+          'derived-cache': 'tip-derived-cache',
+        } as const;
+        return {
+          ok: true,
+          error: `QORT payment succeeded. ${result.detail} Retry resumes metadata verification only and will not send another payment.`,
+          partial: { pending: pending[result.pending], retryable: true },
+          transactionSignature: result.transactionSignature,
+          tipRecovery: result.recovery,
+        };
+      }
+      return {
+        ok: true,
+        transactionSignature: result.transactionSignature,
+      };
+    },
     [
+      authenticatedAddress,
       currentUser.username,
-      buildThreadIndexResource,
       isAuthenticated,
       posts,
       setPosts,
-      setThreadSearchIndexes,
     ]
   );
 
@@ -2909,6 +2963,7 @@ export const useForumCommands = ({
     closePoll,
     deletePost,
     likePost,
+    resolvePostTipRecipient,
     tipPost,
     uploadPostImage,
     uploadPostAttachment,
