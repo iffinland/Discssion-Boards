@@ -1,4 +1,4 @@
-import { requestQortium } from '../qortium/qortiumClient';
+import { requestQortium } from '../qortium/qortiumClient.js';
 
 const READY_STATUS = 'READY';
 const BUILDABLE_STATUSES = new Set([

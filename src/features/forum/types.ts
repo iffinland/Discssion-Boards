@@ -8,7 +8,8 @@ export type ForumMutationResult = {
       | 'derived-index'
       | 'native-poll-confirmation'
       | 'poll-reference'
-      | 'poll-result-refresh';
+      | 'poll-result-refresh'
+      | 'moderation-operations';
     retryable: true;
   };
   nativePollRecovery?: import('../../services/architectureV2/types').NativePollRecovery;

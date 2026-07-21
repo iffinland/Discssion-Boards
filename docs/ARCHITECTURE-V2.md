@@ -38,7 +38,7 @@ targets.
 
 | Repository        | Path                               | Verified commit                                                    |
 | ----------------- | ---------------------------------- | ------------------------------------------------------------------ |
-| Discussion Boards | this repository                    | `aa8ebc088b505d210ba3e11867d172e8bd0c96c4` (Phase 3 worktree base) |
+| Discussion Boards | this repository                    | `f09b9f5ddef12a971d2442a821f2359ccfac864e` (Phase 4 worktree base) |
 | Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                         |
 | Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                         |
 
@@ -1260,28 +1260,206 @@ verified target-owner recipient and amount rules.
 
 ## 23. Moderation and role boundaries
 
-Moderation is an operation domain:
+Phase 4 implements moderation as an independent append-only operation domain.
+It does not alter the entity reducer, owner content, reaction state, native poll
+state, tips, ownership, or role data.
 
-- it cannot alter owner content;
-- moderator identity is bound to the resource publisher and wallet;
-- authorization is checked against trusted role state at the operation's
-  effective order;
-- losing a role prevents later moderation but does not retroactively invalidate
-  actions that were authorized under the approved temporal model;
-- action/reversal precedence is deterministic.
+### 23.1 Verified platform and role boundary
 
-Role state is an authorization domain:
+Phase 4 re-verified Qortium Core commit
+`c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` and Qortium Home commit
+`a41e5f9678d7f20d7fb77a223c45fddc0096632e`.
 
-- the canonical trust root is explicit;
-- delegated changes require prior-state authorization;
-- loader and publisher trust rules must agree;
-- current V1 delegated publications remain compatibility evidence but are not
-  silently trusted;
-- exact temporal authorization and registry/operation choice are Phase 4
-  design decisions that must conform to these invariants.
+The current Home bridge passes `service`, `name`, `identifier`, Core `created`
+and `updated`, `latestSignature`, and resource status through QDN search. It
+also supports exact identifier search, resource fetch, single publication, and
+multiple-resource publication. Current Core name APIs expose current names by
+wallet address and current owner data for a name. They do not expose a
+reliable historical name-to-wallet binding or a fetchable history of prior
+role-registry payload versions.
 
-Phase 1 may define interfaces and enforce owner boundaries but must not mix in
-the full moderation/role migration.
+The Phase 4 role interface consequently has three explicit states:
+
+- `VERIFIED`: the current canonical role registry was fetched under a current
+  QDN name owned by the fixed primary SysOp wallet, or no registry exists and
+  only the fixed primary SysOp role is authoritative;
+- `UNVERIFIED`: role-registry resources exist only outside that trust root, or
+  trusted resources are malformed;
+- `UNAVAILABLE`: current primary-name ownership, discovery, or all trusted
+  payloads are unavailable.
+
+Only `VERIFIED` state authorizes moderation. `UNVERIFIED` and `UNAVAILABLE`
+fail closed. The current delegated publication mismatch described by GitHub
+issue #7 is not trusted as a shortcut: a delegated role snapshot published
+under the delegate's name cannot grant moderation authority merely because the
+UI reported success.
+
+### 23.2 Temporal role rule and verified limitation
+
+Phase 4 uses the explicit model
+`current-primary-registry-revalidation`. Every new publication force-refreshes
+the trusted current registry, binds actor name to the actual QDN publisher and
+wallet, and records the trusted registry identifier/signature used for audit.
+Reload revalidates every operation against the current trusted registry.
+
+This is a deliberately conservative temporal rule forced by the current lack
+of independently verifiable historical role payloads:
+
+- operations after a revocation are rejected;
+- a payload role claim never grants authority;
+- a non-SysOp operation is accepted only while its registry identifier and
+  signature match the currently verifiable canonical registry version, and
+  its trusted publication time is not earlier than that registry version;
+- any later registry version makes earlier non-SysOp authorization
+  `MODERATION_ROLE_STATE_UNAVAILABLE`, even if the change was unrelated;
+- loss or reduction of the actor's role reports `MODERATION_ROLE_REVOKED`.
+
+These conservative invalidations are explicit exceptions to the preferred
+durable historical rule. They prevent both a revoked role from retaining
+authority and a later role grant from retroactively authorizing an earlier
+forged operation. They are safer than preserving an operation using an
+unverifiable embedded role claim. The fixed primary SysOp trust root does not
+depend on a mutable registry version. GitHub issue #7 must introduce a
+trustworthy role history or primary approval/attestation model before delegated
+past authorization can remain valid across registry changes. Phase 4 does not
+invent that history.
+
+### 23.3 Operation schema and identifiers
+
+```ts
+interface ModerationOperation {
+  operation: 'moderation';
+  action:
+    | 'pin'
+    | 'unpin'
+    | 'lock'
+    | 'unlock'
+    | 'solve'
+    | 'unsolve'
+    | 'hide'
+    | 'unhide'
+    | 'remove'
+    | 'restore'
+    | 'set-order';
+  targetType: 'topic' | 'thread' | 'post';
+  targetId: string;
+  actorName: string;
+  actorAddress: string;
+  authorization: {
+    model: 'current-primary-registry-revalidation';
+    actorRole: 'Member' | 'Moderator' | 'Admin' | 'SuperAdmin' | 'SysOp';
+    registryIdentifier: string | null;
+    registrySignature: string | null;
+  };
+  reason?: string;
+  orderValue?: number; // non-negative integer; set-order only
+}
+```
+
+The surrounding V2 envelope has `kind: 'operation'` and
+`recordType: 'moderation'`. The trusted QDN identifier must exactly equal the
+envelope `recordId`. New identifiers use
+`qdbm-v2-mod-moderation_<time><actor-hash>_<random>` and remain under the
+currently verified 64-character Core limit. Each operation contains only one
+moderation intent. Strict unknown-field rejection prevents content, reactions,
+polls, tips, authority, or role state from being smuggled into the operation.
+
+### 23.4 Permission and hierarchy rules
+
+| Target/action                                  | Member | Moderator | Admin | Super Admin | SysOp |
+| ---------------------------------------------- | -----: | --------: | ----: | ----------: | ----: |
+| Topic lock/unlock, hide/unhide, remove/restore |     no |        no |   yes |         yes |   yes |
+| Topic order                                    |     no |        no |    no |         yes |   yes |
+| Thread lock/unlock, solve/unsolve              |     no |       yes |   yes |         yes |   yes |
+| Thread pin/unpin, hide/unhide, remove/restore  |     no |        no |   yes |         yes |   yes |
+| Pinned Thread order                            |     no |        no |    no |         yes |   yes |
+| Post pin/unpin                                 |     no |       yes |   yes |         yes |   yes |
+| Post hide/unhide, remove/restore               |     no |        no |   yes |         yes |   yes |
+
+Regular users have no moderation permission; owner content and future owner
+tombstones remain separate owner operation domains. Role management is never a
+moderation action.
+
+An actor may moderate their own target where the action is allowed. For a
+target owned by different trusted staff, the actor's current role must be
+strictly higher than the target owner's current role. A Moderator therefore
+cannot moderate Moderator/Admin/Super Admin/SysOp-owned content; an Admin may
+act on Moderator-owned content but not Admin-or-higher content. SysOp remains
+the highest role.
+
+For a moderation dimension already decided by a higher role, a later lower
+role cannot override it. Equal or higher roles may reverse it in trusted
+operation order. This applies independently to pin, lock, solved, visibility,
+removal, and order dimensions.
+
+### 23.5 Validation, reduction, and audit
+
+Moderation reduction runs after authoritative V2 entity creation and owner
+edits. An operation is accepted only when:
+
+1. strict envelope/body validation succeeds;
+2. trusted Core metadata exists and the identifier equals `recordId`;
+3. the target exists in authoritative V2 state and its type matches;
+4. actual QDN publisher equals `actorName`;
+5. current name-to-wallet binding equals `actorAddress`;
+6. trusted role state is `VERIFIED` and its resolved role equals the audit
+   claim;
+7. the role may perform the target/action and staff hierarchy rules pass.
+
+Moderation identifiers are append-only: a resource with non-null Core
+`updated` is excluded as `MODERATION_RESOURCE_REPUBLISHED` rather than letting
+an actor rewrite a past operation. Valid records order by Core `created`, then
+`latestSignature`, identifier, and publisher. `clientCreatedAt` and legacy
+`updatedAt` are display-only. Exact duplicate discovery is idempotent.
+Different records reusing one `recordId` are all excluded with
+`MODERATION_CONFLICT`. Each state dimension retains the winning action, actor
+name/address/role, reason, trusted creation time, signature, and identifier so
+state is auditable without a log UI.
+
+Stable diagnostics include:
+
+- `MALFORMED_MODERATION_ENVELOPE`;
+- `MODERATION_INVALID_TARGET` and `MODERATION_TARGET_TYPE_MISMATCH`;
+- `MODERATION_IDENTIFIER_MISMATCH`;
+- `MODERATION_FORGED_ACTOR` and `MODERATION_WALLET_BINDING_MISSING`;
+- `MODERATION_INSUFFICIENT_ROLE`, `MODERATION_ROLE_REVOKED`, and
+  `MODERATION_ROLE_CLAIM_MISMATCH`;
+- `MODERATION_ROLE_STATE_UNVERIFIED` and
+  `MODERATION_ROLE_STATE_UNAVAILABLE`;
+- `MODERATION_FORBIDDEN_FIELD` and `MODERATION_UNSUPPORTED_ACTION`;
+- `MODERATION_PRECEDENCE_DENIED` and `MODERATION_CONFLICT`;
+- `MODERATION_RESOURCE_REPUBLISHED`;
+- `MODERATION_RESOURCE_UNAVAILABLE` and
+  `MODERATION_MISSING_TRUSTED_METADATA`;
+- `MODERATION_LEGACY_TARGET_BLOCKED` for an attempted full-snapshot legacy
+  moderation mutation; and
+- `MODERATION_PUBLICATION_FAILED` when the authoritative operation itself was
+  not published.
+
+### 23.6 Legacy precedence and failure recovery
+
+Legacy pinned, locked, solved, visibility, deletion, and audit fields remain a
+readable compatibility baseline. Derived indexes can carry that baseline but
+cannot create an operation, role, or V2 target authority. Where an accepted V2
+operation exists for a dimension, its reduced state overlays the legacy/index
+value. A later legacy snapshot or index cannot override it. An unavailable
+moderation domain leaves readable legacy display state in place but never
+authorizes a mutation.
+
+New active moderation commands publish independent V2 records and never use a
+legacy full-snapshot fallback. Topic order, pinned-Thread order, Topic/Thread
+lock and visibility, Thread pin and solved state, Post pinning, and staff Post
+removal are wired to this boundary. Mixed owner fields use the existing V2
+owner-edit path; parent/access/poll configuration remains feature-gated rather
+than being mislabeled as moderation. The old legacy Post deletion service is
+explicitly blocked.
+
+Operation publication is authoritative independently of compatibility and
+indexes. If the operation succeeds but a derived index update fails, the
+command reports retryable partial success and retains moderation authority. If
+operation publication fails, no legacy moderation snapshot is published. A
+multi-target ordering command can similarly report that a prefix of independent
+operations committed and requires reload before retry.
 
 ## 24. Restricted access and privacy
 
@@ -1431,7 +1609,9 @@ Each operation phase tests:
 ### Deferred to their workflow phases
 
 1. Native poll UI result model and create-signature-to-poll-ID resolution.
-2. Moderation temporal role semantics and role operation/registry choice.
+2. Durable historical role authorization after role loss, dependent on the
+   trusted role-history/persistence design in GitHub issue #7. Phase 4 uses the
+   explicit conservative current-registry revalidation rule in section 23.
 3. Core confirmation threshold and exact validation fields for tips.
 4. Pagination safety budgets and index partition sizes.
 5. Encryption design, if true confidentiality is ever required.

@@ -53,6 +53,15 @@ const sortSubTopics = (items: SubTopic[]) =>
     }
 
     if (a.isPinned && b.isPinned) {
+      if (
+        typeof a.moderationOrder === 'number' ||
+        typeof b.moderationOrder === 'number'
+      ) {
+        return (
+          (a.moderationOrder ?? Number.MAX_SAFE_INTEGER) -
+          (b.moderationOrder ?? Number.MAX_SAFE_INTEGER)
+        );
+      }
       const aPinnedAt = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
       const bPinnedAt = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
       if (aPinnedAt !== bPinnedAt) {

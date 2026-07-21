@@ -2,7 +2,7 @@ const PERF_QUERY_PARAM = 'perf';
 const PERF_STORAGE_KEY = 'forum-perf-debug';
 
 const canUseWindow = typeof window !== 'undefined';
-const isDevelopment = import.meta.env.DEV;
+const isDevelopment = import.meta.env?.DEV === true;
 
 const canMeasurePerformance = () => {
   return canUseWindow && typeof window.performance?.now === 'function';

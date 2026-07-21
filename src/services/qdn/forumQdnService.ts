@@ -1,23 +1,28 @@
-import type { Post, PostAttachment, SubTopic, Topic } from '../../types';
-import { generateForumEntityId, toPartitionKey } from '../forum/forumId';
+import type {
+  Post,
+  PostAttachment,
+  SubTopic,
+  Topic,
+} from '../../types/index.js';
+import { generateForumEntityId, toPartitionKey } from '../forum/forumId.js';
 import {
   ensureQdnResourceReady,
   fetchWithQdnReadyFallback,
   mapWithConcurrency,
-} from './qdnReadiness';
+} from './qdnReadiness.js';
 import {
   requestQortium,
   type QortiumResourceToPublish,
-} from '../qortium/qortiumClient';
+} from '../qortium/qortiumClient.js';
 import {
   getUserAccount,
   resolveNameWalletAddress,
-} from '../qortium/walletService';
-import { perfDebugTimeStart } from '../perf/perfDebug';
+} from '../qortium/walletService.js';
+import { perfDebugTimeStart } from '../perf/perfDebug.js';
 import type {
   LegacyAuthorityState,
   QdbV2ResourceMetadata,
-} from '../architectureV2/types';
+} from '../architectureV2/types.js';
 import {
   buildV2Envelope,
   buildV2OwnerEditEnvelope,
@@ -47,16 +52,31 @@ import {
 } from '../architectureV2/polls.js';
 import { loadNativePostPoll } from '../qortium/nativePollService.js';
 import type { IdentityValidator } from '../architectureV2/validation.js';
+import {
+  buildModerationEnvelope,
+  applyModerationToForumStructure,
+  applyModerationToPosts,
+  loadModerationState,
+  publishModerationEnvelope,
+  reduceModerationRecords,
+  resolveRoleFromTrustedState,
+  type ModerationAction,
+  type ModerationOperation,
+  type ReducedModerationState,
+  type TrustedRoleAuthorizationState,
+} from '../architectureV2/moderation.js';
+import { forumRolesService } from './forumRolesService.js';
 
-const FORUM_SERVICE = import.meta.env.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
+const FORUM_SERVICE = import.meta.env?.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_IMAGE_SERVICE =
-  import.meta.env.VITE_QORTIUM_QDN_IMAGE_SERVICE ?? 'IMAGE';
+  import.meta.env?.VITE_QORTIUM_QDN_IMAGE_SERVICE ?? 'IMAGE';
 const FORUM_NAMESPACE =
-  import.meta.env.VITE_QORTIUM_QDN_IDENTIFIER?.trim() || 'qdbm';
+  import.meta.env?.VITE_QORTIUM_QDN_IDENTIFIER?.trim() || 'qdbm';
 const FORUM_IDENTIFIER_PREFIX = `${FORUM_NAMESPACE}-`;
 const TOPIC_PREFIX = `${FORUM_IDENTIFIER_PREFIX}topic-`;
 const SUBTOPIC_PREFIX = `${FORUM_IDENTIFIER_PREFIX}sub-`;
 const POST_PREFIX = `${FORUM_IDENTIFIER_PREFIX}post-`;
+const MODERATION_PREFIX = `${FORUM_IDENTIFIER_PREFIX}v2-mod-`;
 const IMAGE_PREFIX = `${FORUM_IDENTIFIER_PREFIX}img-`;
 const ATTACHMENT_PREFIX = `${FORUM_IDENTIFIER_PREFIX}att-`;
 const VIDEO_PREFIX = `${FORUM_IDENTIFIER_PREFIX}video-`;
@@ -222,7 +242,6 @@ const toThreadPostPrefix = (subTopicId: string) =>
 const toLegacyPostSearchPrefix = () => POST_PREFIX;
 const toPostIdentifier = (post: Post) =>
   `${toThreadPostPrefix(post.subTopicId)}${post.id}`;
-const toLegacyPostIdentifier = (post: Post) => `${POST_PREFIX}${post.id}`;
 const toImageIdentifier = (imageId: string) => `${IMAGE_PREFIX}${imageId}`;
 const toAttachmentIdentifier = (attachmentId: string) =>
   `${ATTACHMENT_PREFIX}${attachmentId}`;
@@ -834,6 +853,191 @@ const toPublishResource = (
 };
 
 export const forumQdnService = {
+  async loadV2ModerationState(options?: {
+    identity?: IdentityValidator;
+    roleState?: TrustedRoleAuthorizationState;
+    authority?: V2RuntimeState;
+  }): Promise<ReducedModerationState> {
+    const resources = await searchByPrefix(MODERATION_PREFIX);
+    const walletByName = new Map<string, string | null>();
+    if (!options?.identity) {
+      await Promise.all(
+        [
+          ...new Set(resources.map((item) => item.name.trim()).filter(Boolean)),
+        ].map(async (name) => {
+          try {
+            walletByName.set(
+              name.trim().toLowerCase(),
+              await resolveNameWalletAddress(name)
+            );
+          } catch {
+            walletByName.set(name.trim().toLowerCase(), null);
+          }
+        })
+      );
+    }
+    const identity: IdentityValidator = options?.identity ?? {
+      validatePublisher: (metadata, claimedPublisher) =>
+        metadata.publisherName.trim().toLowerCase() ===
+        claimedPublisher.trim().toLowerCase()
+          ? { ok: true }
+          : {
+              ok: false,
+              code: 'IDENTITY_UNVERIFIED',
+              detail: 'moderation actor does not match QDN publisher',
+            },
+      validateWalletBinding: (publisherName, walletAddress) =>
+        walletByName.get(publisherName.trim().toLowerCase())?.trim() ===
+        walletAddress.trim()
+          ? { ok: true }
+          : {
+              ok: false,
+              code: 'IDENTITY_UNVERIFIED',
+              detail: 'current QDN name-to-wallet binding is unavailable',
+            },
+    };
+    const [authority, roleState] = await Promise.all([
+      options?.authority
+        ? Promise.resolve(options.authority)
+        : this.loadV2AuthorityState(options?.identity),
+      options?.roleState
+        ? Promise.resolve(options.roleState)
+        : forumRolesService.loadTrustedRoleAuthorizationState({ force: true }),
+    ]);
+    return loadModerationState(resources, {
+      fetchPayload: (resource) =>
+        fetchResource(resource.name ?? '', resource.identifier ?? ''),
+      identity,
+      roleState,
+      authority: authority.authoritative,
+    });
+  },
+
+  async publishV2ModerationOperation(
+    input: {
+      action: ModerationAction;
+      targetType: V2EntityCreate['entityType'];
+      targetId: string;
+      actorName: string;
+      actorAddress: string;
+      reason?: string;
+      orderValue?: number;
+    },
+    publishDerived?: () => Promise<void>
+  ) {
+    const roleState = await forumRolesService.loadTrustedRoleAuthorizationState(
+      {
+        force: true,
+      }
+    );
+    const resolvedWallet = await resolveNameWalletAddress(input.actorName);
+    if (!resolvedWallet || resolvedWallet.trim() !== input.actorAddress.trim())
+      throw new Error(
+        '[MODERATION_WALLET_BINDING_MISSING] current actor name/wallet binding could not be verified'
+      );
+    const identity: IdentityValidator = {
+      validatePublisher: (metadata, claimedPublisher) =>
+        metadata.publisherName.trim().toLowerCase() ===
+        claimedPublisher.trim().toLowerCase()
+          ? { ok: true }
+          : {
+              ok: false,
+              code: 'IDENTITY_UNVERIFIED',
+              detail: 'moderation actor does not match QDN publisher',
+            },
+      validateWalletBinding: (publisherName, walletAddress) =>
+        publisherName.trim().toLowerCase() ===
+          input.actorName.trim().toLowerCase() &&
+        walletAddress.trim() === resolvedWallet.trim()
+          ? { ok: true }
+          : {
+              ok: false,
+              code: 'IDENTITY_UNVERIFIED',
+              detail: 'moderation wallet binding mismatch',
+            },
+    };
+    const authority = await this.loadV2AuthorityState();
+    const operation: ModerationOperation = {
+      operation: 'moderation',
+      action: input.action,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      actorName: input.actorName,
+      actorAddress: input.actorAddress,
+      authorization: {
+        model: 'current-primary-registry-revalidation',
+        actorRole: resolveRoleFromTrustedState(input.actorAddress, roleState),
+        registryIdentifier: roleState.metadata?.identifier ?? null,
+        registrySignature: roleState.metadata?.latestSignature ?? null,
+      },
+      ...(input.reason?.trim() ? { reason: input.reason.trim() } : {}),
+      ...(input.action === 'set-order' ? { orderValue: input.orderValue } : {}),
+    };
+    const recordId = `${MODERATION_PREFIX}${generateForumEntityId(
+      'moderation',
+      input.actorName
+    )}`;
+    assertIdentifierLength(recordId);
+    const envelope = buildModerationEnvelope(operation, recordId);
+    const now = Date.now();
+    const preflight = reduceModerationRecords(
+      [
+        {
+          metadata: {
+            service: FORUM_SERVICE,
+            publisherName: input.actorName,
+            identifier: recordId,
+            created: now,
+            updated: null,
+          },
+          envelope,
+        },
+      ],
+      authority.authoritative,
+      identity,
+      roleState
+    );
+    const rejection = preflight.diagnostics[0];
+    if (rejection) throw new Error(`[${rejection.code}] ${rejection.detail}`);
+    const result = await publishModerationEnvelope(
+      envelope,
+      async (record) => {
+        await requestQortium<unknown>({
+          action: 'PUBLISH_QDN_RESOURCE',
+          service: FORUM_SERVICE,
+          name: input.actorName,
+          identifier: recordId,
+          tags: ['forum', 'qdb-v2', 'moderation', input.action],
+          data64: encodeBase64Json(record),
+        });
+      },
+      publishDerived
+    );
+    if (result.ok === false)
+      throw new Error(`[${result.code}] ${result.detail}`);
+    return result;
+  },
+
+  async applyForumModerationState(topics: Topic[], subTopics: SubTopic[]) {
+    let moderation: ReducedModerationState;
+    try {
+      moderation = await this.loadV2ModerationState();
+    } catch {
+      return { topics, subTopics };
+    }
+    return applyModerationToForumStructure(topics, subTopics, moderation);
+  },
+
+  async applyPostModerationState(posts: Post[]) {
+    let moderation: ReducedModerationState;
+    try {
+      moderation = await this.loadV2ModerationState();
+    } catch {
+      return posts;
+    }
+    return applyModerationToPosts(posts, moderation);
+  },
+
   async publishPostReaction(
     targetId: string,
     state: ReactionState,
@@ -941,7 +1145,8 @@ export const forumQdnService = {
     posts: Post[],
     currentWalletAddress?: string | null
   ) {
-    const reactions = await this.applyPostReactionState(posts);
+    const moderated = await this.applyPostModerationState(posts);
+    const reactions = await this.applyPostReactionState(moderated);
     return this.applyNativePollState(reactions, currentWalletAddress);
   },
 
@@ -1158,9 +1363,10 @@ export const forumQdnService = {
         topics.some((topic) => topic.id === subTopic.topicId)
       );
 
+    const moderated = await this.applyForumModerationState(topics, subTopics);
     const result = {
-      topics,
-      subTopics,
+      topics: moderated.topics,
+      subTopics: moderated.subTopics,
       legacy: {
         authorityState: 'UNRESOLVED' as const,
         topicRecords: topicPayloads.filter(
@@ -1396,41 +1602,10 @@ export const forumQdnService = {
     };
   },
 
-  async deletePost(post: Post, ownerName?: string) {
-    const resolvedOwner = await resolveOwnerName(ownerName);
-    const identifier = toPostIdentifier(post);
-    const legacyIdentifier = toLegacyPostIdentifier(post);
-    const payload: PostPayload = {
-      version: 1,
-      type: 'post',
-      status: 'deleted',
-      updatedAt: Date.now(),
-      post: toPersistedPost(post),
-    };
-
-    await publishPayload(
-      resolvedOwner,
-      identifier,
-      payload,
-      `Delete forum post ${post.id}`,
-      'Qortium discussion board delete marker',
-      ['forum', 'post', 'qforum', 'delete']
+  async deletePost() {
+    throw new Error(
+      '[MODERATION_LEGACY_TARGET_BLOCKED] legacy full-snapshot deletion is disabled; use an owner tombstone or V2 moderation removal'
     );
-
-    await verifyPublication(resolvedOwner, identifier, 'post');
-
-    // Publish a legacy tombstone too so older post identifiers stop reappearing
-    // while the thread gradually migrates to thread-scoped identifiers.
-    if (legacyIdentifier !== identifier) {
-      await publishPayload(
-        resolvedOwner,
-        legacyIdentifier,
-        payload,
-        `Delete forum post ${post.id}`,
-        'Qortium discussion board delete marker',
-        ['forum', 'post', 'qforum', 'delete', 'legacy']
-      );
-    }
   },
 
   async publishPostImage(

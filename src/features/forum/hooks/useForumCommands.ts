@@ -32,6 +32,7 @@ import {
   toPersistedNativePollReference,
 } from '../../../services/architectureV2/polls.js';
 import type { NativePollRecovery } from '../../../services/architectureV2/types.js';
+import type { ModerationAction } from '../../../services/architectureV2/moderation.js';
 import {
   closeNativePoll,
   loadNativePostPoll,
@@ -245,26 +246,6 @@ export const useForumCommands = ({
   setSubTopics,
   setPosts,
 }: UseForumCommandsParams) => {
-  const syncThreadSearchIndex = useCallback(
-    async (subTopicId: string, nextPosts: Post[]) => {
-      try {
-        const snapshot = await forumSearchIndexService.publishThreadIndex(
-          subTopicId,
-          nextPosts,
-          currentUser.username
-        );
-        setThreadSearchIndexes((current) => ({
-          ...current,
-          [subTopicId]: snapshot,
-        }));
-        writeThreadIndexCache(subTopicId, snapshot);
-      } catch {
-        // Keep forum mutations successful even if index publish lags behind.
-      }
-    },
-    [currentUser.username, setThreadSearchIndexes]
-  );
-
   const buildTopicDirectoryIndexResource = useCallback(
     (nextTopics: Topic[], nextSubTopics: SubTopic[]) =>
       forumSearchIndexService.buildTopicDirectoryIndexPublishResource(
@@ -283,6 +264,35 @@ export const useForumCommands = ({
         currentUser.username
       ),
     [currentUser.username]
+  );
+
+  const publishModeration = useCallback(
+    async (input: {
+      action: ModerationAction;
+      targetType: 'topic' | 'thread' | 'post';
+      targetId: string;
+      reason?: string;
+      orderValue?: number;
+      publishDerived?: () => Promise<void>;
+    }) => {
+      if (!authenticatedAddress?.trim())
+        throw new Error(
+          '[MODERATION_WALLET_BINDING_MISSING] authenticated wallet is unavailable'
+        );
+      return forumQdnService.publishV2ModerationOperation(
+        {
+          action: input.action,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          actorName: currentUser.username,
+          actorAddress: authenticatedAddress.trim(),
+          reason: input.reason,
+          orderValue: input.orderValue,
+        },
+        input.publishDerived
+      );
+    },
+    [authenticatedAddress, currentUser.username]
   );
 
   const createTopic = useCallback(
@@ -319,6 +329,13 @@ export const useForumCommands = ({
           error: 'Only admins, Super Admins and SysOp can create main topics.',
         };
       }
+
+      if (input.status !== 'open')
+        return {
+          ok: false,
+          error:
+            'Create the Topic open, then lock it with the independent moderation action after publication.',
+        };
 
       if (input.subTopicAccess === 'custom' && allowedAddresses.length === 0) {
         return {
@@ -461,22 +478,52 @@ export const useForumCommands = ({
       });
 
       try {
-        const topicResources = reorderedTopics.map((topic) =>
-          forumQdnService.buildTopicPublishResource(topic, currentUser.username)
-        );
         const nextTopics = sortTopicsByOrder(reorderedTopics);
         const topicDirectoryResource = buildTopicDirectoryIndexResource(
           nextTopics,
           subTopics
         );
-        await publishMultipleQortiumResources([
-          ...topicResources.map((item) => item.resource),
-          topicDirectoryResource.resource,
-        ]);
+        let committed = 0;
+        try {
+          for (const topic of reorderedTopics) {
+            await publishModeration({
+              action: 'set-order',
+              targetType: 'topic',
+              targetId: topic.id,
+              orderValue: topic.sortOrder,
+            });
+            committed += 1;
+          }
+        } catch (error) {
+          if (committed > 0)
+            return {
+              ok: true,
+              partial: { pending: 'moderation-operations', retryable: true },
+              error:
+                'Some topic order operations committed; reload before retrying the remaining order.',
+            };
+          throw error;
+        }
+
+        let indexPending = false;
+        try {
+          await publishMultipleQortiumResources([
+            topicDirectoryResource.resource,
+          ]);
+        } catch {
+          indexPending = true;
+        }
 
         setTopics(nextTopics);
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return { ok: true };
+        return indexPending
+          ? {
+              ok: true,
+              partial: { pending: 'derived-index', retryable: true },
+              error:
+                'Topic order committed; the derived directory index is pending.',
+            }
+          : { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -489,9 +536,9 @@ export const useForumCommands = ({
     },
     [
       currentUser.role,
-      currentUser.username,
       buildTopicDirectoryIndexResource,
       isAuthenticated,
+      publishModeration,
       setTopicDirectoryIndex,
       setTopics,
       subTopics,
@@ -554,9 +601,6 @@ export const useForumCommands = ({
       const pinnedMap = new Map(
         pinnedInTopic.map((subTopic) => [subTopic.id, subTopic])
       );
-      const baseTimestampMs =
-        Date.now() - input.orderedPinnedSubTopicIds.length * 1000;
-
       try {
         const reorderedPinned = input.orderedPinnedSubTopicIds.map(
           (subTopicId, index) => {
@@ -569,7 +613,7 @@ export const useForumCommands = ({
 
             return {
               ...target,
-              pinnedAt: new Date(baseTimestampMs + index * 1000).toISOString(),
+              moderationOrder: index,
             };
           }
         );
@@ -580,24 +624,51 @@ export const useForumCommands = ({
         const nextSubTopics = subTopics.map(
           (subTopic) => reorderedPinnedMap.get(subTopic.id) ?? subTopic
         );
-        const subTopicResources = reorderedPinned.map((subTopic) =>
-          forumQdnService.buildSubTopicPublishResource(
-            subTopic,
-            currentUser.username
-          )
-        );
         const topicDirectoryResource = buildTopicDirectoryIndexResource(
           topics,
           nextSubTopics
         );
-        await publishMultipleQortiumResources([
-          ...subTopicResources.map((resource) => resource.resource),
-          topicDirectoryResource.resource,
-        ]);
+        let committed = 0;
+        try {
+          for (const subTopic of reorderedPinned) {
+            await publishModeration({
+              action: 'set-order',
+              targetType: 'thread',
+              targetId: subTopic.id,
+              orderValue: subTopic.moderationOrder ?? 0,
+            });
+            committed += 1;
+          }
+        } catch (error) {
+          if (committed > 0)
+            return {
+              ok: true,
+              partial: { pending: 'moderation-operations', retryable: true },
+              error:
+                'Some pinned-thread order operations committed; reload before retrying.',
+            };
+          throw error;
+        }
+
+        let indexPending = false;
+        try {
+          await publishMultipleQortiumResources([
+            topicDirectoryResource.resource,
+          ]);
+        } catch {
+          indexPending = true;
+        }
 
         setSubTopics(nextSubTopics);
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return { ok: true };
+        return indexPending
+          ? {
+              ok: true,
+              partial: { pending: 'derived-index', retryable: true },
+              error:
+                'Pinned-thread order committed; the derived directory index is pending.',
+            }
+          : { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -610,9 +681,9 @@ export const useForumCommands = ({
     },
     [
       currentUser.role,
-      currentUser.username,
       buildTopicDirectoryIndexResource,
       isAuthenticated,
+      publishModeration,
       setSubTopics,
       setTopicDirectoryIndex,
       subTopics,
@@ -677,7 +748,6 @@ export const useForumCommands = ({
           error: 'Add at least one wallet address for custom sub-topic access.',
         };
       }
-
       const duplicate = subTopics.some(
         (subTopic) =>
           subTopic.topicId === input.topicId &&
@@ -905,6 +975,21 @@ export const useForumCommands = ({
         };
       }
 
+      const sameAllowedAddresses =
+        allowedAddresses.length === target.allowedAddresses.length &&
+        allowedAddresses.every(
+          (address, index) => address === target.allowedAddresses[index]
+        );
+      if (
+        input.subTopicAccess !== target.subTopicAccess ||
+        !sameAllowedAddresses
+      )
+        return {
+          ok: false,
+          error:
+            '[FORBIDDEN_FIELD] Topic access configuration is not a moderation field and remains feature-gated.',
+        };
+
       const updatedTopic: Topic = {
         ...target,
         title,
@@ -919,18 +1004,56 @@ export const useForumCommands = ({
         const nextTopics = topics.map((topic) =>
           topic.id === target.id ? updatedTopic : topic
         );
-        const topicResource = forumQdnService.buildTopicPublishResource(
-          updatedTopic,
-          currentUser.username
-        );
         const topicDirectoryResource = buildTopicDirectoryIndexResource(
           nextTopics,
           subTopics
         );
-        await publishMultipleQortiumResources([
-          topicResource.resource,
-          topicDirectoryResource.resource,
-        ]);
+        let authoritativeChanges = 0;
+        if (title !== target.title || description !== target.description) {
+          const ownerEdit = await updateTopicOwnerContent({
+            topicId: target.id,
+            title,
+            description,
+          });
+          if (!ownerEdit.ok) return ownerEdit;
+          authoritativeChanges += 1;
+        }
+        const operations: Array<{ action: ModerationAction }> = [];
+        if (input.status !== target.status)
+          operations.push({
+            action: input.status === 'locked' ? 'lock' : 'unlock',
+          });
+        if (input.visibility !== target.visibility)
+          operations.push({
+            action: input.visibility === 'hidden' ? 'hide' : 'unhide',
+          });
+        try {
+          for (const operation of operations) {
+            await publishModeration({
+              action: operation.action,
+              targetType: 'topic',
+              targetId: target.id,
+            });
+            authoritativeChanges += 1;
+          }
+        } catch (error) {
+          if (authoritativeChanges > 0)
+            return {
+              ok: true,
+              partial: { pending: 'moderation-operations', retryable: true },
+              error:
+                'Some authoritative topic changes committed; reload before retrying.',
+            };
+          throw error;
+        }
+        let indexPending = false;
+        try {
+          await publishMultipleQortiumResources([
+            topicDirectoryResource.resource,
+          ]);
+        } catch {
+          indexPending = true;
+        }
 
         setTopics((current) =>
           current.map((topic) =>
@@ -938,7 +1061,14 @@ export const useForumCommands = ({
           )
         );
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return { ok: true };
+        return indexPending
+          ? {
+              ok: true,
+              partial: { pending: 'derived-index', retryable: true },
+              error:
+                'Topic authority committed; the derived directory index is pending.',
+            }
+          : { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -951,13 +1081,14 @@ export const useForumCommands = ({
     },
     [
       currentUser.role,
-      currentUser.username,
       buildTopicDirectoryIndexResource,
       isAuthenticated,
+      publishModeration,
       setTopicDirectoryIndex,
       setTopics,
       subTopics,
       topics,
+      updateTopicOwnerContent,
     ]
   );
 
@@ -1139,6 +1270,17 @@ export const useForumCommands = ({
           error: 'Add at least one wallet address for custom sub-topic access.',
         };
       }
+      if (
+        isTopicChanged ||
+        isAccessChanged ||
+        isPollChanged ||
+        !sameAllowedAddresses
+      )
+        return {
+          ok: false,
+          error:
+            '[FORBIDDEN_FIELD] Thread parent/access/poll configuration is not moderation state and remains feature-gated.',
+        };
 
       const updatedSubTopic: SubTopic = {
         ...target,
@@ -1179,18 +1321,56 @@ export const useForumCommands = ({
         const nextSubTopics = subTopics.map((subTopic) =>
           subTopic.id === target.id ? updatedSubTopic : subTopic
         );
-        const subTopicResource = forumQdnService.buildSubTopicPublishResource(
-          updatedSubTopic,
-          currentUser.username
-        );
         const topicDirectoryResource = buildTopicDirectoryIndexResource(
           topics,
           nextSubTopics
         );
-        await publishMultipleQortiumResources([
-          subTopicResource.resource,
-          topicDirectoryResource.resource,
-        ]);
+        let authoritativeChanges = 0;
+        if (isTitleChanged || isDescriptionChanged) {
+          const ownerEdit = await updateSubTopicOwnerContent({
+            subTopicId: target.id,
+            title,
+            description,
+          });
+          if (!ownerEdit.ok) return ownerEdit;
+          authoritativeChanges += 1;
+        }
+        const operations: ModerationAction[] = [];
+        if (isStatusChanged)
+          operations.push(input.status === 'locked' ? 'lock' : 'unlock');
+        if (isVisibilityChanged)
+          operations.push(input.visibility === 'hidden' ? 'hide' : 'unhide');
+        if (isPinnedChanged) operations.push(input.isPinned ? 'pin' : 'unpin');
+        if (isSolvedChanged)
+          operations.push(input.isSolved ? 'solve' : 'unsolve');
+        try {
+          for (const action of operations) {
+            await publishModeration({
+              action,
+              targetType: 'thread',
+              targetId: target.id,
+              reason: moderationReason,
+            });
+            authoritativeChanges += 1;
+          }
+        } catch (error) {
+          if (authoritativeChanges > 0)
+            return {
+              ok: true,
+              partial: { pending: 'moderation-operations', retryable: true },
+              error:
+                'Some authoritative thread changes committed; reload before retrying.',
+            };
+          throw error;
+        }
+        let indexPending = false;
+        try {
+          await publishMultipleQortiumResources([
+            topicDirectoryResource.resource,
+          ]);
+        } catch {
+          indexPending = true;
+        }
 
         setSubTopics((current) =>
           current.map((subTopic) =>
@@ -1198,7 +1378,14 @@ export const useForumCommands = ({
           )
         );
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return { ok: true };
+        return indexPending
+          ? {
+              ok: true,
+              partial: { pending: 'derived-index', retryable: true },
+              error:
+                'Thread authority committed; the derived directory index is pending.',
+            }
+          : { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -1212,13 +1399,14 @@ export const useForumCommands = ({
     [
       currentUser.id,
       currentUser.role,
-      currentUser.username,
       buildTopicDirectoryIndexResource,
       isAuthenticated,
+      publishModeration,
       setTopicDirectoryIndex,
       setSubTopics,
       subTopics,
       topics,
+      updateSubTopicOwnerContent,
     ]
   );
 
@@ -1263,18 +1451,20 @@ export const useForumCommands = ({
         const nextSubTopics = subTopics.map((subTopic) =>
           subTopic.id === target.id ? updatedSubTopic : subTopic
         );
-        const subTopicResource = forumQdnService.buildSubTopicPublishResource(
-          updatedSubTopic,
-          currentUser.username
-        );
         const topicDirectoryResource = buildTopicDirectoryIndexResource(
           topics,
           nextSubTopics
         );
-        await publishMultipleQortiumResources([
-          subTopicResource.resource,
-          topicDirectoryResource.resource,
-        ]);
+        const published = await publishModeration({
+          action: target.isSolved ? 'unsolve' : 'solve',
+          targetType: 'thread',
+          targetId: target.id,
+          reason,
+          publishDerived: () =>
+            publishMultipleQortiumResources([
+              topicDirectoryResource.resource,
+            ]).then(() => undefined),
+        });
 
         setSubTopics((current) =>
           current.map((subTopic) =>
@@ -1282,7 +1472,14 @@ export const useForumCommands = ({
           )
         );
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return { ok: true };
+        return 'partial' in published
+          ? {
+              ok: true,
+              partial: published.partial,
+              error:
+                'Solved state committed; the derived directory index is pending.',
+            }
+          : { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -1296,9 +1493,9 @@ export const useForumCommands = ({
     [
       currentUser.id,
       currentUser.role,
-      currentUser.username,
       buildTopicDirectoryIndexResource,
       isAuthenticated,
+      publishModeration,
       setSubTopics,
       setTopicDirectoryIndex,
       subTopics,
@@ -2013,18 +2210,19 @@ export const useForumCommands = ({
         const nextPosts = posts.map((post) =>
           post.id === postId ? updatedPost : post
         );
-        const postResource = forumQdnService.buildPostPublishResource(
-          updatedPost,
-          currentUser.username
-        );
         const threadIndexResource = buildThreadIndexResource(
           updatedPost.subTopicId,
           nextPosts
         );
-        await publishMultipleQortiumResources([
-          postResource.resource,
-          threadIndexResource.resource,
-        ]);
+        const published = await publishModeration({
+          action: isPinned ? 'unpin' : 'pin',
+          targetType: 'post',
+          targetId: target.id,
+          publishDerived: () =>
+            publishMultipleQortiumResources([
+              threadIndexResource.resource,
+            ]).then(() => undefined),
+        });
 
         recordRecentPostMutation(updatedPost);
         writeThreadIndexCache(
@@ -2045,7 +2243,14 @@ export const useForumCommands = ({
           ...current,
           [updatedPost.subTopicId]: threadIndexResource.snapshot,
         }));
-        return { ok: true };
+        return 'partial' in published
+          ? {
+              ok: true,
+              partial: published.partial,
+              error:
+                'Post pin state committed; the derived thread index is pending.',
+            }
+          : { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -2058,6 +2263,7 @@ export const useForumCommands = ({
       buildThreadIndexResource,
       currentUser,
       isAuthenticated,
+      publishModeration,
       posts,
       setPosts,
       setThreadSearchIndexes,
@@ -2349,14 +2555,32 @@ export const useForumCommands = ({
         };
       }
 
-      const authority = authorizeLegacyMutation('UNRESOLVED');
-      if (!authority.ok) {
-        return { ok: false, error: `[${authority.code}] ${authority.detail}` };
+      if (!canDeleteAsStaff) {
+        const authority = authorizeLegacyMutation('UNRESOLVED');
+        return {
+          ok: false,
+          error: authority.ok
+            ? '[FORBIDDEN_FIELD] Owner tombstones are not enabled.'
+            : `[${authority.code}] ${authority.detail}`,
+        };
       }
 
       try {
-        await forumQdnService.deletePost(target, currentUser.username);
         const nextPosts = posts.filter((post) => post.id !== input.postId);
+        const threadIndexResource = buildThreadIndexResource(
+          target.subTopicId,
+          nextPosts
+        );
+        const published = await publishModeration({
+          action: 'remove',
+          targetType: 'post',
+          targetId: target.id,
+          reason: input.reason?.trim(),
+          publishDerived: () =>
+            publishMultipleQortiumResources([
+              threadIndexResource.resource,
+            ]).then(() => undefined),
+        });
         setPosts((current) => {
           const next = current.filter((post) => post.id !== input.postId);
           threadPostCache.write(
@@ -2365,8 +2589,18 @@ export const useForumCommands = ({
           );
           return next;
         });
-        await syncThreadSearchIndex(target.subTopicId, nextPosts);
-        return { ok: true };
+        setThreadSearchIndexes((current) => ({
+          ...current,
+          [target.subTopicId]: threadIndexResource.snapshot,
+        }));
+        return 'partial' in published
+          ? {
+              ok: true,
+              partial: published.partial,
+              error:
+                'Post removal committed; the derived thread index is pending.',
+            }
+          : { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -2375,7 +2609,15 @@ export const useForumCommands = ({
         };
       }
     },
-    [currentUser, isAuthenticated, posts, setPosts, syncThreadSearchIndex]
+    [
+      buildThreadIndexResource,
+      currentUser,
+      isAuthenticated,
+      posts,
+      publishModeration,
+      setPosts,
+      setThreadSearchIndexes,
+    ]
   );
 
   const likePost = useCallback(

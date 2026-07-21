@@ -1,4 +1,8 @@
-import type { LegacyAuthorityState, QdbV2ResourceMetadata, V2EntityType } from './types';
+import type {
+  LegacyAuthorityState,
+  QdbV2ResourceMetadata,
+  V2EntityType,
+} from './types.js';
 
 export type LegacyNormalizedEntity = {
   entityType: V2EntityType;
@@ -10,10 +14,14 @@ export type LegacyNormalizedEntity = {
   payload: Record<string, unknown>;
 };
 
-export const normalizeLegacyEntity = (input: Omit<LegacyNormalizedEntity, 'authorityState'> & { authorityState?: LegacyAuthorityState }): LegacyNormalizedEntity => ({
+export const normalizeLegacyEntity = (
+  input: Omit<LegacyNormalizedEntity, 'authorityState'> & {
+    authorityState?: LegacyAuthorityState;
+  }
+): LegacyNormalizedEntity => ({
   ...input,
   authorityState: input.authorityState ?? 'UNRESOLVED',
 });
 
-export const canLegacyEntityAuthorize = (entity: LegacyNormalizedEntity) => entity.authorityState === 'APPROVED';
-
+export const canLegacyEntityAuthorize = (entity: LegacyNormalizedEntity) =>
+  entity.authorityState === 'APPROVED';

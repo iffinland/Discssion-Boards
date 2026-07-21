@@ -1,4 +1,4 @@
-import { requestQortium } from './qortiumClient';
+import { requestQortium } from './qortiumClient.js';
 
 export interface UserAccount {
   address: string;

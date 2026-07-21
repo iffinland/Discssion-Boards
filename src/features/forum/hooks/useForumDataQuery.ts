@@ -452,15 +452,20 @@ export const useForumDataQuery = () => {
           const indexedStructure = toForumStructureFromTopicDirectory(
             nextTopicDirectoryIndex
           );
+          const moderatedStructure =
+            await forumQdnService.applyForumModerationState(
+              indexedStructure.topics,
+              indexedStructure.subTopics
+            );
           applyForumStructure(
             [session.user],
-            indexedStructure.topics,
-            indexedStructure.subTopics
+            moderatedStructure.topics,
+            moderatedStructure.subTopics
           );
           endTiming({
             usedTopicDirectoryIndex: true,
-            topicCount: indexedStructure.topics.length,
-            subTopicCount: indexedStructure.subTopics.length,
+            topicCount: moderatedStructure.topics.length,
+            subTopicCount: moderatedStructure.subTopics.length,
           });
           setLoadingStage('Ready');
           setLoadStatus('ready');
@@ -556,11 +561,7 @@ export const useForumDataQuery = () => {
     return () => {
       active = false;
     };
-  }, [
-    activeAuthName,
-    applyForumStructure,
-    qortiumBridgeProbe,
-  ]);
+  }, [activeAuthName, applyForumStructure, qortiumBridgeProbe]);
 
   const authenticate = useCallback(async () => {
     const account = await getUserAccount();

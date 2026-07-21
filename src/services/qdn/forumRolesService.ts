@@ -1,12 +1,14 @@
-import type { ForumRoleRegistry, UserRole } from '../../types';
-import { fetchWithQdnReadyFallback } from './qdnReadiness';
-import { requestQortium } from '../qortium/qortiumClient';
-import { getAccountNames, getUserAccount } from '../qortium/walletService';
-import { perfDebugTimeStart } from '../perf/perfDebug';
+import type { ForumRoleRegistry, UserRole } from '../../types/index.js';
+import { fetchWithQdnReadyFallback } from './qdnReadiness.js';
+import { requestQortium } from '../qortium/qortiumClient.js';
+import { getAccountNames, getUserAccount } from '../qortium/walletService.js';
+import { perfDebugTimeStart } from '../perf/perfDebug.js';
+import type { QdbV2ResourceMetadata } from '../architectureV2/types.js';
+import type { TrustedRoleAuthorizationState } from '../architectureV2/moderation.js';
 
-const FORUM_SERVICE = import.meta.env.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
+const FORUM_SERVICE = import.meta.env?.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_NAMESPACE =
-  import.meta.env.VITE_QORTIUM_QDN_IDENTIFIER?.trim() || 'qdbm';
+  import.meta.env?.VITE_QORTIUM_QDN_IDENTIFIER?.trim() || 'qdbm';
 
 export const PRIMARY_SYSOP_ADDRESS = 'QN1XYwwmTzXemusDb9p7T1nKJEACLHGgaL';
 
@@ -19,6 +21,10 @@ const ROLE_REGISTRY_CACHE_TTL_MS = 60 * 1000;
 type SearchQdnResourceResult = {
   name: string;
   identifier: string;
+  service?: string;
+  created?: number;
+  updated?: number | null;
+  latestSignature?: string;
 };
 
 type RoleRegistryPayload = {
@@ -43,6 +49,12 @@ let roleRegistryCache: {
   updatedAt: 0,
   inflight: null,
 };
+
+let trustedRoleStateCache: {
+  value: TrustedRoleAuthorizationState | null;
+  updatedAt: number;
+  inflight: Promise<TrustedRoleAuthorizationState> | null;
+} = { value: null, updatedAt: 0, inflight: null };
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
@@ -154,8 +166,9 @@ const parseRoleRegistryPayload = (raw: unknown): RoleRegistryPayload | null => {
 };
 
 const toForumRoleRegistry = (payload: RoleRegistryPayload) => {
-  const primarySysOpAddress =
-    payload.registry.primarySysOpAddress ?? PRIMARY_SYSOP_ADDRESS;
+  // The canonical trust root is application configuration, never a mutable
+  // payload field—even when the payload itself was published by that root.
+  const primarySysOpAddress = PRIMARY_SYSOP_ADDRESS;
   const sysOps = payload.registry.sysOps ?? [];
 
   return {
@@ -189,6 +202,65 @@ const searchByPrefix = async (
   });
 
   return Array.isArray(search) ? search : [];
+};
+
+const searchCanonicalRoleResources = async () => {
+  const search = await requestQortium<SearchQdnResourceResult[]>({
+    action: 'SEARCH_QDN_RESOURCES',
+    service: FORUM_SERVICE,
+    identifier: PRIMARY_ROLE_IDENTIFIER,
+    prefix: false,
+    mode: 'ALL',
+    reverse: true,
+    includeStatus: true,
+    limit: 100,
+    offset: 0,
+  });
+  return Array.isArray(search) ? search : [];
+};
+
+const toTrustedMetadata = (
+  resource: SearchQdnResourceResult
+): QdbV2ResourceMetadata | null => {
+  if (
+    typeof resource.service !== 'string' ||
+    typeof resource.created !== 'number' ||
+    !Number.isSafeInteger(resource.created) ||
+    typeof resource.latestSignature !== 'string' ||
+    !resource.latestSignature.trim() ||
+    (resource.updated !== undefined &&
+      resource.updated !== null &&
+      (typeof resource.updated !== 'number' ||
+        !Number.isSafeInteger(resource.updated)))
+  )
+    return null;
+  return {
+    service: resource.service,
+    publisherName: resource.name,
+    identifier: resource.identifier,
+    created: resource.created,
+    updated: resource.updated ?? null,
+    latestSignature: resource.latestSignature,
+  };
+};
+
+const compareTrustedRoleResources = (
+  left: { metadata: QdbV2ResourceMetadata },
+  right: { metadata: QdbV2ResourceMetadata }
+) => {
+  const leftTime = left.metadata.updated ?? left.metadata.created;
+  const rightTime = right.metadata.updated ?? right.metadata.created;
+  if (leftTime !== rightTime) return rightTime - leftTime;
+  const signature = (right.metadata.latestSignature ?? '').localeCompare(
+    left.metadata.latestSignature ?? ''
+  );
+  if (signature) return signature;
+  const name = right.metadata.publisherName.localeCompare(
+    left.metadata.publisherName
+  );
+  return (
+    name || right.metadata.identifier.localeCompare(left.metadata.identifier)
+  );
 };
 
 const fetchResource = async (
@@ -282,6 +354,154 @@ export const resolveRoleForAddress = (
 };
 
 export const forumRolesService = {
+  async loadTrustedRoleAuthorizationState(options?: {
+    force?: boolean;
+  }): Promise<TrustedRoleAuthorizationState> {
+    const now = Date.now();
+    if (
+      !options?.force &&
+      trustedRoleStateCache.value &&
+      now - trustedRoleStateCache.updatedAt <= ROLE_REGISTRY_CACHE_TTL_MS
+    )
+      return trustedRoleStateCache.value;
+    if (!options?.force && trustedRoleStateCache.inflight)
+      return trustedRoleStateCache.inflight;
+
+    const load = (async (): Promise<TrustedRoleAuthorizationState> => {
+      let trustedNames: string[];
+      try {
+        trustedNames = await getAccountNames(PRIMARY_SYSOP_ADDRESS);
+      } catch {
+        return {
+          status: 'UNAVAILABLE',
+          model: 'current-primary-registry-revalidation',
+          registry: createDefaultRoleRegistry(),
+          metadata: null,
+          detail: 'current primary SysOp QDN-name ownership is unavailable',
+        };
+      }
+      if (trustedNames.length === 0)
+        return {
+          status: 'UNAVAILABLE',
+          model: 'current-primary-registry-revalidation',
+          registry: createDefaultRoleRegistry(),
+          metadata: null,
+          detail: 'primary SysOp currently owns no verifiable QDN name',
+        };
+      let resources: SearchQdnResourceResult[];
+      try {
+        resources = await searchCanonicalRoleResources();
+      } catch {
+        return {
+          status: 'UNAVAILABLE',
+          model: 'current-primary-registry-revalidation',
+          registry: createDefaultRoleRegistry(),
+          metadata: null,
+          detail: 'canonical role-registry discovery is unavailable',
+        };
+      }
+      const trustedNameSet = new Set(
+        trustedNames.map((name) => name.trim().toLowerCase())
+      );
+      const trustedResources = resources.filter((resource) =>
+        trustedNameSet.has(resource.name.trim().toLowerCase())
+      );
+      if (trustedResources.length === 0) {
+        if (resources.length > 0)
+          return {
+            status: 'UNVERIFIED',
+            model: 'current-primary-registry-revalidation',
+            registry: createDefaultRoleRegistry(),
+            metadata: null,
+            detail:
+              'role registries exist only under publishers outside the primary SysOp trust root',
+          };
+        return {
+          status: 'VERIFIED',
+          model: 'current-primary-registry-revalidation',
+          registry: createDefaultRoleRegistry(),
+          metadata: null,
+          detail:
+            'no canonical registry is published; only the fixed primary SysOp role is authoritative',
+        };
+      }
+      const ordered = trustedResources
+        .map((resource) => ({
+          resource,
+          metadata: toTrustedMetadata(resource),
+        }))
+        .filter(
+          (
+            candidate
+          ): candidate is {
+            resource: SearchQdnResourceResult;
+            metadata: QdbV2ResourceMetadata;
+          } => candidate.metadata !== null
+        )
+        .sort(compareTrustedRoleResources);
+      if (ordered.length !== trustedResources.length)
+        return {
+          status: 'UNVERIFIED',
+          model: 'current-primary-registry-revalidation',
+          registry: createDefaultRoleRegistry(),
+          metadata: null,
+          detail:
+            'a canonical role-registry candidate lacks trusted Core ordering metadata',
+        };
+      const selected = ordered[0];
+      try {
+        const payload = parseRoleRegistryPayload(
+          await fetchResource(
+            selected.resource.name,
+            selected.resource.identifier
+          )
+        );
+        if (!payload)
+          return {
+            status: 'UNVERIFIED',
+            model: 'current-primary-registry-revalidation',
+            registry: createDefaultRoleRegistry(),
+            metadata: null,
+            detail: 'latest canonical role-registry payload is malformed',
+          };
+        return {
+          status: 'VERIFIED',
+          model: 'current-primary-registry-revalidation',
+          registry: toForumRoleRegistry(payload),
+          metadata: selected.metadata,
+          detail:
+            'current role registry verified under a name owned by the primary SysOp address',
+        };
+      } catch {
+        return {
+          status: 'UNAVAILABLE',
+          model: 'current-primary-registry-revalidation',
+          registry: createDefaultRoleRegistry(),
+          metadata: null,
+          detail:
+            'latest trusted canonical role-registry payload is unavailable',
+        };
+      }
+    })();
+    trustedRoleStateCache = {
+      ...trustedRoleStateCache,
+      inflight: load,
+    };
+    return load
+      .then((value) => {
+        trustedRoleStateCache = {
+          value,
+          updatedAt: Date.now(),
+          inflight: null,
+        };
+        return value;
+      })
+      .catch((error) => {
+        trustedRoleStateCache = { ...trustedRoleStateCache, inflight: null };
+        throw error;
+      });
+  },
+
   async loadRoleRegistry(): Promise<ForumRoleRegistry> {
     const endTiming = perfDebugTimeStart('role-registry-load');
     const now = Date.now();
@@ -414,6 +634,11 @@ export const forumRolesService = {
       updatedAt,
       inflight: null,
     };
+
+    // A delegated publication must never poison the trusted moderation-role
+    // cache. Force the next moderation authorization to rediscover the
+    // primary-owned canonical registry.
+    trustedRoleStateCache = { value: null, updatedAt: 0, inflight: null };
 
     return sanitizedRegistry;
   },

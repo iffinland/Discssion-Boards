@@ -95,6 +95,7 @@ export interface SubTopic {
   lastModerationReason?: string | null;
   lastModeratedByUserId?: string | null;
   lastModeratedAt?: string | null;
+  moderationOrder?: number | null;
 }
 
 export interface Post {
@@ -114,6 +115,8 @@ export interface Post {
   likes: number;
   tips: number;
   likedByAddresses: string[];
+  moderationHidden?: boolean;
+  moderationRemoved?: boolean;
 }
 
 export interface ForumRoleRegistry {
