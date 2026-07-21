@@ -21,6 +21,7 @@ import type {
 import { forumSearchIndexService } from '../../../services/qdn/forumSearchIndexService';
 import { forumRolesService } from '../../../services/qdn/forumRolesService';
 import { writeThreadIndexCache } from '../../../services/qdn/threadIndexCache';
+import { authorizeLegacyMutation } from '../../../services/architectureV2/reducer';
 import type {
   ForumRoleRegistry,
   Post,
@@ -1490,6 +1491,11 @@ export const useForumCommands = ({
         return { ok: false, error: 'Only owner can edit this post.' };
       }
 
+      const authority = authorizeLegacyMutation('UNRESOLVED');
+      if (!authority.ok) {
+        return { ok: false, error: `[${authority.code}] ${authority.detail}` };
+      }
+
       const updatedAt = new Date().toISOString();
       const updatedPost: Post = {
         ...target,
@@ -1881,6 +1887,11 @@ export const useForumCommands = ({
           error:
             'Only owner, admin, Super Admin or SysOp can delete this post.',
         };
+      }
+
+      const authority = authorizeLegacyMutation('UNRESOLVED');
+      if (!authority.ok) {
+        return { ok: false, error: `[${authority.code}] ${authority.detail}` };
       }
 
       try {

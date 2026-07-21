@@ -11,6 +11,7 @@ import {
 } from '../qortium/qortiumClient';
 import { getUserAccount } from '../qortium/walletService';
 import { perfDebugTimeStart } from '../perf/perfDebug';
+import type { LegacyAuthorityState, QdbV2ResourceMetadata } from '../architectureV2/types';
 
 const FORUM_SERVICE = import.meta.env.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_IMAGE_SERVICE =
@@ -34,7 +35,18 @@ const imageUrlCache = new Map<string, string>();
 interface SearchQdnResourceResult {
   name: string;
   identifier: string;
+  service?: string;
+  created?: number;
+  updated?: number;
+  latestSignature?: string;
+  status?: unknown;
 }
+
+export type LegacyResourceProvenance = {
+  resource: QdbV2ResourceMetadata;
+  availability: 'available' | 'unavailable';
+  authorityState: LegacyAuthorityState;
+};
 
 export type ForumPostImageReference = {
   service: string;
@@ -69,6 +81,7 @@ type TopicPayload = {
   status: EntityStatus;
   updatedAt: number;
   topic: Topic;
+  provenance?: LegacyResourceProvenance;
 };
 
 type SubTopicPayload = {
@@ -77,6 +90,7 @@ type SubTopicPayload = {
   status: EntityStatus;
   updatedAt: number;
   subTopic: SubTopic;
+  provenance?: LegacyResourceProvenance;
 };
 
 type PostPayload = {
@@ -85,6 +99,7 @@ type PostPayload = {
   status: EntityStatus;
   updatedAt: number;
   post: Post;
+  provenance?: LegacyResourceProvenance;
 };
 
 type ForumStructureSnapshot = {
@@ -271,6 +286,8 @@ const searchByPrefix = async (
     reverse: true,
     limit: 1000,
     offset: 0,
+    includeMetadata: true,
+    includeStatus: true,
   });
 
   return Array.isArray(search) ? search : [];
@@ -301,6 +318,8 @@ const mapLatestPayloads = <TPayload extends { updatedAt: number }, TKey>(
   payloads: Array<TPayload | null>,
   keyOf: (payload: TPayload) => TKey
 ) => {
+  // This selector is V1 display compatibility only. Its client timestamp
+  // never establishes V2 authority or mutation permission.
   const nextMap = new Map<TKey, TPayload>();
 
   payloads.filter(Boolean).forEach((payload) => {
@@ -321,7 +340,7 @@ const fetchTopicPayloads = async () => {
   const payloads = await mapWithConcurrency(topicResults, async (item) => {
     try {
       const raw = await fetchResource(item.name, item.identifier);
-      return parseTopicPayload(raw);
+      return parseTopicPayload(raw, item);
     } catch {
       failedCount += 1;
       return null;
@@ -340,7 +359,7 @@ const fetchSubTopicPayloads = async () => {
   const payloads = await mapWithConcurrency(subTopicResults, async (item) => {
     try {
       const raw = await fetchResource(item.name, item.identifier);
-      return parseSubTopicPayload(raw);
+      return parseSubTopicPayload(raw, item);
     } catch {
       failedCount += 1;
       return null;
@@ -358,7 +377,7 @@ const fetchPostPayloadsByPrefix = async (prefix: string) => {
   return mapWithConcurrency(postResults, async (item) => {
     try {
       const raw = await fetchResource(item.name, item.identifier);
-      return parsePostPayload(raw);
+      return parsePostPayload(raw, item);
     } catch {
       return null;
     }
@@ -604,7 +623,34 @@ const isPost = (value: unknown): value is Post => {
   );
 };
 
-const parseTopicPayload = (raw: unknown): TopicPayload | null => {
+const toLegacyProvenance = (
+  resource: SearchQdnResourceResult
+): LegacyResourceProvenance | undefined => {
+  if (
+    typeof resource.service !== 'string' ||
+    typeof resource.created !== 'number' ||
+    typeof resource.updated !== 'number'
+  ) {
+    return undefined;
+  }
+  return {
+    resource: {
+      service: resource.service,
+      publisherName: resource.name,
+      identifier: resource.identifier,
+      created: resource.created,
+      updated: resource.updated,
+      latestSignature: resource.latestSignature,
+    },
+    availability: 'available',
+    authorityState: 'UNRESOLVED',
+  };
+};
+
+const parseTopicPayload = (
+  raw: unknown,
+  resource: SearchQdnResourceResult
+): TopicPayload | null => {
   if (!isObject(raw) || raw.type !== 'topic') {
     return null;
   }
@@ -621,10 +667,14 @@ const parseTopicPayload = (raw: unknown): TopicPayload | null => {
     status,
     updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : Date.now(),
     topic,
+    provenance: toLegacyProvenance(resource),
   };
 };
 
-const parseSubTopicPayload = (raw: unknown): SubTopicPayload | null => {
+const parseSubTopicPayload = (
+  raw: unknown,
+  resource: SearchQdnResourceResult
+): SubTopicPayload | null => {
   if (!isObject(raw) || raw.type !== 'subtopic') {
     return null;
   }
@@ -641,10 +691,14 @@ const parseSubTopicPayload = (raw: unknown): SubTopicPayload | null => {
     status,
     updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : Date.now(),
     subTopic,
+    provenance: toLegacyProvenance(resource),
   };
 };
 
-const parsePostPayload = (raw: unknown): PostPayload | null => {
+const parsePostPayload = (
+  raw: unknown,
+  resource: SearchQdnResourceResult
+): PostPayload | null => {
   if (!isObject(raw) || raw.type !== 'post' || !isPost(raw.post)) {
     return null;
   }
@@ -680,6 +734,7 @@ const parsePostPayload = (raw: unknown): PostPayload | null => {
           : 0,
       likedByAddresses: sanitizeAddressList(raw.post.likedByAddresses),
     },
+    provenance: toLegacyProvenance(resource),
   };
 };
 
@@ -770,7 +825,20 @@ export const forumQdnService = {
         topics.some((topic) => topic.id === subTopic.topicId)
       );
 
-    const result = { topics, subTopics };
+    const result = {
+      topics,
+      subTopics,
+      legacy: {
+        authorityState: 'UNRESOLVED' as const,
+        topicRecords: topicPayloads.filter(
+          (payload): payload is TopicPayload => payload !== null
+        ),
+        subTopicRecords: subTopicPayloads.filter(
+          (payload): payload is SubTopicPayload => payload !== null
+        ),
+        failedResourceCount,
+      },
+    };
     endTiming({
       topicCount: topics.length,
       subTopicCount: subTopics.length,

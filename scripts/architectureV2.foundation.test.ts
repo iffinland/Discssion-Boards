@@ -3,6 +3,7 @@ import {
   reduceV2Creates,
   applyOwnerEdit,
   legacyCanMutate,
+  authorizeLegacyMutation,
 } from '../src/services/architectureV2/reducer.js';
 
 import { normalizeLegacyEntity } from '../src/services/architectureV2/legacy.js';
@@ -26,5 +27,8 @@ const forbidden = applyOwnerEdit(edited, record(2).metadata, { operation: 'owner
 assert.equal(forbidden.quarantined[forbidden.quarantined.length - 1]?.code, 'FORBIDDEN_FIELD');
 const legacy = normalizeLegacyEntity({ entityType: 'post', entityId: 'legacy-1', legacyStatus: 'available', payload: { author: 'alice' } });
 assert.equal(legacyCanMutate(legacy), false);
+assert.equal(authorizeLegacyMutation('UNRESOLVED').ok, false);
+assert.equal(authorizeLegacyMutation('QUARANTINED').ok, false);
+assert.equal(authorizeLegacyMutation('APPROVED').ok, true);
 assert.deepEqual(emptyV2State().entities, {});
 console.log('Architecture V2 foundation tests passed');

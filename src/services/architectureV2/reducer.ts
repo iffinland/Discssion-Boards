@@ -1,5 +1,5 @@
 import type { LegacyNormalizedEntity } from './legacy.js';
-import type { OwnerEdit, QdbV2Envelope, QdbV2ResourceMetadata, QuarantineRecord, V2EntityCreate } from './types.js';
+import type { LegacyAuthorityState, OwnerEdit, QdbV2Envelope, QdbV2ResourceMetadata, QuarantineRecord, V2EntityCreate } from './types.js';
 import { validateEntityCreate } from './validation.js';
 import type { IdentityValidator } from './validation.js';
 import { validateOwnerEditFields } from './fieldPolicy.js';
@@ -34,3 +34,12 @@ export const applyOwnerEdit = (state: V2State, metadata: QdbV2ResourceMetadata, 
 };
 
 export const legacyCanMutate = (entity: LegacyNormalizedEntity) => entity.authorityState === 'APPROVED';
+
+export const authorizeLegacyMutation = (authorityState: LegacyAuthorityState) =>
+  authorityState === 'APPROVED'
+    ? { ok: true as const }
+    : {
+        ok: false as const,
+        code: 'LEGACY_AUTHORITY_BLOCKED' as const,
+        detail: `legacy authority state ${authorityState} cannot authorize mutation`,
+      };
