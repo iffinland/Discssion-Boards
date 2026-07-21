@@ -1,10 +1,4 @@
-import type {
-  ForumRoleRegistry,
-  Post,
-  SubTopic,
-  Topic,
-  UserRole,
-} from '../../types/index.js';
+import type { Post, SubTopic, Topic, UserRole } from '../../types/index.js';
 import type { V2State } from './reducer.js';
 import type {
   QdbV2ResourceMetadata,
@@ -13,6 +7,15 @@ import type {
 } from './types.js';
 import type { IdentityValidator } from './validation.js';
 import { validateMetadata } from './validation.js';
+import {
+  resolveRole,
+  resolveRoleAt,
+  roleLineageEquals,
+  type RoleLineage,
+  type TrustedRoleAuthorizationState,
+} from './roles.js';
+
+export type { TrustedRoleAuthorizationState } from './roles.js';
 
 export type ModerationAction =
   | 'pin'
@@ -27,25 +30,21 @@ export type ModerationAction =
   | 'restore'
   | 'set-order';
 
-export type ModerationRoleVerificationStatus =
-  | 'VERIFIED'
-  | 'UNVERIFIED'
-  | 'UNAVAILABLE';
-
-export type TrustedRoleAuthorizationState = {
-  status: ModerationRoleVerificationStatus;
-  model: 'current-primary-registry-revalidation';
-  registry: ForumRoleRegistry;
-  metadata: QdbV2ResourceMetadata | null;
-  detail: string;
-};
-
-export type ModerationAuthorizationReference = {
+export type LegacyModerationAuthorizationReference = {
   model: 'current-primary-registry-revalidation';
   actorRole: UserRole;
   registryIdentifier: string | null;
   registrySignature: string | null;
 };
+
+export type V2ModerationAuthorizationReference = RoleLineage & {
+  model: 'v2-role-operation-history';
+  actorRole: UserRole;
+};
+
+export type ModerationAuthorizationReference =
+  | LegacyModerationAuthorizationReference
+  | V2ModerationAuthorizationReference;
 
 export type ModerationOperation = {
   operation: 'moderation';
@@ -246,13 +245,47 @@ const isModerationAction = (value: unknown): value is ModerationAction =>
 export const resolveRoleFromTrustedState = (
   address: string,
   state: TrustedRoleAuthorizationState
-): UserRole => {
-  const normalized = address.trim();
-  if (normalized === state.registry.primarySysOpAddress) return 'SysOp';
-  if (state.registry.sysOps.includes(normalized)) return 'SuperAdmin';
-  if (state.registry.admins.includes(normalized)) return 'Admin';
-  if (state.registry.moderators.includes(normalized)) return 'Moderator';
-  return 'Member';
+): UserRole => resolveRole(address, state.registry);
+
+const isAuthorizationReference = (
+  value: Record<string, unknown>
+): value is ModerationAuthorizationReference => {
+  if (!isUserRole(value.actorRole)) return false;
+  if (value.model === 'current-primary-registry-revalidation')
+    return (
+      hasOnlyKeys(value, [
+        'model',
+        'actorRole',
+        'registryIdentifier',
+        'registrySignature',
+      ]) &&
+      (typeof value.registryIdentifier === 'string' ||
+        value.registryIdentifier === null) &&
+      (typeof value.registrySignature === 'string' ||
+        value.registrySignature === null)
+    );
+  if (value.model !== 'v2-role-operation-history') return false;
+  if (
+    !hasOnlyKeys(value, [
+      'model',
+      'actorRole',
+      'bootstrapIdentifier',
+      'bootstrapSignature',
+      'previousOperationId',
+      'previousOperationSignature',
+    ])
+  )
+    return false;
+  const paired = (left: unknown, right: unknown) =>
+    (left === null && right === null) ||
+    (typeof left === 'string' &&
+      left.trim().length > 0 &&
+      typeof right === 'string' &&
+      right.trim().length > 0);
+  return (
+    paired(value.bootstrapIdentifier, value.bootstrapSignature) &&
+    paired(value.previousOperationId, value.previousOperationSignature)
+  );
 };
 
 export const isModerationEnvelope = (
@@ -284,12 +317,6 @@ export const isModerationEnvelope = (
       'reason',
       'orderValue',
     ]) &&
-    hasOnlyKeys(authorization, [
-      'model',
-      'actorRole',
-      'registryIdentifier',
-      'registrySignature',
-    ]) &&
     value.schema === 'qdb-v2' &&
     value.schemaVersion === 2 &&
     value.kind === 'operation' &&
@@ -315,12 +342,7 @@ export const isModerationEnvelope = (
         typeof body.orderValue === 'number' &&
         body.orderValue >= 0
       : body.orderValue === undefined) &&
-    authorization.model === 'current-primary-registry-revalidation' &&
-    isUserRole(authorization.actorRole) &&
-    (typeof authorization.registryIdentifier === 'string' ||
-      authorization.registryIdentifier === null) &&
-    (typeof authorization.registrySignature === 'string' ||
-      authorization.registrySignature === null)
+    isAuthorizationReference(authorization)
   );
 };
 
@@ -421,14 +443,19 @@ const dimensionForAction = (
   return 'order';
 };
 
-const roleStateChangedSinceClaim = (
-  operation: ModerationOperation,
-  state: TrustedRoleAuthorizationState
-) =>
-  operation.authorization.registrySignature !==
-    (state.metadata?.latestSignature ?? null) ||
-  operation.authorization.registryIdentifier !==
-    (state.metadata?.identifier ?? null);
+const authorizationMatchesCheckpoint = (
+  authorization: ModerationAuthorizationReference,
+  checkpoint: RoleLineage
+) => {
+  if (authorization.model === 'v2-role-operation-history')
+    return roleLineageEquals(authorization, checkpoint);
+  return (
+    checkpoint.previousOperationId === null &&
+    checkpoint.previousOperationSignature === null &&
+    authorization.registryIdentifier === checkpoint.bootstrapIdentifier &&
+    authorization.registrySignature === checkpoint.bootstrapSignature
+  );
+};
 
 const diagnostic = (
   code: ModerationDiagnosticCode,
@@ -533,45 +560,41 @@ const validateRecord = (
         roleState.detail
       ),
     };
-  const actorRole = resolveRoleFromTrustedState(body.actorAddress, roleState);
-  if (actorRole !== body.authorization.actorRole) {
-    const revoked =
-      ROLE_RANK[actorRole] < ROLE_RANK[body.authorization.actorRole] &&
-      roleStateChangedSinceClaim(body, roleState);
+  const historical = resolveRoleAt(roleState, record.metadata);
+  if (historical.ok === false)
     return {
       ok: false,
       diagnostic: diagnostic(
-        revoked ? 'MODERATION_ROLE_REVOKED' : 'MODERATION_ROLE_CLAIM_MISMATCH',
+        historical.code === 'ROLE_BOOTSTRAP_TRUST_FAILURE'
+          ? 'MODERATION_ROLE_STATE_UNAVAILABLE'
+          : 'MODERATION_ROLE_CLAIM_MISMATCH',
         record,
-        revoked
-          ? 'current trusted role state no longer authorizes the claimed role'
-          : 'payload role claim does not match current trusted role state'
+        historical.detail
       ),
     };
-  }
-  if (actorRole !== 'SysOp' && roleStateChangedSinceClaim(body, roleState))
-    return {
-      ok: false,
-      diagnostic: diagnostic(
-        'MODERATION_ROLE_STATE_UNAVAILABLE',
-        record,
-        'the referenced historical role-registry version is no longer independently verifiable'
-      ),
-    };
-  const registryOrderTime = roleState.metadata
-    ? (roleState.metadata.updated ?? roleState.metadata.created)
-    : null;
+  const actorRole = resolveRole(body.actorAddress, historical.registry);
   if (
-    actorRole !== 'SysOp' &&
-    registryOrderTime !== null &&
-    record.metadata.created < registryOrderTime
+    !authorizationMatchesCheckpoint(body.authorization, historical.checkpoint)
   )
+    return {
+      ok: false,
+      diagnostic: diagnostic(
+        ROLE_RANK[actorRole] < ROLE_RANK[body.authorization.actorRole]
+          ? 'MODERATION_ROLE_REVOKED'
+          : 'MODERATION_ROLE_CLAIM_MISMATCH',
+        record,
+        ROLE_RANK[actorRole] < ROLE_RANK[body.authorization.actorRole]
+          ? 'trusted prior role history no longer authorizes the claimed role at publication order'
+          : 'moderation authorization does not reference the trusted role checkpoint immediately preceding publication'
+      ),
+    };
+  if (actorRole !== body.authorization.actorRole)
     return {
       ok: false,
       diagnostic: diagnostic(
         'MODERATION_ROLE_CLAIM_MISMATCH',
         record,
-        'moderation publication predates the trusted registry version it claims'
+        'payload role claim does not match trusted role state at publication order'
       ),
     };
   const minimumRole = MINIMUM_ROLE[body.targetType][body.action];
@@ -584,9 +607,9 @@ const validateRecord = (
         `${actorRole} cannot ${body.action} ${body.targetType}`
       ),
     };
-  const targetOwnerRole = resolveRoleFromTrustedState(
+  const targetOwnerRole = resolveRole(
     target.walletAddress,
-    roleState
+    historical.registry
   );
   const sameWallet = target.walletAddress.trim() === body.actorAddress.trim();
   if (

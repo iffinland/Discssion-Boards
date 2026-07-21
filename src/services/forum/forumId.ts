@@ -67,7 +67,8 @@ export const generateForumEntityId = (
     | 'video'
     | 'poll'
     | 'option'
-    | 'moderation',
+    | 'moderation'
+    | 'role',
   ownerHint?: string
 ): string => {
   const timePart = encodeTime(Date.now(), TIME_PART_LENGTH);

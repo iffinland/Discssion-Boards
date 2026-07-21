@@ -15,6 +15,7 @@ import type { V2State } from '../src/services/architectureV2/reducer.js';
 import type { IdentityValidator } from '../src/services/architectureV2/validation.js';
 import { buildV2PostEnvelope } from '../src/services/architectureV2/runtime.js';
 import { forumQdnService } from '../src/services/qdn/forumQdnService.js';
+import { PRIMARY_SYSOP_ADDRESS } from '../src/services/qdn/forumRolesService.js';
 import type { Post, SubTopic, Topic, UserRole } from '../src/types/index.js';
 
 const assert = (condition: boolean, message: string) => {
@@ -84,7 +85,7 @@ const authority: V2State = {
 };
 const roleState: TrustedRoleAuthorizationState = {
   status: 'VERIFIED',
-  model: 'current-primary-registry-revalidation',
+  model: 'v2-role-operation-history',
   registry: {
     primarySysOpAddress: 'ROOT',
     sysOps: ['S'],
@@ -100,8 +101,23 @@ const roleState: TrustedRoleAuthorizationState = {
     updated: 0,
     latestSignature: 'role-current',
   },
+  checkpoint: {
+    bootstrapIdentifier: 'qdbm-roles-default',
+    bootstrapSignature: 'role-current',
+    previousOperationId: null,
+    previousOperationSignature: null,
+  },
+  timeline: [],
+  audit: [],
+  diagnostics: [],
   detail: 'verified test registry',
 };
+roleState.timeline.push({
+  metadata: roleState.metadata,
+  registry: roleState.registry,
+  checkpoint: roleState.checkpoint,
+  operationId: null,
+});
 const roleFor = (actor: string): UserRole =>
   actor === 'sysop'
     ? 'SysOp'
@@ -296,7 +312,31 @@ assert(
 const revokedState: TrustedRoleAuthorizationState = {
   ...roleState,
   registry: { ...roleState.registry, moderators: [], updatedAt: 2 },
-  metadata: { ...roleState.metadata!, latestSignature: 'role-revoked' },
+  checkpoint: {
+    ...roleState.checkpoint,
+    previousOperationId: 'role-revoke',
+    previousOperationSignature: 'role-revoked',
+  },
+  timeline: [
+    ...roleState.timeline,
+    {
+      metadata: {
+        service: 'DOCUMENT',
+        publisherName: 'sysop',
+        identifier: 'role-revoke',
+        created: 2,
+        updated: null,
+        latestSignature: 'role-revoked',
+      },
+      registry: { ...roleState.registry, moderators: [], updatedAt: 2 },
+      checkpoint: {
+        ...roleState.checkpoint,
+        previousOperationId: 'role-revoke',
+        previousOperationSignature: 'role-revoked',
+      },
+      operationId: 'role-revoke',
+    },
+  ],
 };
 const revoked = record({
   action: 'lock',
@@ -319,6 +359,30 @@ const changedRegistryState: TrustedRoleAuthorizationState = {
     updated: 500,
     latestSignature: 'role-new-version',
   },
+  checkpoint: {
+    bootstrapIdentifier: 'qdbm-roles-default',
+    bootstrapSignature: 'role-new-version',
+    previousOperationId: null,
+    previousOperationSignature: null,
+  },
+  timeline: [
+    {
+      metadata: {
+        ...roleState.metadata!,
+        created: 500,
+        updated: null,
+        latestSignature: 'role-new-version',
+      },
+      registry: { ...roleState.registry, updatedAt: 500 },
+      checkpoint: {
+        bootstrapIdentifier: 'qdbm-roles-default',
+        bootstrapSignature: 'role-new-version',
+        previousOperationId: null,
+        previousOperationSignature: null,
+      },
+      operationId: null,
+    },
+  ],
 };
 const historicalUnknown = record({
   action: 'lock',
@@ -330,7 +394,7 @@ const historicalUnknown = record({
 });
 assert(
   reduce([historicalUnknown], changedRegistryState).diagnostics[0]?.code ===
-    'MODERATION_ROLE_STATE_UNAVAILABLE',
+    'MODERATION_ROLE_CLAIM_MISMATCH',
   'an obsolete registry reference cannot be treated as historical proof'
 );
 const retroactiveGrant = record({
@@ -341,8 +405,12 @@ const retroactiveGrant = record({
   registrySignature: 'role-new-version',
   created: 400,
 });
-retroactiveGrant.envelope.body.authorization.registryIdentifier =
-  changedRegistryState.metadata?.identifier ?? null;
+if (
+  retroactiveGrant.envelope.body.authorization.model ===
+  'current-primary-registry-revalidation'
+)
+  retroactiveGrant.envelope.body.authorization.registryIdentifier =
+    changedRegistryState.metadata?.identifier ?? null;
 assert(
   reduce([retroactiveGrant], changedRegistryState).diagnostics[0]?.code ===
     'MODERATION_ROLE_CLAIM_MISMATCH',
@@ -744,6 +812,18 @@ testGlobal.qdnRequest = async (payload) => {
     const name = String(payload.name);
     return { owner: wallets[name] ?? (name === 'root-name' ? 'ROOT' : null) };
   }
+  if (action === 'FETCH_NODE_API')
+    return {
+      type: 'ARBITRARY',
+      method: 'PUT',
+      signature: 'runtime-role-signature',
+      creatorAddress: PRIMARY_SYSOP_ADDRESS,
+      timestamp: 2,
+      name: 'root-name',
+      identifier: 'qdbm-roles-default',
+      blockHeight: 2,
+      blockSequence: 0,
+    };
   if (action === 'SEARCH_QDN_RESOURCES') {
     const identifier = String(payload.identifier);
     if (identifier === 'qdbm-roles-default')
@@ -840,7 +920,7 @@ try {
 } catch (error) {
   untrustedRoleRejected =
     error instanceof Error &&
-    error.message.includes('MODERATION_ROLE_STATE_UNVERIFIED');
+    error.message.includes('MODERATION_INSUFFICIENT_ROLE');
 }
 assert(
   untrustedRoleRejected &&

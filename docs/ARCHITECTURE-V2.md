@@ -1,6 +1,6 @@
 # Discussion Boards Architecture V2
 
-Status: **Design prerequisite for review**
+Status: **Implemented through Phase 4 and delegated-role persistence issue #7**
 
 This document defines the Architecture V2 state, authority, validation, and
 migration model for Discussion Boards. It is the prerequisite deliverable for
@@ -36,11 +36,11 @@ targets.
 
 ### 2.1 Reference state inspected
 
-| Repository        | Path                               | Verified commit                                                    |
-| ----------------- | ---------------------------------- | ------------------------------------------------------------------ |
-| Discussion Boards | this repository                    | `f09b9f5ddef12a971d2442a821f2359ccfac864e` (Phase 4 worktree base) |
-| Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                         |
-| Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                         |
+| Repository        | Path                               | Verified commit                                                     |
+| ----------------- | ---------------------------------- | ------------------------------------------------------------------- |
+| Discussion Boards | this repository                    | `1919e97f5e7415a7b8852bd6e6e158f0411756ae` (issue #7 worktree base) |
+| Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                          |
+| Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                          |
 
 The Discussion Boards production source reviewed by architecture issue #1
 remains commit `f20f93c833ef74dc83a22a59be2d1c6682e96bde`.
@@ -54,6 +54,8 @@ GitHub specification inspected:
 - issue #3, Phase 1 ownership/state authorization;
 - issue #4, Phase 2 independent reactions;
 - issue #5, Phase 3 native polls;
+- issue #6, Phase 4 moderation and role authorization;
+- issue #7, delegated role-registry persistence;
 - the dependent phased issue workflow through issue #14.
 
 ### 2.2 Three classes of platform statement
@@ -1270,59 +1272,121 @@ Phase 4 re-verified Qortium Core commit
 `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` and Qortium Home commit
 `a41e5f9678d7f20d7fb77a223c45fddc0096632e`.
 
-The current Home bridge passes `service`, `name`, `identifier`, Core `created`
-and `updated`, `latestSignature`, and resource status through QDN search. It
-also supports exact identifier search, resource fetch, single publication, and
-multiple-resource publication. Current Core name APIs expose current names by
-wallet address and current owner data for a name. They do not expose a
-reliable historical name-to-wallet binding or a fetchable history of prior
-role-registry payload versions.
+The current Home bridge passes `service`, `name`, `identifier`, Core `created`,
+`updated`, `latestSignature`, and resource status through QDN search. It also
+supports exact/prefix discovery, resource fetch and publication. Its read-only
+`FETCH_NODE_API` route can retrieve the immutable transaction for a QDN latest
+signature. At the referenced Core commit,
+`/transactions/signature/{signature}` exposes ARBITRARY method, timestamp,
+signature, creator address, name, identifier, block height, and block sequence.
+These response details are currently verified implementation facts and must be
+re-checked before later migration work.
 
-The Phase 4 role interface consequently has three explicit states:
+Historical QDN name ownership is still unavailable. Current name ownership
+must not be substituted for it. Issue #7 therefore binds each new immutable
+role operation to the Core transaction creator address at publication time.
+This is stronger evidence than an embedded actor or a current ownership lookup.
 
-- `VERIFIED`: the current canonical role registry was fetched under a current
-  QDN name owned by the fixed primary SysOp wallet, or no registry exists and
-  only the fixed primary SysOp role is authoritative;
-- `UNVERIFIED`: role-registry resources exist only outside that trust root, or
-  trusted resources are malformed;
-- `UNAVAILABLE`: current primary-name ownership, discovery, or all trusted
-  payloads are unavailable.
+The fixed primary SysOp wallet
+`QN1XYwwmTzXemusDb9p7T1nKJEACLHGgaL` remains the trust root. Existing role
+assignments bootstrap from the latest canonical `qdbm-roles-default` resource
+whose publisher is currently among that wallet's QDN names **and** whose latest
+Core transaction proves that the fixed wallet published the selected resource
+revision. Name-cache staleness cannot make a transferred name authoritative.
+If no primary-owned registry exists, the fixed primary alone is the verified
+bootstrap. Complete role-specific discovery is paged in trusted order; hitting
+the 5,000-resource safety budget makes role state unavailable rather than
+silently truncating it.
 
-Only `VERIFIED` state authorizes moderation. `UNVERIFIED` and `UNAVAILABLE`
-fail closed. The current delegated publication mismatch described by GitHub
-issue #7 is not trusted as a shortcut: a delegated role snapshot published
-under the delegate's name cannot grant moderation authority merely because the
-UI reported success.
+The role interface remains `VERIFIED`, `UNVERIFIED`, or `UNAVAILABLE`; only
+`VERIFIED` authorizes role or moderation writes. Missing discovery, payload,
+transaction evidence, or bootstrap proof fails closed. Delegated legacy
+full-registry snapshots are reported as
+`ROLE_LEGACY_DELEGATED_SNAPSHOT_IGNORED` and remain historical evidence only.
+They never enter the trusted state.
 
-### 23.2 Temporal role rule and verified limitation
+### 23.2 Authoritative role-operation history
 
-Phase 4 uses the explicit model
-`current-primary-registry-revalidation`. Every new publication force-refreshes
-the trusted current registry, binds actor name to the actual QDN publisher and
-wallet, and records the trusted registry identifier/signature used for audit.
-Reload revalidates every operation against the current trusted registry.
+Issue #7 selects independent append-only role operations over a
+primary-SysOp-owned legacy bootstrap. A primary-only snapshot would not provide
+real delegated administration, while trusting delegated snapshots would allow
+whole-state replacement. A proposal/approval workflow is not required because
+current Core transaction evidence can bind each immutable operation to its
+publisher wallet. The selected model provides delegated persistence,
+prior-state authorization, deterministic reduction, and a historical audit.
 
-This is a deliberately conservative temporal rule forced by the current lack
-of independently verifiable historical role payloads:
+Each `qdbm-v2-role-*` resource contains one strict operation:
 
-- operations after a revocation are rejected;
-- a payload role claim never grants authority;
-- a non-SysOp operation is accepted only while its registry identifier and
-  signature match the currently verifiable canonical registry version, and
-  its trusted publication time is not earlier than that registry version;
-- any later registry version makes earlier non-SysOp authorization
-  `MODERATION_ROLE_STATE_UNAVAILABLE`, even if the change was unrelated;
-- loss or reduction of the actor's role reports `MODERATION_ROLE_REVOKED`.
+```ts
+interface RoleOperation {
+  operation: 'role-change';
+  action: 'assign' | 'revoke';
+  targetAddress: string;
+  role: 'Moderator' | 'Admin' | 'SuperAdmin';
+  actorName: string;
+  actorAddress: string;
+  prior: {
+    bootstrapIdentifier: string | null;
+    bootstrapSignature: string | null;
+    previousOperationId: string | null;
+    previousOperationSignature: string | null;
+  };
+  reason?: string;
+}
+```
 
-These conservative invalidations are explicit exceptions to the preferred
-durable historical rule. They prevent both a revoked role from retaining
-authority and a later role grant from retroactively authorizing an earlier
-forged operation. They are safer than preserving an operation using an
-unverifiable embedded role claim. The fixed primary SysOp trust root does not
-depend on a mutable registry version. GitHub issue #7 must introduce a
-trustworthy role history or primary approval/attestation model before delegated
-past authorization can remain valid across registry changes. Phase 4 does not
-invent that history.
+The envelope is `qdb-v2`, schema version 2, `kind: 'operation'`, and
+`recordType: 'role-change'`; `targetId` equals `targetAddress` and the trusted
+identifier equals `recordId`. Unknown fields, mutable resource revisions, and
+SysOp as a delegable role are rejected. Operations order only by trusted Core
+`created`, then latest signature, identifier, and publisher. Client dates and
+legacy `updatedAt` do not participate.
+
+The reducer starts with the trusted bootstrap checkpoint. Every operation must
+name that checkpoint and the immediately preceding accepted operation. It is
+then authenticated and authorized against the role state that existed before
+it. Accepted operations alone advance the checkpoint. Concurrent branches from
+one checkpoint resolve deterministically: the first trusted-order branch wins
+and stale branches fail `ROLE_LINEAGE_MISMATCH` for explicit retry. Repeated
+assignment and revocation are idempotent; conflicting reuse of one
+publisher/identifier is quarantined.
+
+The enforced role-change matrix is:
+
+| Actor              | Assign/revoke SuperAdmin | Assign/revoke Admin | Assign/revoke Moderator |
+| ------------------ | ------------------------ | ------------------- | ----------------------- |
+| SysOp              | yes                      | yes                 | yes                     |
+| SuperAdmin         | no                       | yes                 | yes                     |
+| Admin              | no                       | no                  | yes                     |
+| Moderator / Member | no                       | no                  | no                      |
+
+No actor may change their own role, a peer/higher target, or a role equal to or
+above their own. The primary SysOp cannot be removed, replaced, or transferred.
+A role operation never carries a full registry snapshot.
+
+Before publication, the command verifies the current actor name/wallet binding
+and the current trusted checkpoint. On reload, the immutable transaction must
+match resource signature, timestamp, name, identifier, and claimed actor
+wallet. This transaction-time evidence—not the actor payload—supports
+historical reduction. Successful publication followed by refresh/discovery
+failure returns retryable `role-state-refresh` partial success and never rolls
+back authority. Publication failure does not change local trusted state. No
+compatibility registry or index write is required for a role operation.
+
+Stable role diagnostics include `MALFORMED_ROLE_OPERATION`,
+`ROLE_FORGED_ACTOR`, `ROLE_PUBLISHER_WALLET_MISMATCH`,
+`ROLE_UNTRUSTED_PUBLISHER`, `ROLE_INSUFFICIENT_PRIOR_ROLE`,
+`ROLE_SELF_ESCALATION_ATTEMPT`, `ROLE_FORBIDDEN_ASSIGNMENT`,
+`ROLE_FORBIDDEN_REVOCATION`, `ROLE_TARGET_HIERARCHY_VIOLATION`,
+`ROLE_TARGET_ROLE_MISMATCH`, `ROLE_PROTECTED_SYSOP_MUTATION`,
+`ROLE_OPERATION_CONFLICT`, `ROLE_LINEAGE_MISMATCH`,
+`ROLE_IDENTIFIER_MISMATCH`, `ROLE_TRANSACTION_MISMATCH`,
+`ROLE_RESOURCE_REPUBLISHED`, `ROLE_RESOURCE_UNAVAILABLE`,
+`ROLE_TRANSACTION_UNAVAILABLE`, `ROLE_NAME_WALLET_UNAVAILABLE`,
+`ROLE_MISSING_TRUSTED_METADATA`,
+`ROLE_LEGACY_DELEGATED_SNAPSHOT_IGNORED`,
+`ROLE_OPERATION_PREDATES_BOOTSTRAP`, `ROLE_BOOTSTRAP_TRUST_FAILURE`, and
+`ROLE_DISCOVERY_INCOMPLETE`.
 
 ### 23.3 Operation schema and identifiers
 
@@ -1346,10 +1410,12 @@ interface ModerationOperation {
   actorName: string;
   actorAddress: string;
   authorization: {
-    model: 'current-primary-registry-revalidation';
+    model: 'v2-role-operation-history';
     actorRole: 'Member' | 'Moderator' | 'Admin' | 'SuperAdmin' | 'SysOp';
-    registryIdentifier: string | null;
-    registrySignature: string | null;
+    bootstrapIdentifier: string | null;
+    bootstrapSignature: string | null;
+    previousOperationId: string | null;
+    previousOperationSignature: string | null;
   };
   reason?: string;
   orderValue?: number; // non-negative integer; set-order only
@@ -1381,8 +1447,9 @@ tombstones remain separate owner operation domains. Role management is never a
 moderation action.
 
 An actor may moderate their own target where the action is allowed. For a
-target owned by different trusted staff, the actor's current role must be
-strictly higher than the target owner's current role. A Moderator therefore
+target owned by different trusted staff, the actor's trusted role at operation
+publication order must be strictly higher than the target owner's role at that
+same checkpoint. A Moderator therefore
 cannot moderate Moderator/Admin/Super Admin/SysOp-owned content; an Admin may
 act on Moderator-owned content but not Admin-or-higher content. SysOp remains
 the highest role.
@@ -1402,8 +1469,9 @@ edits. An operation is accepted only when:
 3. the target exists in authoritative V2 state and its type matches;
 4. actual QDN publisher equals `actorName`;
 5. current name-to-wallet binding equals `actorAddress`;
-6. trusted role state is `VERIFIED` and its resolved role equals the audit
-   claim;
+6. trusted role state is `VERIFIED`, the operation references the immediately
+   preceding trusted role checkpoint, and the role at that historical point
+   equals the audit claim;
 7. the role may perform the target/action and staff hierarchy rules pass.
 
 Moderation identifiers are append-only: a resource with non-null Core
@@ -1415,6 +1483,15 @@ Different records reusing one `recordId` are all excluded with
 `MODERATION_CONFLICT`. Each state dimension retains the winning action, actor
 name/address/role, reason, trusted creation time, signature, and identifier so
 state is auditable without a log UI.
+
+Legacy Phase 4 moderation envelopes using
+`current-primary-registry-revalidation` remain valid only when they order after
+the trusted bootstrap and before the first accepted V2 role operation, and
+their registry identifier/signature match that bootstrap. Later V2 role
+changes do not invalidate a prior accepted moderation operation. A revoked
+actor cannot publish a new action because its immediately preceding historical
+checkpoint resolves to `Member` (or another insufficient role). A later grant
+cannot authorize an earlier operation.
 
 Stable diagnostics include:
 
@@ -1494,7 +1571,8 @@ The GitHub dependency graph remains authoritative. Current planned order:
 6. **Phase 5:** verified transaction-based tips.
 7. **Phase 6:** paginated QDN discovery and rebuildable indexes.
 8. Correct restricted-access/privacy terminology.
-9. Correct delegated role persistence where not completed in Phase 4.
+9. **Delegated-role persistence (#7):** append-only authenticated role
+   operations over the trusted legacy bootstrap (completed before Phase 5).
 10. Harden bridge detection and large-file source-token publication.
 11. Align Home display settings and localization.
 12. Restore dependency/lint/format baseline.
@@ -1609,9 +1687,8 @@ Each operation phase tests:
 ### Deferred to their workflow phases
 
 1. Native poll UI result model and create-signature-to-poll-ID resolution.
-2. Durable historical role authorization after role loss, dependent on the
-   trusted role-history/persistence design in GitHub issue #7. Phase 4 uses the
-   explicit conservative current-registry revalidation rule in section 23.
+2. A future, explicitly reviewed SysOp-transfer mechanism. The fixed trust root
+   is intentionally immutable in the current role-operation model.
 3. Core confirmation threshold and exact validation fields for tips.
 4. Pagination safety budgets and index partition sizes.
 5. Encryption design, if true confidentiality is ever required.

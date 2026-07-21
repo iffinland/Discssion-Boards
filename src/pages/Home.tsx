@@ -1043,14 +1043,20 @@ const Home = ({ searchQuery }: HomeProps) => {
     }
 
     setRoleAddress('');
-    setRoleFeedback(`${roleLabelByType[roleType]} role updated successfully.`);
+    setRoleFeedback(
+      result.partial
+        ? (result.error ?? 'Role operation published; refresh is pending.')
+        : `${roleLabelByType[roleType]} role updated successfully.`
+    );
   };
 
   const handleRemoveRole = async (address: string) => {
     const result = await removeRoleAssignment(address);
     setRoleFeedback(
       result.ok
-        ? 'Role removed successfully.'
+        ? result.partial
+          ? (result.error ?? 'Role revocation published; refresh is pending.')
+          : 'Role removed successfully.'
         : (result.error ?? 'Unable to remove forum role.')
     );
   };

@@ -1514,7 +1514,7 @@ export const useForumCommands = ({
         return { ok: false, error: 'Wallet address is required.' };
       }
 
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !authenticatedAddress) {
         return { ok: false, error: 'Authenticate with Qortium first.' };
       }
 
@@ -1552,29 +1552,26 @@ export const useForumCommands = ({
         };
       }
 
-      const nextRegistry: ForumRoleRegistry = {
-        ...roleRegistry,
-        sysOps:
-          input.role === 'SuperAdmin'
-            ? normalizeAddressList([...roleRegistry.sysOps, address])
-            : roleRegistry.sysOps.filter((entry) => entry !== address),
-        admins:
-          input.role === 'Admin'
-            ? normalizeAddressList([...roleRegistry.admins, address])
-            : roleRegistry.admins.filter((entry) => entry !== address),
-        moderators:
-          input.role === 'Moderator'
-            ? normalizeAddressList([...roleRegistry.moderators, address])
-            : roleRegistry.moderators.filter((entry) => entry !== address),
-        updatedAt: Date.now(),
-      };
-
       try {
-        const published = await forumRolesService.publishRoleRegistry(
-          nextRegistry,
-          currentUser.username
-        );
-        setRoleRegistry(published);
+        const published = await forumRolesService.publishRoleOperation({
+          action: 'assign',
+          role: input.role,
+          targetAddress: address,
+          actorName: currentUser.username,
+          actorAddress: authenticatedAddress,
+        });
+        if (!published.ok)
+          return {
+            ok: false,
+            error: `[${published.code}] ${published.detail}`,
+          };
+        if ('partial' in published)
+          return {
+            ok: true,
+            error: published.detail,
+            partial: published.partial,
+          };
+        setRoleRegistry(published.state.registry);
         return { ok: true };
       } catch (error) {
         return {
@@ -1604,7 +1601,7 @@ export const useForumCommands = ({
         return { ok: false, error: 'Wallet address is required.' };
       }
 
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !authenticatedAddress) {
         return { ok: false, error: 'Authenticate with Qortium first.' };
       }
 
@@ -1661,26 +1658,39 @@ export const useForumCommands = ({
         };
       }
 
-      const nextRegistry: ForumRoleRegistry = {
-        ...roleRegistry,
-        sysOps: roleRegistry.sysOps.filter(
-          (entry) => entry !== normalizedAddress
-        ),
-        admins: roleRegistry.admins.filter(
-          (entry) => entry !== normalizedAddress
-        ),
-        moderators: roleRegistry.moderators.filter(
-          (entry) => entry !== normalizedAddress
-        ),
-        updatedAt: Date.now(),
-      };
+      const targetRole = isTargetSuperAdmin
+        ? 'SuperAdmin'
+        : isTargetAdmin
+          ? 'Admin'
+          : isTargetModerator
+            ? 'Moderator'
+            : null;
+      if (!targetRole)
+        return {
+          ok: false,
+          error: 'The target does not currently hold a delegated role.',
+        };
 
       try {
-        const published = await forumRolesService.publishRoleRegistry(
-          nextRegistry,
-          currentUser.username
-        );
-        setRoleRegistry(published);
+        const published = await forumRolesService.publishRoleOperation({
+          action: 'revoke',
+          role: targetRole,
+          targetAddress: normalizedAddress,
+          actorName: currentUser.username,
+          actorAddress: authenticatedAddress,
+        });
+        if (!published.ok)
+          return {
+            ok: false,
+            error: `[${published.code}] ${published.detail}`,
+          };
+        if ('partial' in published)
+          return {
+            ok: true,
+            error: published.detail,
+            partial: published.partial,
+          };
+        setRoleRegistry(published.state.registry);
         return { ok: true };
       } catch (error) {
         return {

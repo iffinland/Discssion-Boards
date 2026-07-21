@@ -965,10 +965,9 @@ export const forumQdnService = {
       actorName: input.actorName,
       actorAddress: input.actorAddress,
       authorization: {
-        model: 'current-primary-registry-revalidation',
+        model: 'v2-role-operation-history',
         actorRole: resolveRoleFromTrustedState(input.actorAddress, roleState),
-        registryIdentifier: roleState.metadata?.identifier ?? null,
-        registrySignature: roleState.metadata?.latestSignature ?? null,
+        ...roleState.checkpoint,
       },
       ...(input.reason?.trim() ? { reason: input.reason.trim() } : {}),
       ...(input.action === 'set-order' ? { orderValue: input.orderValue } : {}),

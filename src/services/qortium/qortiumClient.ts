@@ -21,6 +21,7 @@ const READ_ACTIONS = new Set([
   'GET_NAME_DATA',
   'GET_LIST',
   'GET_BALANCE',
+  'FETCH_NODE_API',
 ]);
 
 type RequestBridge = {

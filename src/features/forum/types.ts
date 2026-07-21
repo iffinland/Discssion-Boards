@@ -9,7 +9,8 @@ export type ForumMutationResult = {
       | 'native-poll-confirmation'
       | 'poll-reference'
       | 'poll-result-refresh'
-      | 'moderation-operations';
+      | 'moderation-operations'
+      | 'role-state-refresh';
     retryable: true;
   };
   nativePollRecovery?: import('../../services/architectureV2/types').NativePollRecovery;

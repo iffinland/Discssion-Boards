@@ -19,7 +19,8 @@
     "test:architecture-v2-runtime": "tsc scripts/architectureV2.runtime.test.ts --outDir .tmp-tests --module ES2020 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --skipLibCheck && node .tmp-tests/scripts/architectureV2.runtime.test.js",
     "test:architecture-v2-reactions": "tsc scripts/architectureV2.reactions.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --skipLibCheck && node .tmp-tests/scripts/architectureV2.reactions.test.js",
     "test:architecture-v2-polls": "tsc scripts/architectureV2.polls.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.polls.test.js",
-    "test:architecture-v2-moderation": "tsc scripts/architectureV2.moderation.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.moderation.test.js"
+    "test:architecture-v2-moderation": "tsc scripts/architectureV2.moderation.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.moderation.test.js",
+    "test:architecture-v2-roles": "tsc scripts/architectureV2.roles.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.roles.test.js"
   },
   "dependencies": {
     "i18next": "^25.1.2",
