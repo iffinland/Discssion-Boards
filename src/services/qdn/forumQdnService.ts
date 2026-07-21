@@ -12,6 +12,12 @@ import {
 import { getUserAccount } from '../qortium/walletService';
 import { perfDebugTimeStart } from '../perf/perfDebug';
 import type { LegacyAuthorityState, QdbV2ResourceMetadata } from '../architectureV2/types';
+import { buildV2Envelope, buildV2OwnerEditEnvelope, isV2EntityEnvelope, reduceV2RuntimeRecords, toV2RuntimeRecord, type V2RuntimeRecord, type V2RuntimeState } from '../architectureV2/runtime.js';
+import type { OwnerEdit } from '../architectureV2/types.js';
+import { applyOwnerEdit } from '../architectureV2/reducer.js';
+import type { V2EntityCreate } from '../architectureV2/types.js';
+import { validateEntityCreate } from '../architectureV2/validation.js';
+import type { IdentityValidator } from '../architectureV2/validation.js';
 
 const FORUM_SERVICE = import.meta.env.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_IMAGE_SERVICE =
@@ -782,6 +788,94 @@ const toPublishResource = (
 };
 
 export const forumQdnService = {
+  async publishV2OwnerEdit(edit: OwnerEdit, ownerName: string, identity: IdentityValidator) {
+    const current = await this.loadV2AuthorityState(identity);
+    const target = current.authoritative.entities[edit.targetId];
+    if (!target) throw new Error('[UNAUTHORIZED_PUBLISHER] target V2 entity is not authoritative');
+    const metadata: QdbV2ResourceMetadata = {
+      service: FORUM_SERVICE,
+      publisherName: ownerName,
+      identifier: `${FORUM_IDENTIFIER_PREFIX}v2-operation-${edit.targetId}`,
+      created: Date.now(),
+      updated: Date.now(),
+    };
+    const quarantineCount = current.authoritative.quarantined.length;
+    const checked = applyOwnerEdit(current.authoritative, metadata, edit, identity);
+    const rejection = checked.quarantined.length > quarantineCount
+      ? checked.quarantined[checked.quarantined.length - 1]
+      : undefined;
+    if (rejection) throw new Error(`[${rejection.code}] ${rejection.detail}`);
+    const envelope = buildV2OwnerEditEnvelope(edit, `${FORUM_IDENTIFIER_PREFIX}v2-edit-${edit.targetId}-${Date.now()}`);
+    await requestQortium<unknown>({ action: 'PUBLISH_QDN_RESOURCE', service: FORUM_SERVICE, name: ownerName, identifier: envelope.recordId, tags: ['forum', 'qdb-v2', 'owner-edit'], data64: encodeBase64Json(envelope) });
+    return envelope;
+  },
+
+  async publishV2Entity(body: V2EntityCreate, identity: IdentityValidator) {
+    const envelope = buildV2Envelope(body, `${FORUM_IDENTIFIER_PREFIX}v2-${body.entityType}-${body.entityId}`);
+    const now = Date.now();
+    const metadata: QdbV2ResourceMetadata = {
+      service: FORUM_SERVICE,
+      publisherName: body.publisherName,
+      identifier: envelope.recordId,
+      created: now,
+      updated: now,
+    };
+    const validation = validateEntityCreate(metadata, envelope, identity);
+    if (validation.ok === false) {
+      throw new Error(`[${validation.code}] ${validation.detail}`);
+    }
+    await requestQortium<unknown>({
+      action: 'PUBLISH_QDN_RESOURCE',
+      service: FORUM_SERVICE,
+      name: body.publisherName,
+      identifier: envelope.recordId,
+      tags: ['forum', 'qdb-v2', body.entityType],
+      data64: encodeBase64Json(envelope),
+    });
+    return envelope;
+  },
+
+  async loadV2AuthorityState(identity: IdentityValidator): Promise<V2RuntimeState> {
+    const results = await searchByPrefix(`${FORUM_IDENTIFIER_PREFIX}v2-`);
+    const records: V2RuntimeRecord[] = [];
+    const diagnostics: V2RuntimeState['diagnostics'] = [];
+    for (const item of results) {
+      if (
+        typeof item.service !== 'string' ||
+        typeof item.created !== 'number' ||
+        typeof item.updated !== 'number'
+      ) {
+        diagnostics.push({ code: 'MISSING_TRUSTED_METADATA', identifier: item.identifier });
+        continue;
+      }
+      let payload: unknown;
+      try {
+        payload = await fetchResource(item.name, item.identifier);
+      } catch {
+        diagnostics.push({ code: 'UNAVAILABLE_RESOURCE', identifier: item.identifier });
+        continue;
+      }
+      if (!isV2EntityEnvelope(payload)) {
+        diagnostics.push({ code: 'MALFORMED_ENVELOPE', identifier: item.identifier });
+        continue;
+      }
+      const metadata: QdbV2ResourceMetadata = {
+        service: item.service,
+        publisherName: item.name,
+        identifier: item.identifier,
+        created: item.created,
+        updated: item.updated,
+        latestSignature: item.latestSignature,
+      };
+      records.push(toV2RuntimeRecord(metadata, payload));
+    }
+    const reduced = reduceV2RuntimeRecords(records, identity);
+    return {
+      authoritative: reduced.authoritative,
+      diagnostics: [...diagnostics, ...reduced.diagnostics],
+    };
+  },
+
   async loadForumStructure() {
     const endTiming = perfDebugTimeStart('forum-structure-load');
     const [topicResult, subTopicResult] = await Promise.all([

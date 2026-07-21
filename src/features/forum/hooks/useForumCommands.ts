@@ -314,8 +314,30 @@ export const useForumCommands = ({
         allowedAddresses,
       };
 
+      let v2Committed = false;
       try {
         const nextTopics = [newTopic, ...topics];
+        await forumQdnService.publishV2Entity(
+          {
+            entityType: 'topic',
+            entityId: newTopic.id,
+            publisherName: currentUser.username,
+            walletAddress: authenticatedAddress ?? '',
+            title: newTopic.title,
+            description: newTopic.description,
+          },
+          {
+            validatePublisher: (metadata, claimed) =>
+              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+            validateWalletBinding: (_name, wallet) =>
+              wallet.trim() === authenticatedAddress?.trim()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+          }
+        );
+        v2Committed = true;
         const topicResource = forumQdnService.buildTopicPublishResource(
           newTopic,
           currentUser.username
@@ -334,6 +356,9 @@ export const useForumCommands = ({
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
         return { ok: true };
       } catch (error) {
+        if (v2Committed) {
+          return { ok: true, partial: { pending: 'compatibility', retryable: true }, error: 'V2 topic committed; legacy compatibility publication is pending.' };
+        }
         return {
           ok: false,
           error:
@@ -343,6 +368,7 @@ export const useForumCommands = ({
     },
     [
       currentUser,
+      authenticatedAddress,
       isAuthenticated,
       buildTopicDirectoryIndexResource,
       subTopics,
@@ -640,8 +666,31 @@ export const useForumCommands = ({
         lastModeratedAt: null,
       };
 
+      let v2Committed = false;
       try {
         const nextSubTopics = [newSubTopic, ...subTopics];
+        await forumQdnService.publishV2Entity(
+          {
+            entityType: 'thread',
+            entityId: newSubTopic.id,
+            parentTopicId: newSubTopic.topicId,
+            publisherName: currentUser.username,
+            walletAddress: authenticatedAddress ?? '',
+            title: newSubTopic.title,
+            description: newSubTopic.description,
+          },
+          {
+            validatePublisher: (metadata, claimed) =>
+              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+            validateWalletBinding: (_name, wallet) =>
+              wallet.trim() === authenticatedAddress?.trim()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+          }
+        );
+        v2Committed = true;
         const subTopicResource = forumQdnService.buildSubTopicPublishResource(
           newSubTopic,
           currentUser.username
@@ -660,6 +709,9 @@ export const useForumCommands = ({
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
         return { ok: true, subTopicId: newSubTopic.id };
       } catch (error) {
+        if (v2Committed) {
+          return { ok: true, subTopicId: newSubTopic.id, partial: { pending: 'compatibility', retryable: true }, error: 'V2 thread committed; legacy compatibility publication is pending.' };
+        }
         return {
           ok: false,
           error:
@@ -680,6 +732,28 @@ export const useForumCommands = ({
       subTopics,
       topics,
     ]
+  );
+
+  const updateTopicOwnerContent = useCallback(
+    async (input: { topicId: string; title: string; description: string }): Promise<ForumMutationResult> => {
+      const target = topics.find((topic) => topic.id === input.topicId);
+      if (!target) return { ok: false, error: 'Main topic not found.' };
+      if (!isAuthenticated) return { ok: false, error: 'Authenticate with Qortium first.' };
+      try {
+        await forumQdnService.publishV2OwnerEdit(
+          { operation: 'owner-edit', targetType: 'topic', targetId: target.id, publisherName: currentUser.username, walletAddress: authenticatedAddress ?? '', changes: { title: input.title.trim(), description: input.description.trim() } },
+          currentUser.username,
+          {
+            validatePublisher: (metadata, claimed) => metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+            validateWalletBinding: (_name, wallet) => wallet.trim() === authenticatedAddress?.trim() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+          }
+        );
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : '[LEGACY_AUTHORITY_BLOCKED] owner authority unavailable.' };
+      }
+    },
+    [authenticatedAddress, currentUser.username, isAuthenticated, topics]
   );
 
   const updateTopicSettings = useCallback(
@@ -783,6 +857,28 @@ export const useForumCommands = ({
       subTopics,
       topics,
     ]
+  );
+
+  const updateSubTopicOwnerContent = useCallback(
+    async (input: { subTopicId: string; title: string; description: string }): Promise<ForumMutationResult> => {
+      const target = subTopics.find((subTopic) => subTopic.id === input.subTopicId);
+      if (!target) return { ok: false, error: 'Sub-topic not found.' };
+      if (!isAuthenticated) return { ok: false, error: 'Authenticate with Qortium first.' };
+      try {
+        await forumQdnService.publishV2OwnerEdit(
+          { operation: 'owner-edit', targetType: 'thread', targetId: target.id, publisherName: currentUser.username, walletAddress: authenticatedAddress ?? '', changes: { title: input.title.trim(), description: input.description.trim() } },
+          currentUser.username,
+          {
+            validatePublisher: (metadata, claimed) => metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+            validateWalletBinding: (_name, wallet) => wallet.trim() === authenticatedAddress?.trim() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+          }
+        );
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : '[LEGACY_AUTHORITY_BLOCKED] owner authority unavailable.' };
+      }
+    },
+    [authenticatedAddress, currentUser.username, isAuthenticated, subTopics]
   );
 
   const updateSubTopicSettings = useCallback(
@@ -1386,8 +1482,31 @@ export const useForumCommands = ({
         likedByAddresses: [],
       };
 
+      let v2Committed = false;
       try {
         const nextPosts = [...posts, newPost];
+        await forumQdnService.publishV2Entity(
+          {
+            entityType: 'post',
+            entityId: newPost.id,
+            parentThreadId: newPost.subTopicId,
+            parentPostId: newPost.parentPostId,
+            publisherName: currentUser.username,
+            walletAddress: authenticatedAddress ?? '',
+            content: newPost.content,
+          },
+          {
+            validatePublisher: (metadata, claimed) =>
+              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+            validateWalletBinding: (_name, wallet) =>
+              wallet.trim() === authenticatedAddress?.trim()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+          }
+        );
+        v2Committed = true;
         const nextSubTopics = subTopics.map((subTopic) =>
           subTopic.id === input.subTopicId
             ? {
@@ -1442,6 +1561,9 @@ export const useForumCommands = ({
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
         return { ok: true };
       } catch (error) {
+        if (v2Committed) {
+          return { ok: true, partial: { pending: 'compatibility', retryable: true }, error: 'V2 post committed; compatibility/index publication is pending.' };
+        }
         return {
           ok: false,
           error:
@@ -1491,9 +1613,33 @@ export const useForumCommands = ({
         return { ok: false, error: 'Only owner can edit this post.' };
       }
 
-      const authority = authorizeLegacyMutation('UNRESOLVED');
-      if (!authority.ok) {
-        return { ok: false, error: `[${authority.code}] ${authority.detail}` };
+      try {
+        await forumQdnService.publishV2OwnerEdit(
+          {
+            operation: 'owner-edit',
+            targetType: 'post',
+            targetId: target.id,
+            publisherName: currentUser.username,
+            walletAddress: authenticatedAddress ?? '',
+            changes: { content },
+          },
+          currentUser.username,
+          {
+            validatePublisher: (metadata, claimed) =>
+              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+            validateWalletBinding: (_name, wallet) =>
+              wallet.trim() === authenticatedAddress?.trim()
+                ? { ok: true }
+                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+          }
+        );
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : '[LEGACY_AUTHORITY_BLOCKED] V2 owner authority unavailable.',
+        };
       }
 
       const updatedAt = new Date().toISOString();
@@ -2194,7 +2340,9 @@ export const useForumCommands = ({
     reorderTopics,
     reorderPinnedSubTopics,
     createSubTopic,
+    updateTopicOwnerContent,
     updateTopicSettings,
+    updateSubTopicOwnerContent,
     updateSubTopicSettings,
     toggleSubTopicSolved,
     upsertRoleAssignment,

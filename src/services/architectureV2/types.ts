@@ -20,6 +20,8 @@ export type QdbV2Envelope<TBody> = {
   body: TBody;
   clientCreatedAt?: string;
 };
+export type QdbV2CreateEnvelope<TBody> = Omit<QdbV2Envelope<TBody>, 'kind'> & { kind: 'entity-create' };
+export type QdbV2OperationEnvelope<TBody> = Omit<QdbV2Envelope<TBody>, 'kind'> & { kind: 'operation' };
 
 export type V2Identity = { publisherName: string; walletAddress: string };
 export type TopicCreate = V2Identity & { entityType: 'topic'; entityId: string; title: string; description: string };
@@ -31,8 +33,12 @@ export type OwnerEdit = {
   operation: 'owner-edit';
   targetType: V2EntityType;
   targetId: string;
+  publisherName: string;
+  walletAddress: string;
   changes: Record<string, unknown>;
 };
+
+export type V2OwnerEditEnvelope = QdbV2OperationEnvelope<OwnerEdit>;
 
 export type RejectionCode =
   | 'MALFORMED_ENVELOPE'
@@ -45,4 +51,3 @@ export type RejectionCode =
   | 'V2_OVERRIDES_LEGACY';
 
 export type QuarantineRecord = { code: RejectionCode; recordId: string; detail: string };
-

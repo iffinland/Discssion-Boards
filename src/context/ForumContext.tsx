@@ -109,6 +109,8 @@ type ForumActionsContextValue = {
     subTopicAccess: TopicAccess;
     allowedAddresses: string[];
   }) => Promise<ForumMutationResult>;
+  updateTopicOwnerContent: (input: { topicId: string; title: string; description: string }) => Promise<ForumMutationResult>;
+  updateSubTopicOwnerContent: (input: { subTopicId: string; title: string; description: string }) => Promise<ForumMutationResult>;
   updateSubTopicSettings: (input: {
     subTopicId: string;
     topicId?: string;
@@ -227,7 +229,9 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
     reorderTopics,
     reorderPinnedSubTopics,
     createSubTopic,
+    updateTopicOwnerContent,
     updateTopicSettings,
+    updateSubTopicOwnerContent,
     updateSubTopicSettings,
     toggleSubTopicSolved,
     upsertRoleAssignment,
@@ -430,7 +434,9 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       reorderTopics,
       reorderPinnedSubTopics,
       createSubTopic,
+      updateTopicOwnerContent,
       updateTopicSettings,
+      updateSubTopicOwnerContent,
       updateSubTopicSettings,
       toggleSubTopicSolved,
       upsertRoleAssignment,
@@ -456,7 +462,9 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       reorderTopics,
       reorderPinnedSubTopics,
       createSubTopic,
+      updateTopicOwnerContent,
       updateTopicSettings,
+      updateSubTopicOwnerContent,
       updateSubTopicSettings,
       toggleSubTopicSolved,
       upsertRoleAssignment,

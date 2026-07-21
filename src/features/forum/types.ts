@@ -2,6 +2,7 @@ export type ForumMutationResult = {
   ok: boolean;
   error?: string;
   subTopicId?: string;
+  partial?: { pending: 'compatibility' | 'derived-index'; retryable: true };
 };
 
 export type ForumPollDraft = {
