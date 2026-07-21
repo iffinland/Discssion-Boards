@@ -5,6 +5,7 @@ import type {
   RejectionCode,
   V2EntityCreate,
 } from './types.js';
+import { isV2AttachmentReferenceList } from './fieldPolicy.js';
 
 export type ValidationResult =
   | { ok: true }
@@ -81,6 +82,16 @@ export const validateEntityCreate = (
       ok: false,
       code: 'MALFORMED_ENVELOPE',
       detail: 'entity envelope target mismatch',
+    };
+  if (
+    envelope.body.entityType === 'post' &&
+    envelope.body.attachments !== undefined &&
+    !isV2AttachmentReferenceList(envelope.body.attachments)
+  )
+    return {
+      ok: false,
+      code: 'MALFORMED_ENVELOPE',
+      detail: 'invalid post attachment references',
     };
   const publisher = identity.validatePublisher(
     metadata,

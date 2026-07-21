@@ -1,5 +1,3 @@
-declare const qdnRequest: unknown;
-
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
 };
@@ -24,7 +22,7 @@ const READ_ACTIONS = new Set([
   'FETCH_NODE_API',
 ]);
 
-type RequestBridge = {
+export type RequestBridge = {
   request: (payload: Record<string, unknown>) => Promise<unknown> | unknown;
 };
 
@@ -32,6 +30,40 @@ type BridgeRequestFunction = RequestBridge['request'];
 
 interface QortiumRequestOptions {
   timeoutMs?: number;
+}
+
+export type QortiumBridgeSource = 'globalThis' | 'window' | 'parent' | 'top';
+
+export type QortiumBridgeResolution =
+  | {
+      status: 'AVAILABLE';
+      source: QortiumBridgeSource;
+      bridge: RequestBridge;
+    }
+  | {
+      status: 'UNAVAILABLE' | 'MALFORMED' | 'INACCESSIBLE';
+      source?: QortiumBridgeSource;
+    };
+
+export type QortiumBridgeEnvironment = {
+  globalScope: unknown;
+  windowScope?: unknown;
+};
+
+export type QortiumRequestErrorCode =
+  | 'BRIDGE_UNAVAILABLE'
+  | 'BRIDGE_MALFORMED'
+  | 'BRIDGE_INACCESSIBLE'
+  | 'REQUEST_TIMEOUT';
+
+export class QortiumRequestError extends Error {
+  readonly code: QortiumRequestErrorCode;
+
+  constructor(code: QortiumRequestErrorCode, detail: string) {
+    super(`[${code}] ${detail}`);
+    this.name = 'QortiumRequestError';
+    this.code = code;
+  }
 }
 
 export type QortiumResourceToPublish = {
@@ -109,66 +141,105 @@ const isBridgeRequestFunction = (
   return typeof value === 'function';
 };
 
-const getWindowBridge = () => {
-  if (typeof window === 'undefined') {
-    return null;
+type PropertyRead =
+  | { status: 'AVAILABLE'; value: unknown }
+  | { status: 'UNAVAILABLE' | 'INACCESSIBLE' };
+
+const readProperty = (target: unknown, property: string): PropertyRead => {
+  if (
+    (typeof target !== 'object' || target === null) &&
+    typeof target !== 'function'
+  ) {
+    return { status: 'UNAVAILABLE' };
   }
 
-  const localRequest = (window as unknown as { qdnRequest?: unknown })
-    .qdnRequest;
-  if (isBridgeRequestFunction(localRequest)) {
-    return localRequest;
-  }
-
-  let parentRequest: unknown = null;
   try {
-    parentRequest = (window as unknown as { parent?: { qdnRequest?: unknown } })
-      .parent?.qdnRequest;
+    if (!Reflect.has(target, property)) {
+      return { status: 'UNAVAILABLE' };
+    }
+
+    return { status: 'AVAILABLE', value: Reflect.get(target, property) };
   } catch {
-    parentRequest = null;
+    return { status: 'INACCESSIBLE' };
   }
-
-  if (isBridgeRequestFunction(parentRequest)) {
-    return parentRequest;
-  }
-
-  let topRequest: unknown = null;
-  try {
-    topRequest = (window as unknown as { top?: { qdnRequest?: unknown } }).top
-      ?.qdnRequest;
-  } catch {
-    topRequest = null;
-  }
-
-  if (isBridgeRequestFunction(topRequest)) {
-    return topRequest;
-  }
-
-  return null;
 };
 
-const getRequestBridge = (): RequestBridge | null => {
-  if (isBridgeRequestFunction(qdnRequest)) {
-    return { request: qdnRequest };
+const inspectBridgeProperty = (
+  target: unknown,
+  source: QortiumBridgeSource
+): QortiumBridgeResolution => {
+  const result = readProperty(target, 'qdnRequest');
+  if (result.status !== 'AVAILABLE') {
+    return { status: result.status, source };
   }
 
-  const globalQdnRequest = (
-    globalThis as typeof globalThis & { qdnRequest?: unknown }
-  ).qdnRequest;
-  if (isBridgeRequestFunction(globalQdnRequest)) {
-    return { request: globalQdnRequest };
+  if (!isBridgeRequestFunction(result.value)) {
+    return {
+      status:
+        result.value === null || result.value === undefined
+          ? 'UNAVAILABLE'
+          : 'MALFORMED',
+      source,
+    };
   }
 
-  const windowQdnRequest = getWindowBridge();
-  if (isBridgeRequestFunction(windowQdnRequest)) {
-    return { request: windowQdnRequest };
+  return {
+    status: 'AVAILABLE',
+    source,
+    bridge: { request: result.value },
+  };
+};
+
+const defaultBridgeEnvironment = (): QortiumBridgeEnvironment => ({
+  globalScope: globalThis,
+  windowScope: typeof window === 'undefined' ? undefined : window,
+});
+
+export const resolveQortiumRequestBridge = (
+  environment: QortiumBridgeEnvironment = defaultBridgeEnvironment()
+): QortiumBridgeResolution => {
+  const candidates: Array<{
+    source: QortiumBridgeSource;
+    target?: unknown;
+    inaccessible?: boolean;
+  }> = [{ source: 'globalThis', target: environment.globalScope }];
+
+  if (environment.windowScope !== undefined) {
+    candidates.push({ source: 'window', target: environment.windowScope });
+
+    for (const source of ['parent', 'top'] as const) {
+      const frame = readProperty(environment.windowScope, source);
+      if (frame.status === 'AVAILABLE') {
+        candidates.push({ source, target: frame.value });
+      } else if (frame.status === 'INACCESSIBLE') {
+        candidates.push({ source, inaccessible: true });
+      }
+    }
   }
 
-  return null;
+  let failure: Exclude<QortiumBridgeResolution, { status: 'AVAILABLE' }> = {
+    status: 'UNAVAILABLE',
+  };
+  for (const candidate of candidates) {
+    const resolution: QortiumBridgeResolution = candidate.inaccessible
+      ? { status: 'INACCESSIBLE', source: candidate.source }
+      : inspectBridgeProperty(candidate.target, candidate.source);
+    if (resolution.status === 'AVAILABLE') {
+      return resolution;
+    }
+    if (
+      failure.status === 'UNAVAILABLE' &&
+      resolution.status !== 'UNAVAILABLE'
+    ) {
+      failure = resolution;
+    }
+  }
+
+  return failure;
 };
 
 export const isQortiumRequestAvailable = () => {
-  return getRequestBridge() !== null;
+  return resolveQortiumRequestBridge().status === 'AVAILABLE';
 };
 
 const sleep = async (durationMs: number) => {
@@ -178,21 +249,43 @@ const sleep = async (durationMs: number) => {
 };
 
 const waitForQortiumRequest = async () => {
-  const immediate = getRequestBridge();
-  if (immediate) {
+  const immediate = resolveQortiumRequestBridge();
+  if (immediate.status === 'AVAILABLE') {
     return immediate;
   }
 
+  let latest: QortiumBridgeResolution = immediate;
   const startedAt = Date.now();
   while (Date.now() - startedAt < QORTIUM_REQUEST_WAIT_MS) {
     await sleep(QORTIUM_REQUEST_POLL_MS);
-    const bridge = getRequestBridge();
-    if (bridge) {
-      return bridge;
+    latest = resolveQortiumRequestBridge();
+    if (latest.status === 'AVAILABLE') {
+      return latest;
     }
   }
 
-  return null;
+  return latest;
+};
+
+const toBridgeError = (
+  resolution: Exclude<QortiumBridgeResolution, { status: 'AVAILABLE' }>
+) => {
+  if (resolution.status === 'MALFORMED') {
+    return new QortiumRequestError(
+      'BRIDGE_MALFORMED',
+      'Qortium bridge is present but is not callable. Reload Qortium Home and try again.'
+    );
+  }
+  if (resolution.status === 'INACCESSIBLE') {
+    return new QortiumRequestError(
+      'BRIDGE_INACCESSIBLE',
+      'Qortium bridge could not be accessed from this frame. Open the app directly through Qortium Home.'
+    );
+  }
+  return new QortiumRequestError(
+    'BRIDGE_UNAVAILABLE',
+    'Qortium bridge unavailable. Open this app through Qortium Home to use publishing and wallet actions.'
+  );
 };
 
 export const requestQortium = async <TResponse>(
@@ -210,16 +303,16 @@ export const requestQortium = async <TResponse>(
   const maxAttempts = READ_ACTIONS.has(action) ? READ_RETRY_COUNT + 1 : 1;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const bridge = await waitForQortiumRequest();
+    const resolution = await waitForQortiumRequest();
 
-    if (!bridge) {
-      throw new Error(
-        'QDN request interface is not available in this environment.'
-      );
+    if (resolution.status !== 'AVAILABLE') {
+      throw toBridgeError(resolution);
     }
 
     let didTimeout = false;
-    const baseRequestPromise = Promise.resolve(bridge.request(payload));
+    const baseRequestPromise = Promise.resolve().then(() =>
+      resolution.bridge.request(payload)
+    );
     baseRequestPromise.catch(() => {
       if (!didTimeout) {
         return;
@@ -231,7 +324,8 @@ export const requestQortium = async <TResponse>(
       timeoutHandle = setTimeout(() => {
         didTimeout = true;
         reject(
-          new Error(
+          new QortiumRequestError(
+            'REQUEST_TIMEOUT',
             `Qortium request timed out after ${timeoutMs / 1000} seconds (${label}).`
           )
         );

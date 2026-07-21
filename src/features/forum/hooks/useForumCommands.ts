@@ -17,8 +17,10 @@ import { threadPostCache } from '../../../services/forum/threadPostCache';
 import { recordRecentPostMutation } from '../../../services/forum/postReconciliation';
 import {
   publishMultipleQortiumResources,
+  QortiumRequestError,
   type QortiumResourceToPublish,
 } from '../../../services/qortium/qortiumClient';
+import { QdnFilePublicationError } from '../../../services/qortium/qdnFilePublication';
 import { forumQdnService } from '../../../services/qdn/forumQdnService';
 import type {
   ThreadSearchSnapshot,
@@ -71,6 +73,25 @@ const FORUM_VIDEO_LIMITS = {
   maxBytes: 100 * 1024 * 1024,
   acceptedTypes: ['video/mp4', 'video/webm', 'video/ogg'],
 } as const;
+
+const toUploadFailure = (error: unknown, fallback: string) => {
+  if (error instanceof QdnFilePublicationError) {
+    return {
+      ok: false as const,
+      code: error.code,
+      error: error.message,
+      recovery: error.recovery,
+    };
+  }
+  if (error instanceof QortiumRequestError) {
+    return { ok: false as const, code: error.code, error: error.message };
+  }
+  return {
+    ok: false as const,
+    code: 'PUBLICATION_FAILED',
+    error: error instanceof Error ? error.message : fallback,
+  };
+};
 
 type UseForumCommandsParams = {
   currentUser: User;
@@ -2015,6 +2036,7 @@ export const useForumCommands = ({
           publisherName: currentUser.username,
           walletAddress: authenticatedAddress ?? '',
           content: newPost.content,
+          attachments: newPost.attachments,
           pollReference,
         };
         const publishV2Post = () =>
@@ -2223,7 +2245,7 @@ export const useForumCommands = ({
             targetId: target.id,
             publisherName: currentUser.username,
             walletAddress: authenticatedAddress ?? '',
-            changes: { content },
+            changes: { content, attachments },
           },
           currentUser.username,
           {
@@ -2287,6 +2309,7 @@ export const useForumCommands = ({
               publisherName: currentUser.username,
               walletAddress: authenticatedAddress ?? '',
               content: updatedPost.content,
+              attachments: updatedPost.attachments,
               pollReference: isNativePostPoll(updatedPost.poll)
                 ? toPersistedNativePollReference(updatedPost.poll)
                 : null,
@@ -2972,11 +2995,7 @@ export const useForumCommands = ({
           }),
         };
       } catch (error) {
-        return {
-          ok: false,
-          error:
-            error instanceof Error ? error.message : 'Failed to upload image.',
-        };
+        return toUploadFailure(error, 'Failed to upload image.');
       }
     },
     [currentUser.username, isAuthenticated]
@@ -2991,7 +3010,8 @@ export const useForumCommands = ({
       if (!isAllowedAttachmentFile(file)) {
         return {
           ok: false,
-          error: 'Unsupported attachment type. Use TXT, MD or ZIP.',
+          code: 'UNSUPPORTED_FILE_TYPE',
+          error: '[UNSUPPORTED_FILE_TYPE] Use a TXT, MD or ZIP attachment.',
         };
       }
 
@@ -2999,10 +3019,11 @@ export const useForumCommands = ({
       if (file.size > sizeLimit) {
         return {
           ok: false,
+          code: 'FILE_TOO_LARGE',
           error:
             getAttachmentExtension(file.name) === 'zip'
-              ? 'ZIP attachment is too large. Maximum allowed size is 10 MB.'
-              : 'Text attachment is too large. Maximum allowed size is 2 MB.',
+              ? '[FILE_TOO_LARGE] ZIP attachments are limited to 10 MiB.'
+              : '[FILE_TOO_LARGE] Text attachments are limited to 2 MiB.',
         };
       }
 
@@ -3025,13 +3046,7 @@ export const useForumCommands = ({
           },
         };
       } catch (error) {
-        return {
-          ok: false,
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Failed to upload attachment.',
-        };
+        return toUploadFailure(error, 'Failed to upload attachment.');
       }
     },
     [currentUser.username, isAuthenticated]
@@ -3051,14 +3066,16 @@ export const useForumCommands = ({
       ) {
         return {
           ok: false,
-          error: 'Unsupported video type. Use MP4, WEBM or OGG.',
+          code: 'UNSUPPORTED_FILE_TYPE',
+          error: '[UNSUPPORTED_FILE_TYPE] Use an MP4, WEBM or OGG video.',
         };
       }
 
       if (file.size > FORUM_VIDEO_LIMITS.maxBytes) {
         return {
           ok: false,
-          error: 'Video is too large. Maximum allowed size is 100 MB.',
+          code: 'FILE_TOO_LARGE',
+          error: '[FILE_TOO_LARGE] Videos are limited to 100 MiB.',
         };
       }
 
@@ -3079,11 +3096,7 @@ export const useForumCommands = ({
           }),
         };
       } catch (error) {
-        return {
-          ok: false,
-          error:
-            error instanceof Error ? error.message : 'Failed to upload video.',
-        };
+        return toUploadFailure(error, 'Failed to upload video.');
       }
     },
     [currentUser.username, isAuthenticated]

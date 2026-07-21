@@ -40,17 +40,23 @@ export type ForumPollDraft = {
 export type ForumUploadImageResult = {
   ok: boolean;
   error?: string;
+  code?: string;
+  recovery?: import('../../services/qortium/qdnFilePublication').QdnFilePublicationRecovery;
   imageTag?: string;
 };
 
 export type ForumUploadAttachmentResult = {
   ok: boolean;
   error?: string;
+  code?: string;
+  recovery?: import('../../services/qortium/qdnFilePublication').QdnFilePublicationRecovery;
   attachment?: import('../../types').PostAttachment;
 };
 
 export type ForumUploadVideoResult = {
   ok: boolean;
   error?: string;
+  code?: string;
+  recovery?: import('../../services/qortium/qdnFilePublication').QdnFilePublicationRecovery;
   videoTag?: string;
 };

@@ -1,7 +1,8 @@
 # Discussion Boards Architecture V2
 
 Status: **Implemented through Phase 6, delegated-role persistence issue #7,
-and restricted-access terminology issue #9**
+restricted-access terminology issue #9, and bridge/publication hardening issue
+#11**
 
 This document defines the Architecture V2 state, authority, validation, and
 migration model for Discussion Boards. It is the prerequisite deliverable for
@@ -37,16 +38,17 @@ targets.
 
 ### 2.1 Reference state inspected
 
-| Repository        | Path                               | Verified commit                                                    |
-| ----------------- | ---------------------------------- | ------------------------------------------------------------------ |
-| Discussion Boards | this repository                    | `3f17fb329f8f2419454c18b6c1f3c383027b858f` (Phase 6 worktree base) |
-| Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                         |
-| Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                         |
+| Repository        | Path                               | Verified commit                                                      |
+| ----------------- | ---------------------------------- | -------------------------------------------------------------------- |
+| Discussion Boards | this repository                    | `eaba239cb7120abf9bf57166ea8b9de0868c0876` (issue #11 worktree base) |
+| Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                           |
+| Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                           |
 
 The Discussion Boards production source reviewed by architecture issue #1
 remains commit `f20f93c833ef74dc83a22a59be2d1c6682e96bde`.
-The later Discussion Boards commit above is the clean Phase 5 implementation
-base and includes the completed earlier Architecture V2 phases.
+The later Discussion Boards commit above is the clean issue #11 worktree base
+and includes the completed Architecture V2 phases through issue #10 plus the
+restricted-access correction in issue #9.
 
 GitHub specification inspected:
 
@@ -59,6 +61,7 @@ GitHub specification inspected:
 - issue #7, delegated role-registry persistence;
 - issue #8, verified transaction-reference tips;
 - issue #10, scalable QDN pagination and rebuildable indexes;
+- issue #11, Qortium bridge detection and large-file publication;
 - the dependent phased issue workflow through issue #14.
 
 ### 2.2 Three classes of platform statement
@@ -227,8 +230,8 @@ not Post entity fields in V2.
 
 Post attachments are references to separately published QDN resources. Their
 service, publisher, identifier, filename, media type, and size are claims that
-must be validated before use. Large-file publication mechanics are deferred to
-the bridge/large-file phase.
+must be validated before use. New publication uses the issue #11 size-aware
+bridge boundary in section 24.9 and `docs/QORTIUM-BRIDGE-PUBLICATION.md`.
 
 ## 6. Application payload envelope
 
@@ -2051,6 +2054,28 @@ backup/recovery, lost keys, multi-device use, and Core/Home capability
 re-verification. Until that work is approved and implemented, the application
 must not expose an “Encrypted/private” discussion option.
 
+### 24.9 Qortium bridge and file-publication boundary (#11)
+
+All bridge use is centralized behind a guarded resolver. The currently
+verified callable bridge is searched in deterministic `globalThis`, `window`,
+`parent`, then `top` order. Missing, malformed, inaccessible, and callable
+states are distinct. Secure actions fail predictably outside Home and are
+never emulated.
+
+New files up to and including 2 MiB may use bounded inline base64. Larger
+accepted files, up to the verified Home limit of 100 MiB, must use Home's
+`SELECT_QDN_PUBLISH_SOURCE` token and a single-resource publish. A token failure
+never falls back to large inline data. Exact resource confirmation and a
+versioned identifier-stable recovery record prevent an accepted/ambiguous
+attempt from allocating a duplicate identifier on retry.
+
+Media-resource publication remains independent of V2 entity authority. Only a
+confirmed resource reference can later enter an allowed V2 Post create/edit;
+the upload itself cannot mutate Post content or another operation domain.
+Legacy tags and references remain compatibility-readable. The verified Home
+and Core contracts, error taxonomy, platform memory caveat, and manual stress
+procedure are recorded in `docs/QORTIUM-BRIDGE-PUBLICATION.md`.
+
 ## 25. Phased migration boundaries
 
 The GitHub dependency graph remains authoritative. Current planned order:
@@ -2073,7 +2098,9 @@ The GitHub dependency graph remains authoritative. Current planned order:
    minimization (implemented).
 9. **Delegated-role persistence (#7):** append-only authenticated role
    operations over the trusted legacy bootstrap (completed before Phase 5).
-10. Harden bridge detection and large-file source-token publication.
+10. **Bridge/publication hardening (#11):** guarded bridge resolution, bounded
+    inline publication, source-token large-file publication, and recoverable
+    exact-identifier confirmation (implemented).
 11. Align Home display settings and localization.
 12. Restore dependency/lint/format baseline.
 13. Add QAVS manifest, license, version, and release metadata.
@@ -2135,7 +2162,13 @@ Fixture families:
     titles, excerpts, and inaccessible authoritative content do not enter
     official-UI results;
 30. missing V1 access classification proving a V2 Topic/Thread becomes partial
-    and fails closed instead of defaulting public.
+    and fails closed instead of defaulting public;
+31. callable, missing, malformed, throwing, and cross-origin bridge contexts;
+32. exact 2 MiB and 100 MiB file boundaries plus unsupported/oversized files;
+33. source-token cancellation/failure and accepted-but-unconfirmed publication
+    with identifier-stable retry;
+34. legacy image, attachment, and video references proving the new transport
+    requires no destructive migration.
 
 Fixtures that represent live QDN records must preserve the resource metadata
 needed to reproduce ordering and identity decisions.
@@ -2220,6 +2253,25 @@ Each operation phase tests:
 - no encrypted/private option or ad-hoc encryption scheme is introduced;
 - access, prior Architecture V2, rich-text, and production-build checks pass.
 
+### 27.6 Bridge and publication hardening acceptance (#11)
+
+- no bridge path evaluates an undeclared identifier or bypasses the guarded
+  centralized resolver;
+- supported global/window/frame contexts are deterministic, while malformed,
+  throwing, inaccessible, and unavailable contexts return stable diagnostics;
+- outside-Home secure actions fail predictably without fake signing;
+- files through 2 MiB use a bounded inline path and larger supported files use
+  Home source tokens without page-side full-file base64 conversion;
+- source-token failure never silently falls back to inline publication;
+- cancellation, rejection, preparation, bridge, confirmation, and ambiguous
+  submit outcomes remain distinct;
+- accepted/unconfirmed attempts preserve identifier/signature evidence and
+  retry cannot allocate a duplicate identifier;
+- existing media/reference readers and V2 owner/operation authority boundaries
+  remain unchanged;
+- the dedicated bridge/publication suite, all prior Architecture V2 suites,
+  rich-text checks, lint/format checks, and production build pass.
+
 ## 28. Open decisions
 
 ### Blocking automatic legacy authority migration
@@ -2237,6 +2289,5 @@ Each operation phase tests:
    is intentionally immutable in the current role-operation model.
 3. Encryption design, tracked as a separate architecture issue only if true
    confidentiality becomes a confirmed product requirement.
-4. Large-file source-token behavior on every supported Home platform.
 
 Deferred decisions may not violate the invariants in section 3.

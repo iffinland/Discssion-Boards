@@ -28,6 +28,29 @@ const reject = (
   ...state,
   quarantined: [...state.quarantined, { code, recordId: id, detail }],
 });
+const sameAttachmentReferences = (
+  left: Extract<V2EntityCreate, { entityType: 'post' }>['attachments'],
+  right: Extract<V2EntityCreate, { entityType: 'post' }>['attachments']
+) => {
+  const leftReferences = left ?? [];
+  const rightReferences = right ?? [];
+  return (
+    leftReferences.length === rightReferences.length &&
+    leftReferences.every((reference, index) => {
+      const other = rightReferences[index];
+      return (
+        other !== undefined &&
+        reference.id === other.id &&
+        reference.service === other.service &&
+        reference.name === other.name &&
+        reference.identifier === other.identifier &&
+        reference.filename === other.filename &&
+        reference.mimeType === other.mimeType &&
+        reference.size === other.size
+      );
+    })
+  );
+};
 const sameEntityCreate = (left: V2EntityCreate, right: V2EntityCreate) => {
   if (
     left.entityType !== right.entityType ||
@@ -49,6 +72,7 @@ const sameEntityCreate = (left: V2EntityCreate, right: V2EntityCreate) => {
       left.parentThreadId === right.parentThreadId &&
       left.parentPostId === right.parentPostId &&
       left.content === right.content &&
+      sameAttachmentReferences(left.attachments, right.attachments) &&
       sameNativePollReference(left.pollReference, right.pollReference)
     );
   return false;

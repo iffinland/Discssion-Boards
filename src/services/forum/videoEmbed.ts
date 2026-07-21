@@ -1,6 +1,6 @@
-import { ensureQdnResourceReady } from '../qdn/qdnReadiness';
-import { discoverQdnResources } from '../qdn/qdnPagination';
-import { requestQortium } from '../qortium/qortiumClient';
+import { ensureQdnResourceReady } from '../qdn/qdnReadiness.js';
+import { discoverQdnResources } from '../qdn/qdnPagination.js';
+import { requestQortium } from '../qortium/qortiumClient.js';
 
 export type ForumVideoReference = {
   service: 'VIDEO';

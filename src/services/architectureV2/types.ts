@@ -76,12 +76,22 @@ export type ThreadCreate = V2Identity & {
   title: string;
   description: string;
 };
+export type V2AttachmentReference = {
+  id: string;
+  service: string;
+  name: string;
+  identifier: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+};
 export type PostCreate = V2Identity & {
   entityType: 'post';
   entityId: string;
   parentThreadId: string;
   parentPostId: string | null;
   content: string;
+  attachments?: V2AttachmentReference[];
   pollReference?: NativePollReference | null;
 };
 export type V2EntityCreate = TopicCreate | ThreadCreate | PostCreate;

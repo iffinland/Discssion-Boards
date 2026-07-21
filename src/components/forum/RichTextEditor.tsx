@@ -24,6 +24,7 @@ import {
   encodeQdnVideoTag,
   parseForumVideoInput,
 } from '../../services/forum/videoEmbed';
+import { QDN_INLINE_FILE_MAX_BYTES } from '../../services/qortium/qdnFilePublication';
 import AppModal from '../common/AppModal';
 import RichTextToolsModal from './RichTextToolsModal';
 
@@ -221,12 +222,14 @@ const RichTextEditor = ({
         file.type as (typeof RICH_TEXT_IMAGE_LIMITS.acceptedTypes)[number]
       )
     ) {
-      setEditorInfo('Unsupported image type. Use JPG, PNG, WEBP or GIF.');
+      setEditorInfo(
+        '[UNSUPPORTED_FILE_TYPE] Use a JPG, PNG, WEBP or GIF image.'
+      );
       return;
     }
 
     if (file.size > RICH_TEXT_IMAGE_LIMITS.maxBytes) {
-      setEditorInfo('Image is too large. Maximum allowed size is 2 MB.');
+      setEditorInfo('[FILE_TOO_LARGE] Images are limited to 2 MiB.');
       return;
     }
 
@@ -282,6 +285,11 @@ const RichTextEditor = ({
       const nextAttachments = [...attachments];
 
       for (const file of selectedFiles) {
+        if (file.size > QDN_INLINE_FILE_MAX_BYTES) {
+          setEditorInfo(
+            `Large attachment selected (${(file.size / (1024 * 1024)).toFixed(2)} MiB). Qortium Home will ask you to choose the same file again for memory-safe publication.`
+          );
+        }
         const uploaded = await onUploadAttachment(file);
         if (
           nextAttachments.some(
@@ -349,17 +357,21 @@ const RichTextEditor = ({
         file.type as (typeof VIDEO_UPLOAD_LIMITS.acceptedTypes)[number]
       )
     ) {
-      setEditorInfo('Unsupported video type. Use MP4, WEBM or OGG.');
+      setEditorInfo('[UNSUPPORTED_FILE_TYPE] Use an MP4, WEBM or OGG video.');
       return;
     }
 
     if (file.size > VIDEO_UPLOAD_LIMITS.maxBytes) {
-      setEditorInfo('Video is too large. Maximum allowed size is 100 MB.');
+      setEditorInfo('[FILE_TOO_LARGE] Videos are limited to 100 MiB.');
       return;
     }
 
     try {
-      setEditorInfo('Uploading video to QDN...');
+      setEditorInfo(
+        file.size > QDN_INLINE_FILE_MAX_BYTES
+          ? `Large video selected (${(file.size / (1024 * 1024)).toFixed(2)} MiB). Qortium Home will ask you to choose the same file again for memory-safe publication.`
+          : 'Uploading video to QDN...'
+      );
       const videoTag = await onUploadVideo(file, videoTitle);
       insertRawAtCursor(videoTag);
       setVideoInput('');

@@ -14,6 +14,7 @@ import {
   requestQortium,
   type QortiumResourceToPublish,
 } from '../qortium/qortiumClient.js';
+import { publishQdnFileResource } from '../qortium/qdnFilePublication.js';
 import {
   getUserAccount,
   resolveNameWalletAddress,
@@ -214,19 +215,6 @@ const encodeBase64Json = (value: unknown): string => {
   bytes.forEach((byte) => {
     binary += String.fromCharCode(byte);
   });
-
-  return btoa(binary);
-};
-
-const fileToBase64 = async (file: File): Promise<string> => {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  let binary = '';
-
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
-  }
 
   return btoa(binary);
 };
@@ -2135,25 +2123,19 @@ export const forumQdnService = {
     const identifier = toImageIdentifier(imageId);
     assertIdentifierLength(identifier);
 
-    await requestQortium<unknown>(
-      {
-        action: 'PUBLISH_QDN_RESOURCE',
-        service: FORUM_IMAGE_SERVICE,
-        name: resolvedOwner,
-        identifier,
-        filename: file.name,
-        data64: await fileToBase64(file),
-      },
-      {
-        timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
-      }
-    );
-
-    return {
+    const published = await publishQdnFileResource({
+      file,
       service: FORUM_IMAGE_SERVICE,
       name: resolvedOwner,
       identifier,
-      filename: file.name,
+      timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
+    });
+
+    return {
+      service: published.resource.service,
+      name: published.resource.name,
+      identifier: published.resource.identifier,
+      filename: published.resource.filename,
     };
   },
 
@@ -2166,27 +2148,21 @@ export const forumQdnService = {
     const identifier = toAttachmentIdentifier(attachmentId);
     assertIdentifierLength(identifier);
 
-    await requestQortium<unknown>(
-      {
-        action: 'PUBLISH_QDN_RESOURCE',
-        service: 'FILE',
-        name: resolvedOwner,
-        identifier,
-        filename: file.name,
-        data64: await fileToBase64(file),
-      },
-      {
-        timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
-      }
-    );
-
-    return {
+    const published = await publishQdnFileResource({
+      file,
       service: 'FILE',
       name: resolvedOwner,
       identifier,
-      filename: file.name,
-      mimeType: file.type || 'application/octet-stream',
-      size: file.size,
+      timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
+    });
+
+    return {
+      service: published.resource.service,
+      name: published.resource.name,
+      identifier: published.resource.identifier,
+      filename: published.resource.filename,
+      mimeType: published.resource.mimeType,
+      size: published.resource.size,
     };
   },
 
@@ -2199,27 +2175,21 @@ export const forumQdnService = {
     const identifier = toVideoIdentifier(videoId);
     assertIdentifierLength(identifier);
 
-    await requestQortium<unknown>(
-      {
-        action: 'PUBLISH_QDN_RESOURCE',
-        service: 'VIDEO',
-        name: resolvedOwner,
-        identifier,
-        filename: file.name,
-        data64: await fileToBase64(file),
-      },
-      {
-        timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
-      }
-    );
-
-    return {
+    const published = await publishQdnFileResource({
+      file,
       service: 'VIDEO',
       name: resolvedOwner,
       identifier,
-      filename: file.name,
-      mimeType: file.type || 'video/mp4',
-      size: file.size,
+      timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
+    });
+
+    return {
+      service: 'VIDEO',
+      name: published.resource.name,
+      identifier: published.resource.identifier,
+      filename: published.resource.filename,
+      mimeType: published.resource.mimeType,
+      size: published.resource.size,
     };
   },
 

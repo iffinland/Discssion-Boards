@@ -23,7 +23,8 @@
     "test:architecture-v2-roles": "tsc scripts/architectureV2.roles.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.roles.test.js",
     "test:architecture-v2-tips": "tsc scripts/architectureV2.tips.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.tips.test.js",
     "test:architecture-v2-pagination": "tsc scripts/architectureV2.pagination.test.ts --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.pagination.test.js",
-    "test:architecture-v2-access": "tsc scripts/architectureV2.access.test.tsx --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --jsx react-jsx --skipLibCheck && node .tmp-tests/scripts/architectureV2.access.test.js"
+    "test:architecture-v2-access": "tsc scripts/architectureV2.access.test.tsx --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --jsx react-jsx --skipLibCheck && node .tmp-tests/scripts/architectureV2.access.test.js",
+    "test:qortium-bridge-publication": "tsc scripts/qortiumBridgePublication.test.ts --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/qortiumBridgePublication.test.js"
   },
   "dependencies": {
     "i18next": "^25.1.2",

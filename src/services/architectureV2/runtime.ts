@@ -13,6 +13,7 @@ import type {
 import type { IdentityValidator } from './validation.js';
 import { validateEntityCreate, validateMetadata } from './validation.js';
 import { isNativePollReference } from './polls.js';
+import { isV2AttachmentReferenceList } from './fieldPolicy.js';
 
 export type V2CreateRuntimeRecord = {
   metadata: QdbV2ResourceMetadata;
@@ -133,6 +134,8 @@ export const isV2EntityEnvelope = (
       typeof body.parentThreadId === 'string' &&
       (typeof body.parentPostId === 'string' || body.parentPostId === null) &&
       typeof body.content === 'string' &&
+      (body.attachments === undefined ||
+        isV2AttachmentReferenceList(body.attachments)) &&
       (body.pollReference === undefined ||
         body.pollReference === null ||
         isNativePollReference(body.pollReference))
