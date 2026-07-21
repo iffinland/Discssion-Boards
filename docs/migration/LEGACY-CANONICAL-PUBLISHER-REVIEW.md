@@ -46,6 +46,19 @@ as a human decision. The package contains one concise record for each of the
 explanation, immutable/embedded-field evidence state, availability ambiguity,
 identifier conflicts, and an explicit manifest-decision template.
 
+## High-risk enrichment
+
+The targeted enrichment is [high-risk-payload-enrichment.json](./high-risk-payload-enrichment.json), covering only the 14 non-auto groups. It retrieved 48 resource payload/transaction pairs: 47 payloads were available and one was unavailable. Latest transaction signatures resolved for all 48 resources, providing direct latest timestamp and block-height evidence. No first-publication transaction was recoverable from the current public API, so these latest transactions cannot establish original ownership. One high-risk group includes an unavailable payload and multiple groups expose visible deletion payloads.
+
+Payloads show repeated immutable creation timestamps across publishers and
+later `deleted` states, consistent with snapshot republication and deletion
+workflows. Cross-family Post groups contain matching logical IDs but require an
+explicit migration equivalence rule; they are not treated as independent
+creations. No earliest candidate was disproved, but none is approved.
+
+The human-only [decision sheet](./HIGH-RISK-DECISION-SHEET.md) lists all 14
+remaining decisions, safest options, and consequences of an incorrect choice.
+
 Known legitimate V1 mutation paths represented by the current source and to be
 covered by fixtures are:
 

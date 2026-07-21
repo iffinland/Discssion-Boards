@@ -1,0 +1,2776 @@
+{
+  "entries": [
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "free man",
+      "candidateCreated": 1775587639085,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knmmacwn1jrg_zkkn64nta1n7tbkg"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "free man"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775587639085,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2AKgoRnpzEy3jgDF1wbxqAypnFPRMfqJJNt4FtnqF9c3S57kDe2zhoDkUXzHWKojavepGAXiPwNdfhhY5VBfPDwG",
+          "latestTransaction": {
+            "blockHeight": 2534861,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "2AKgoRnpzEy3jgDF1wbxqAypnFPRMfqJJNt4FtnqF9c3S57kDe2zhoDkUXzHWKojavepGAXiPwNdfhhY5VBfPDwG",
+            "timestamp": 1775587639085,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "free man",
+            "createdAt": "2026-04-07T18:47:16.117Z",
+            "id": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+            "likes": 0,
+            "status": "active",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775587636118
+          },
+          "payloadError": null,
+          "publisher": "free man",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754648610,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+          "identifierFamily": "partitioned",
+          "latestSignature": "hxxw7iyiy1cykXxEH8tn6xUyg6SQwFSe2UW5wCAXgoUt9waHRPrCyB5uHk6drkeNMpw3jSKdHfTkWXNeAuqdoS8",
+          "latestTransaction": {
+            "blockHeight": 2537146,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "hxxw7iyiy1cykXxEH8tn6xUyg6SQwFSe2UW5wCAXgoUt9waHRPrCyB5uHk6drkeNMpw3jSKdHfTkWXNeAuqdoS8",
+            "timestamp": 1775754648610,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "free man",
+            "createdAt": "2026-04-07T18:47:16.117Z",
+            "id": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754646441
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754652456,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+          "identifierFamily": "legacy",
+          "latestSignature": "4WEGQ3CxYaWnk1ZZE92RUQq1jqC5kTiDEGnPW77GhupkCVotUDAVum2ibUZT7sy4o9grD85hu9iLfyXz8vLDxoRh",
+          "latestTransaction": {
+            "blockHeight": 2537146,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "4WEGQ3CxYaWnk1ZZE92RUQq1jqC5kTiDEGnPW77GhupkCVotUDAVum2ibUZT7sy4o9grD85hu9iLfyXz8vLDxoRh",
+            "timestamp": 1775754652456,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "free man",
+            "createdAt": "2026-04-07T18:47:16.117Z",
+            "id": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754646441
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775657182821,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knppmj2v1bzw_9rzkpz7wqdre6kye"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775657182821,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4EvNiy5W6QweDR8mfXN4SoigEfNhJ4camhJJ31DZy4ukxbx7e5pLXKb4gy4bSfbPobHgCbvJnuGWsoNjmuiMumuG",
+          "latestTransaction": {
+            "blockHeight": 2535813,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "4EvNiy5W6QweDR8mfXN4SoigEfNhJ4camhJJ31DZy4ukxbx7e5pLXKb4gy4bSfbPobHgCbvJnuGWsoNjmuiMumuG",
+            "timestamp": 1775657182821,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-08T14:06:15.131Z",
+            "id": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+            "likes": 0,
+            "status": "active",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775657175131
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754660294,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4VzZnRjdM2g3XocRHTSpjJcXmmTKMeEN5G5F4pM4ZyFC48QWzD8MSsGPWGfWftvwVZdVQL8caBxBWXbDQvWqKvbi",
+          "latestTransaction": {
+            "blockHeight": 2537146,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "4VzZnRjdM2g3XocRHTSpjJcXmmTKMeEN5G5F4pM4ZyFC48QWzD8MSsGPWGfWftvwVZdVQL8caBxBWXbDQvWqKvbi",
+            "timestamp": 1775754660294,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-08T14:06:15.131Z",
+            "id": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754657656
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754663768,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+          "identifierFamily": "legacy",
+          "latestSignature": "vu1MpvN2fBSQ6EhcJ3mSYCP4Kby9yyj5cJ45GP6xqLE1rzNem3PstQvNvvpBhG3DM15AJiYgSuwjTtnUXPjw1Yz",
+          "latestTransaction": {
+            "blockHeight": 2537146,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "vu1MpvN2fBSQ6EhcJ3mSYCP4Kby9yyj5cJ45GP6xqLE1rzNem3PstQvNvvpBhG3DM15AJiYgSuwjTtnUXPjw1Yz",
+            "timestamp": 1775754663768,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-08T14:06:15.131Z",
+            "id": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754657656
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775663553321,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knpwpyteywsq_9wydyhpsrwjvfgfy"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Q-Music"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775663553321,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4y4rZJt9sFRLP4mHeCEzEpPsL38H6UwF79Cd6rdu3v1Kk39zHKrvDaqefCRdeTHuMN5TmszPQKzvgw9m8YKqUbaK",
+          "latestTransaction": {
+            "blockHeight": 2535900,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "4y4rZJt9sFRLP4mHeCEzEpPsL38H6UwF79Cd6rdu3v1Kk39zHKrvDaqefCRdeTHuMN5TmszPQKzvgw9m8YKqUbaK",
+            "timestamp": 1775663553321,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-08T15:52:25.166Z",
+            "id": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+            "likes": 0,
+            "status": "active",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775663545166
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754634341,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3nTXgYx53SfQQPGtaD59fw3AWf2BVLTkXVsLUWqCBrv1REWhEwXigVLVB2nvjmoqkgBP3QLB29pWEaLLxpm4sVBQ",
+          "latestTransaction": {
+            "blockHeight": 2537146,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "3nTXgYx53SfQQPGtaD59fw3AWf2BVLTkXVsLUWqCBrv1REWhEwXigVLVB2nvjmoqkgBP3QLB29pWEaLLxpm4sVBQ",
+            "timestamp": 1775754634341,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-08T15:52:25.166Z",
+            "id": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754630576
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754637770,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+          "identifierFamily": "legacy",
+          "latestSignature": "3AkR9QAkLmBmE4UG3su3tEdZFVE7vzJzm7toJt5Pd46gNdHzjznSbvhiGLKoxqLHMDsPmZPDpx2CaaoVEEV1aKTo",
+          "latestTransaction": {
+            "blockHeight": 2537146,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "3AkR9QAkLmBmE4UG3su3tEdZFVE7vzJzm7toJt5Pd46gNdHzjznSbvhiGLKoxqLHMDsPmZPDpx2CaaoVEEV1aKTo",
+            "timestamp": 1775754637770,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-08T15:52:25.166Z",
+            "id": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754630576
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775678382577,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knqavn6q1bzw_97ne0bf123e0x55e"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "iffi forest life",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775678382577,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2r3u7zgsvjDZmcEGa1ZFTVSk13EPiLou8H4SZ4UBVxhwsWsE2Sugjt4Bew94rHjLrHBf5bJYdBSp2GFo6UTgG1k4",
+          "latestTransaction": {
+            "blockHeight": 2536103,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "2r3u7zgsvjDZmcEGa1ZFTVSk13EPiLou8H4SZ4UBVxhwsWsE2Sugjt4Bew94rHjLrHBf5bJYdBSp2GFo6UTgG1k4",
+            "timestamp": 1775678382577,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-08T19:59:39.223Z",
+            "id": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+            "likes": 0,
+            "status": "active",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775678379223
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754613041,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5he4Nj9sCiBY9NB4jBhLegkT3e1bkB2fz8RNs2aqGFxGkUw7yNcVArLFL2oY3hGkSqiJS6duURiqtHeVFj8enSUr",
+          "latestTransaction": {
+            "blockHeight": 2537145,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "5he4Nj9sCiBY9NB4jBhLegkT3e1bkB2fz8RNs2aqGFxGkUw7yNcVArLFL2oY3hGkSqiJS6duURiqtHeVFj8enSUr",
+            "timestamp": 1775754613041,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-08T19:59:39.223Z",
+            "id": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754609948
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754617498,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "legacy",
+          "latestSignature": "33ZaEbemFxZHkqFgVBcVoiwixg7WtnfsgKaYVgA2rYcGxd9UHD9xYY9ntwrEUBEVFMDY8D6nEc7edBD7S7hYk1BV",
+          "latestTransaction": {
+            "blockHeight": 2537145,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "33ZaEbemFxZHkqFgVBcVoiwixg7WtnfsgKaYVgA2rYcGxd9UHD9xYY9ntwrEUBEVFMDY8D6nEc7edBD7S7hYk1BV",
+            "timestamp": 1775754617498,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-08T19:59:39.223Z",
+            "id": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754609948
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777301866869,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knqavn6q1bzw_97ne0bf123e0x55e",
+          "identifierFamily": "partitioned",
+          "latestSignature": "233chcjFGvyT7TDT4FgsFHhksjU3aaHvtorGc5rjbGeVLQZXG2Tke7S5SJwgqjkqyQpjVCr4M2DhF5tUjsSuCLnQ",
+          "latestTransaction": {
+            "blockHeight": 2558299,
+            "creatorAddress": "QdFtH8USoDvixChuG13dmaxU87fr84NcDL",
+            "fee": "0.01000000",
+            "signature": "233chcjFGvyT7TDT4FgsFHhksjU3aaHvtorGc5rjbGeVLQZXG2Tke7S5SJwgqjkqyQpjVCr4M2DhF5tUjsSuCLnQ",
+            "timestamp": 1777301866869,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-08T19:59:39.223Z",
+            "id": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
+            "likes": 0,
+            "poll": null,
+            "status": "active",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1777301863262
+          },
+          "payloadError": null,
+          "publisher": "iffi forest life",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775710819848,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knr9sjd31bzw_t0txpmtk2ywnb0dw"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "developer iffi",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775710819848,
+          "coreStatus": null,
+          "coreUpdated": 1775711425382,
+          "identifier": "qdbm-post-01wmyelq-post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4VSPvdzPccfaongFB4XTXFH4UJVdf9oBibH1dE9QpU3iWaPqDDy8QHykK3UyDbMPdF8SXLmH2JCaSq6dzeKLusHM",
+          "latestTransaction": {
+            "blockHeight": 2536555,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "4VSPvdzPccfaongFB4XTXFH4UJVdf9oBibH1dE9QpU3iWaPqDDy8QHykK3UyDbMPdF8SXLmH2JCaSq6dzeKLusHM",
+            "timestamp": 1775711425382,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-09T05:00:16.675Z",
+            "id": "post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+            "likes": 0,
+            "status": "active",
+            "subTopicId": "subtopic_01knr5h3881bzw_0y550zyta08et086",
+            "type": "post",
+            "updatedAt": 1775711422638
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776264934264,
+          "coreStatus": null,
+          "coreUpdated": 1776957409379,
+          "identifier": "qdbm-post-01wmyelq-post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4mp8uSxkhoazqphVTq6ierH4hEuKGqFhLJKjcPohez4Mt3QLjPzJ4VBHV7cYWz8EqCaXYfcoWu4Mw8YNJc7ktehM",
+          "latestTransaction": {
+            "blockHeight": 2553589,
+            "creatorAddress": "QipPqwJeLtx89dXcSkY7vimMUNT8Gy5k2E",
+            "fee": "0.01000000",
+            "signature": "4mp8uSxkhoazqphVTq6ierH4hEuKGqFhLJKjcPohez4Mt3QLjPzJ4VBHV7cYWz8EqCaXYfcoWu4Mw8YNJc7ktehM",
+            "timestamp": 1776957409379,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "deleted": true
+          },
+          "payloadError": null,
+          "publisher": "developer iffi",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776264938862,
+          "coreStatus": null,
+          "coreUpdated": 1776957407519,
+          "identifier": "qdbm-post-post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
+          "identifierFamily": "legacy",
+          "latestSignature": "MMarENMfu1SH4UTHwHiazWWWWCTbe4hLPVjXRqPKNcaDPVm8nnUxDFpxz18mPjBXRkKe7npxXSrh5Zyy7m8CRRB",
+          "latestTransaction": {
+            "blockHeight": 2553589,
+            "creatorAddress": "QipPqwJeLtx89dXcSkY7vimMUNT8Gy5k2E",
+            "fee": "0.01000000",
+            "signature": "MMarENMfu1SH4UTHwHiazWWWWCTbe4hLPVjXRqPKNcaDPVm8nnUxDFpxz18mPjBXRkKe7npxXSrh5Zyy7m8CRRB",
+            "timestamp": 1776957407519,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "deleted": true
+          },
+          "payloadError": null,
+          "publisher": "developer iffi",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "developer iffi",
+      "candidateCreated": 1775754058364,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01knsk11p010yp_ffkf9zcyny67kvg1",
+      "entityType": "Post",
+      "identifierFamilyConflict": "legacy+partitioned conflict",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01knsk11p010yp_ffkf9zcyny67kvg1",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01knsk11p010yp_ffkf9zcyny67kvg1"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Q-Music",
+        "developer iffi"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775754058364,
+          "coreStatus": null,
+          "coreUpdated": 1776957427216,
+          "identifier": "qdbm-post-00uhlmtc-post_01knsk11p010yp_ffkf9zcyny67kvg1",
+          "identifierFamily": "partitioned",
+          "latestSignature": "59nja8P4zpGnRNS34q2Syf3nE4bAoh95UYfvPvpzQY8MJ3BVgWuTBATyiAPqr8zgd8pW8s7nT9DuTuNvHmCZRk2X",
+          "latestTransaction": {
+            "blockHeight": 2553589,
+            "creatorAddress": "QipPqwJeLtx89dXcSkY7vimMUNT8Gy5k2E",
+            "fee": "0.01000000",
+            "signature": "59nja8P4zpGnRNS34q2Syf3nE4bAoh95UYfvPvpzQY8MJ3BVgWuTBATyiAPqr8zgd8pW8s7nT9DuTuNvHmCZRk2X",
+            "timestamp": 1776957427216,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "deleted": true
+          },
+          "payloadError": null,
+          "publisher": "developer iffi",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754592308,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00uhlmtc-post_01knsk11p010yp_ffkf9zcyny67kvg1",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4m1cGZohbAKHgi3mXoA4oqm4YgqULhhH4kb4ypxv4HhquG2keLJrnXt9wUWUMwkeoibDtRM8CgR3aEVw29hfFXHW",
+          "latestTransaction": {
+            "blockHeight": 2537145,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "4m1cGZohbAKHgi3mXoA4oqm4YgqULhhH4kb4ypxv4HhquG2keLJrnXt9wUWUMwkeoibDtRM8CgR3aEVw29hfFXHW",
+            "timestamp": 1775754592308,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "developer iffi",
+            "createdAt": "2026-04-09T17:00:53.312Z",
+            "id": "post_01knsk11p010yp_ffkf9zcyny67kvg1",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754589355
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775754598427,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-post_01knsk11p010yp_ffkf9zcyny67kvg1",
+          "identifierFamily": "legacy",
+          "latestSignature": "2nowSx7d3EG1XbBsw92BbpHrBC9ttThBABWAWbBU56myjXE4mShR9v8fRiRSzqy4pvTi8xdEHLHeJhFGnM4RCro",
+          "latestTransaction": {
+            "blockHeight": 2537145,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "2nowSx7d3EG1XbBsw92BbpHrBC9ttThBABWAWbBU56myjXE4mShR9v8fRiRSzqy4pvTi8xdEHLHeJhFGnM4RCro",
+            "timestamp": 1775754598427,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "developer iffi",
+            "createdAt": "2026-04-09T17:00:53.312Z",
+            "id": "post_01knsk11p010yp_ffkf9zcyny67kvg1",
+            "likes": 0,
+            "status": "deleted",
+            "subTopicId": "subtopic_01knmc7d11ywsq_aeh2dkk092nvxncm",
+            "type": "post",
+            "updatedAt": 1775754589355
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1777229313844,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kq5hybbvywsq_g2hjtxnyb3836c30"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "four or more publishers; mutation sequence and creator cannot be inferred from envelopes",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "NodeFM",
+        "Q-Music",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777229313844,
+          "coreStatus": null,
+          "coreUpdated": 1777229341511,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3Aph1pYeec2diQNMLePVFqYLPA2x8akZp4BTfQqfP2aX9AsrPDuim3oQ5E2yR26hHEcaoSVyc7Dwpyw6yQDNKvvn",
+          "latestTransaction": {
+            "blockHeight": 2557307,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "3Aph1pYeec2diQNMLePVFqYLPA2x8akZp4BTfQqfP2aX9AsrPDuim3oQ5E2yR26hHEcaoSVyc7Dwpyw6yQDNKvvn",
+            "timestamp": 1777229341511,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-26T18:48:31.354Z",
+            "id": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+            "likes": 0,
+            "poll": {
+              "description": "test h\u00e4\u00e4letamine - kumb on parem",
+              "id": "poll_01kq5hybbvywsq_ecpy9xpq17adham9",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq5hybbvywsq_jdv16rgax1mk8rxm",
+                  "label": "see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_w4pf6j817qhbr2rc",
+                  "label": "v\u00f5i see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_9t0sxmy89w6atdk1",
+                  "label": "hoopis see"
+                }
+              ],
+              "question": "Mis on parem",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
+                  ],
+                  "votedAt": "2026-04-26T18:48:58.971Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq5hptgrywsq_dqp785ydsz47mr4y",
+            "type": "post",
+            "updatedAt": 1777229338971
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777229697866,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3fsf6QDW24bbYcaShEX5K7RZY9KeiqMNFWMQVzXxKaGBTtQ3b7wC1EhHZH8arPZdoS8jgV7Yv9LXL7QcBvdzm79h",
+          "latestTransaction": {
+            "blockHeight": 2557312,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "3fsf6QDW24bbYcaShEX5K7RZY9KeiqMNFWMQVzXxKaGBTtQ3b7wC1EhHZH8arPZdoS8jgV7Yv9LXL7QcBvdzm79h",
+            "timestamp": 1777229697866,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-26T18:48:31.354Z",
+            "id": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+            "likes": 0,
+            "poll": {
+              "description": "test h\u00e4\u00e4letamine - kumb on parem",
+              "id": "poll_01kq5hybbvywsq_ecpy9xpq17adham9",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq5hybbvywsq_jdv16rgax1mk8rxm",
+                  "label": "see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_w4pf6j817qhbr2rc",
+                  "label": "v\u00f5i see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_9t0sxmy89w6atdk1",
+                  "label": "hoopis see"
+                }
+              ],
+              "question": "Mis on parem",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
+                  ],
+                  "votedAt": "2026-04-26T18:48:58.971Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_jdv16rgax1mk8rxm"
+                  ],
+                  "votedAt": "2026-04-26T18:54:54.905Z",
+                  "voterId": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq5hptgrywsq_dqp785ydsz47mr4y",
+            "type": "post",
+            "updatedAt": 1777229694905
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777273514069,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "58R55WJbkvo1aPhyALtKNeZrRHYPawH8YWDYnxoqw1cRmeA9dXDfkBFTUUEzqK5P8g9uiRCcev64ws3RxDSftCmH",
+          "latestTransaction": {
+            "blockHeight": 2557911,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "58R55WJbkvo1aPhyALtKNeZrRHYPawH8YWDYnxoqw1cRmeA9dXDfkBFTUUEzqK5P8g9uiRCcev64ws3RxDSftCmH",
+            "timestamp": 1777273514069,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-26T18:48:31.354Z",
+            "id": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+            "likes": 0,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "test h\u00e4\u00e4letamine - kumb on parem",
+              "id": "poll_01kq5hybbvywsq_ecpy9xpq17adham9",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq5hybbvywsq_jdv16rgax1mk8rxm",
+                  "label": "see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_w4pf6j817qhbr2rc",
+                  "label": "v\u00f5i see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_9t0sxmy89w6atdk1",
+                  "label": "hoopis see"
+                }
+              ],
+              "question": "Mis on parem",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
+                  ],
+                  "votedAt": "2026-04-26T18:48:58.971Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_jdv16rgax1mk8rxm"
+                  ],
+                  "votedAt": "2026-04-26T18:54:54.905Z",
+                  "voterId": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
+                  ],
+                  "votedAt": "2026-04-27T07:05:10.932Z",
+                  "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq5hptgrywsq_dqp785ydsz47mr4y",
+            "type": "post",
+            "updatedAt": 1777273510933
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777289640933,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01ixpu8r-post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5HoYKkqGN8TR2wvtALDAihH4KBQCGkqFiHyPUK5Sb88B7LKK1Uv2omjd8SwmmVWMT3AVv6phzeKxnbCA4hWKjr8x",
+          "latestTransaction": {
+            "blockHeight": 2558132,
+            "creatorAddress": "QTRKB2qCSANjYj5JbhybkvQyPmSC24PZZZ",
+            "fee": "0.01000000",
+            "signature": "5HoYKkqGN8TR2wvtALDAihH4KBQCGkqFiHyPUK5Sb88B7LKK1Uv2omjd8SwmmVWMT3AVv6phzeKxnbCA4hWKjr8x",
+            "timestamp": 1777289640933,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-26T18:48:31.354Z",
+            "id": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
+            "likes": 0,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "test h\u00e4\u00e4letamine - kumb on parem",
+              "id": "poll_01kq5hybbvywsq_ecpy9xpq17adham9",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq5hybbvywsq_jdv16rgax1mk8rxm",
+                  "label": "see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_w4pf6j817qhbr2rc",
+                  "label": "v\u00f5i see"
+                },
+                {
+                  "id": "option_01kq5hybbvywsq_9t0sxmy89w6atdk1",
+                  "label": "hoopis see"
+                }
+              ],
+              "question": "Mis on parem",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
+                  ],
+                  "votedAt": "2026-04-26T18:48:58.971Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_jdv16rgax1mk8rxm"
+                  ],
+                  "votedAt": "2026-04-26T18:54:54.905Z",
+                  "voterId": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
+                  ],
+                  "votedAt": "2026-04-27T11:33:56.597Z",
+                  "voterId": "QTRKB2qCSANjYj5JbhybkvQyPmSC24PZZZ"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq5hptgrywsq_dqp785ydsz47mr4y",
+            "type": "post",
+            "updatedAt": 1777289636597
+          },
+          "payloadError": null,
+          "publisher": "NodeFM",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1777229502555,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kq5j43tbywsq_k8gwaebq1354k7jb"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Q-Music",
+        "developer iffi"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777229502555,
+          "coreStatus": null,
+          "coreUpdated": 1777229518998,
+          "identifier": "qdbm-post-00zg3aas-post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+          "identifierFamily": "partitioned",
+          "latestSignature": "51eQZEPyJbykQGGosVbi8b9BvRW8DfRm17wxAVVKmA2ADuieauufnCciMTCAgTzqopp3Bjhd7gdCKmTDdVBiomDV",
+          "latestTransaction": {
+            "blockHeight": 2557310,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "51eQZEPyJbykQGGosVbi8b9BvRW8DfRm17wxAVVKmA2ADuieauufnCciMTCAgTzqopp3Bjhd7gdCKmTDdVBiomDV",
+            "timestamp": 1777229518998,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-26T18:51:40.235Z",
+            "id": "post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+            "likes": 0,
+            "poll": {
+              "description": "mitme vastuse v\u00f5imalus. maksimaalne 6 valikut saab lisada kaasa",
+              "id": "poll_01kq5j43tbywsq_sz0bfwmgqm3xdtws",
+              "mode": "multiple",
+              "options": [
+                {
+                  "id": "option_01kq5j43tbywsq_4zmvhhpafcmfc6b6",
+                  "label": "k\u00fcsimus 1"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_4a9bpapr67xe3d16",
+                  "label": "k\u00fcsimus 2"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_y2n2ymyre8xk8hpf",
+                  "label": "k\u00fcsimus 3"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_jyx6sdjzaa7sdjt5",
+                  "label": "k\u00fcsimus 4"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_m55j3xcr4nm83f14",
+                  "label": "k\u00fcsimus 5"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_5q65p4km365m6fdk",
+                  "label": "k\u00fcsimus kuus"
+                }
+              ],
+              "question": "Testin k\u00fcsitlust",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq5j43tbywsq_jyx6sdjzaa7sdjt5",
+                    "option_01kq5j43tbywsq_4a9bpapr67xe3d16"
+                  ],
+                  "votedAt": "2026-04-26T18:51:56.580Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq5j0vy6ywsq_74k1ck2sjmx664r4",
+            "type": "post",
+            "updatedAt": 1777229516581
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777229770468,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00zg3aas-post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4aFrX3FWd4n2fFzi2L22erRk9UTKqLAS4cCW6YqcTMRvBe5NJ5bXzGwuCgzExc4k96b9eUkYaxCopUizrrhWrBBf",
+          "latestTransaction": {
+            "blockHeight": 2557313,
+            "creatorAddress": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz",
+            "fee": "0.01000000",
+            "signature": "4aFrX3FWd4n2fFzi2L22erRk9UTKqLAS4cCW6YqcTMRvBe5NJ5bXzGwuCgzExc4k96b9eUkYaxCopUizrrhWrBBf",
+            "timestamp": 1777229770468,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-26T18:51:40.235Z",
+            "id": "post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+            "likes": 0,
+            "poll": {
+              "description": "mitme vastuse v\u00f5imalus. maksimaalne 6 valikut saab lisada kaasa",
+              "id": "poll_01kq5j43tbywsq_sz0bfwmgqm3xdtws",
+              "mode": "multiple",
+              "options": [
+                {
+                  "id": "option_01kq5j43tbywsq_4zmvhhpafcmfc6b6",
+                  "label": "k\u00fcsimus 1"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_4a9bpapr67xe3d16",
+                  "label": "k\u00fcsimus 2"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_y2n2ymyre8xk8hpf",
+                  "label": "k\u00fcsimus 3"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_jyx6sdjzaa7sdjt5",
+                  "label": "k\u00fcsimus 4"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_m55j3xcr4nm83f14",
+                  "label": "k\u00fcsimus 5"
+                },
+                {
+                  "id": "option_01kq5j43tbywsq_5q65p4km365m6fdk",
+                  "label": "k\u00fcsimus kuus"
+                }
+              ],
+              "question": "Testin k\u00fcsitlust",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq5j43tbywsq_jyx6sdjzaa7sdjt5",
+                    "option_01kq5j43tbywsq_4a9bpapr67xe3d16"
+                  ],
+                  "votedAt": "2026-04-26T18:51:56.580Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq5j43tbywsq_4a9bpapr67xe3d16",
+                    "option_01kq5j43tbywsq_5q65p4km365m6fdk",
+                    "option_01kq5j43tbywsq_y2n2ymyre8xk8hpf"
+                  ],
+                  "votedAt": "2026-04-26T18:55:59.014Z",
+                  "voterId": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq5j0vy6ywsq_74k1ck2sjmx664r4",
+            "type": "post",
+            "updatedAt": 1777229759014
+          },
+          "payloadError": null,
+          "publisher": "Q-Music",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777232058059,
+          "coreStatus": null,
+          "coreUpdated": 1777287993425,
+          "identifier": "qdbm-post-00zg3aas-post_01kq5j43tbywsq_k8gwaebq1354k7jb",
+          "identifierFamily": "partitioned",
+          "latestSignature": "5v4VDGvM6HfWG5yyKjUfibiJeJSxkSyGu63ytxZc4TffWgVv8quToEpffo7VToEY9E3MBWhhi8YFp8recKshAxEq",
+          "latestTransaction": {
+            "blockHeight": 2558109,
+            "creatorAddress": "QipPqwJeLtx89dXcSkY7vimMUNT8Gy5k2E",
+            "fee": "0.01000000",
+            "signature": "5v4VDGvM6HfWG5yyKjUfibiJeJSxkSyGu63ytxZc4TffWgVv8quToEpffo7VToEY9E3MBWhhi8YFp8recKshAxEq",
+            "timestamp": 1777287993425,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "deleted": true
+          },
+          "payloadError": null,
+          "publisher": "developer iffi",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1777294245384,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01kq7fvw3gywsq_r88c7gcd65zfn5vn"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "four or more publishers; mutation sequence and creator cannot be inferred from envelopes",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Counter Economy",
+        "Discussion_Boards",
+        "NodeFM",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1777294245384,
+          "coreStatus": null,
+          "coreUpdated": 1777294275320,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2jASCSpbRu44wVAL4QmLXUhkANFRrKmaxNgNbcvgksYFRZaCgxHPCN9FT1yS9znUsMocqUc32LM6qBQj6DeKHdD8",
+          "latestTransaction": {
+            "blockHeight": 2558195,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "2jASCSpbRu44wVAL4QmLXUhkANFRrKmaxNgNbcvgksYFRZaCgxHPCN9FT1yS9znUsMocqUc32LM6qBQj6DeKHdD8",
+            "timestamp": 1777294275320,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-27T12:50:41.904Z",
+            "id": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+            "likes": 0,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01kq7fvw3gywsq_xz5k80qa3nafedyx",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq7fvw3gywsq_vk4pgazvwy3jps07",
+                  "label": "Good"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_h5ye69h1bvnphb8j",
+                  "label": "Bad"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_mp9vhafa5s31ajv2",
+                  "label": "Why not"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_v6yxd0rww974zqnx",
+                  "label": "I don't know"
+                }
+              ],
+              "question": "Cast your vote, what do you think about this voting system?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
+                  ],
+                  "votedAt": "2026-04-27T12:51:11.434Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq7fpcpcywsq_txnps0m06w2r6vr2",
+            "type": "post",
+            "updatedAt": 1777294271434
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777294421635,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "61HvLYhSkHB1bPkcJRtZRW7jpAoCWS28iHEPErGE21LimtKijmMMVYUuLw2Cmjos2FWZWUD4Ge7jo2AT2vzMS6bV",
+          "latestTransaction": {
+            "blockHeight": 2558197,
+            "creatorAddress": "QTRKB2qCSANjYj5JbhybkvQyPmSC24PZZZ",
+            "fee": "0.01000000",
+            "signature": "61HvLYhSkHB1bPkcJRtZRW7jpAoCWS28iHEPErGE21LimtKijmMMVYUuLw2Cmjos2FWZWUD4Ge7jo2AT2vzMS6bV",
+            "timestamp": 1777294421635,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-27T12:50:41.904Z",
+            "id": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+            "likes": 0,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01kq7fvw3gywsq_xz5k80qa3nafedyx",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq7fvw3gywsq_vk4pgazvwy3jps07",
+                  "label": "Good"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_h5ye69h1bvnphb8j",
+                  "label": "Bad"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_mp9vhafa5s31ajv2",
+                  "label": "Why not"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_v6yxd0rww974zqnx",
+                  "label": "I don't know"
+                }
+              ],
+              "question": "Cast your vote, what do you think about this voting system?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
+                  ],
+                  "votedAt": "2026-04-27T12:51:11.434Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_mp9vhafa5s31ajv2"
+                  ],
+                  "votedAt": "2026-04-27T12:53:37.795Z",
+                  "voterId": "QTRKB2qCSANjYj5JbhybkvQyPmSC24PZZZ"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq7fpcpcywsq_txnps0m06w2r6vr2",
+            "type": "post",
+            "updatedAt": 1777294417795
+          },
+          "payloadError": null,
+          "publisher": "NodeFM",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777294613728,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "222gK7VhPJmeBq4mraEZAzvtD4iCfAUjzddXqhSujXPwoSJVhReFPFHECtczFhadCR2fHcrr7SjtPkang4edSr3k",
+          "latestTransaction": {
+            "blockHeight": 2558200,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "222gK7VhPJmeBq4mraEZAzvtD4iCfAUjzddXqhSujXPwoSJVhReFPFHECtczFhadCR2fHcrr7SjtPkang4edSr3k",
+            "timestamp": 1777294613728,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-27T12:50:41.904Z",
+            "id": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+            "likes": 0,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01kq7fvw3gywsq_xz5k80qa3nafedyx",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq7fvw3gywsq_vk4pgazvwy3jps07",
+                  "label": "Good"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_h5ye69h1bvnphb8j",
+                  "label": "Bad"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_mp9vhafa5s31ajv2",
+                  "label": "Why not"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_v6yxd0rww974zqnx",
+                  "label": "I don't know"
+                }
+              ],
+              "question": "Cast your vote, what do you think about this voting system?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
+                  ],
+                  "votedAt": "2026-04-27T12:51:11.434Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
+                  ],
+                  "votedAt": "2026-04-27T12:56:50.010Z",
+                  "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq7fpcpcywsq_txnps0m06w2r6vr2",
+            "type": "post",
+            "updatedAt": 1777294610010
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1777349820324,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-00ib3qgv-post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+          "identifierFamily": "partitioned",
+          "latestSignature": "39cGbUQCsgDuKMbk2TrfaieDgJTaejiXTykaSdJpMEuNWDeUiBEZLwcyjJLqHwghYFY9FQaqFYBYTYNfCHKTUXPy",
+          "latestTransaction": {
+            "blockHeight": 2558955,
+            "creatorAddress": "QcKMRd52VET8FvT7N6LwqppXEd6gZo9da4",
+            "fee": "0.01000000",
+            "signature": "39cGbUQCsgDuKMbk2TrfaieDgJTaejiXTykaSdJpMEuNWDeUiBEZLwcyjJLqHwghYFY9FQaqFYBYTYNfCHKTUXPy",
+            "timestamp": 1777349820324,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Discussion_Boards",
+            "createdAt": "2026-04-27T12:50:41.904Z",
+            "id": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
+            "likes": 0,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01kq7fvw3gywsq_xz5k80qa3nafedyx",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01kq7fvw3gywsq_vk4pgazvwy3jps07",
+                  "label": "Good"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_h5ye69h1bvnphb8j",
+                  "label": "Bad"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_mp9vhafa5s31ajv2",
+                  "label": "Why not"
+                },
+                {
+                  "id": "option_01kq7fvw3gywsq_v6yxd0rww974zqnx",
+                  "label": "I don't know"
+                }
+              ],
+              "question": "Cast your vote, what do you think about this voting system?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
+                  ],
+                  "votedAt": "2026-04-27T12:51:11.434Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
+                  ],
+                  "votedAt": "2026-04-27T12:56:50.010Z",
+                  "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
+                },
+                {
+                  "optionIds": [
+                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
+                  ],
+                  "votedAt": "2026-04-28T04:16:56.270Z",
+                  "voterId": "QcKMRd52VET8FvT7N6LwqppXEd6gZo9da4"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01kq7fpcpcywsq_txnps0m06w2r6vr2",
+            "type": "post",
+            "updatedAt": 1777349816270
+          },
+          "payloadError": null,
+          "publisher": "Counter Economy",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Simon James",
+      "candidateCreated": 1778542696350,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01krcpfkqv18r2_c8wd7rd1rzd3qcky"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Simon James",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1778542696350,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01km00kf-post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+          "identifierFamily": "partitioned",
+          "latestSignature": "55NqmwXkcn6fq6C9jGnDPf28sDdHoH2VNN7P5wcCeAkY1A6LKc7JzMRuaxefMkgRWby94HBPDhoksfnMvdB3RcVa",
+          "latestTransaction": {
+            "blockHeight": 2575274,
+            "creatorAddress": "QfX9KhXnoB78v2D36j7nocKaYtzUYcyQyH",
+            "fee": "0.01000000",
+            "signature": "55NqmwXkcn6fq6C9jGnDPf28sDdHoH2VNN7P5wcCeAkY1A6LKc7JzMRuaxefMkgRWby94HBPDhoksfnMvdB3RcVa",
+            "timestamp": 1778542696350,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Simon James",
+            "createdAt": "2026-05-11T23:38:14.139Z",
+            "id": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+            "likes": 0,
+            "poll": null,
+            "status": "active",
+            "subTopicId": "subtopic_01kqgq9n381bzw_zg2w89srvcshdjzf",
+            "type": "post",
+            "updatedAt": 1778542694140
+          },
+          "payloadError": null,
+          "publisher": "Simon James",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778758187220,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01km00kf-post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+          "identifierFamily": "partitioned",
+          "latestSignature": "54jKijpi9DVPkHP7RfosnXkroYkPVCEXxbjrtWxwoTaYokWCFXFYi5SqvtZoSqMnb7VnZtbCidw15htavRh6SQmR",
+          "latestTransaction": {
+            "blockHeight": 2578223,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "54jKijpi9DVPkHP7RfosnXkroYkPVCEXxbjrtWxwoTaYokWCFXFYi5SqvtZoSqMnb7VnZtbCidw15htavRh6SQmR",
+            "timestamp": 1778758187220,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Simon James",
+            "createdAt": "2026-05-11T23:38:14.139Z",
+            "id": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+            "likes": 2,
+            "poll": null,
+            "status": "active",
+            "subTopicId": "subtopic_01kqgq9n381bzw_zg2w89srvcshdjzf",
+            "type": "post",
+            "updatedAt": 1778758183452
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778929084685,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-01km00kf-post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4iJaGEq8RR551tEQAYTuuA2Byi2BVKC51Yy9cxFMQNa22cDD3q7D31KVDWNcoAGFG76FjSnkp53t8MFiQo3Dcipa",
+          "latestTransaction": {
+            "blockHeight": 2580563,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "4iJaGEq8RR551tEQAYTuuA2Byi2BVKC51Yy9cxFMQNa22cDD3q7D31KVDWNcoAGFG76FjSnkp53t8MFiQo3Dcipa",
+            "timestamp": 1778929084685,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Simon James",
+            "createdAt": "2026-05-11T23:38:14.139Z",
+            "id": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
+            "likes": 2,
+            "poll": null,
+            "status": "active",
+            "subTopicId": "subtopic_01kqgq9n381bzw_zg2w89srvcshdjzf",
+            "type": "post",
+            "updatedAt": 1778929082107
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Qortal-Video-Bridge",
+      "candidateCreated": 1778830121589,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+      "entityType": "Post",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+        "entityType": "Post",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Post:post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "QUARANTINE"
+      },
+      "manualReviewReason": "four or more publishers; mutation sequence and creator cannot be inferred from envelopes",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Qortal-Video-Bridge",
+        "Shadow Archives",
+        "Stonecrow",
+        "iffi vaba mees",
+        "russian"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1778830121589,
+          "coreStatus": null,
+          "coreUpdated": 1778920960924,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "A7gTXr73v6iwxRRwkLAZpKrrkW6ufCxx2unLsw75QAKjcJpPCuJVJA3x8nddnasF3trK1dEceuxAAP4TMneYLzd",
+          "latestTransaction": {
+            "blockHeight": 2580452,
+            "creatorAddress": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa",
+            "fee": "0.01000000",
+            "signature": "A7gTXr73v6iwxRRwkLAZpKrrkW6ufCxx2unLsw75QAKjcJpPCuJVJA3x8nddnasF3trK1dEceuxAAP4TMneYLzd",
+            "timestamp": 1778920960924,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Qortal-Video-Bridge",
+            "createdAt": "2026-05-15T07:28:39.215Z",
+            "id": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+            "likes": 1,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01krn8k49fyuaj_zvy2wgjcg98yps19",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01krn8k49fyuaj_k2prcwk1nwe778c9",
+                  "label": "Good idea"
+                },
+                {
+                  "id": "option_01krn8k49fyuaj_4anggp8x72r25jcq",
+                  "label": "Bad idea"
+                }
+              ],
+              "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-15T07:28:59.974Z",
+                  "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-16T08:40:15.913Z",
+                  "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01krn8ff0hyuaj_dwmrj8gmv551nq9e",
+            "type": "post",
+            "updatedAt": 1778920957492
+          },
+          "payloadError": null,
+          "publisher": "Qortal-Video-Bridge",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "unavailable",
+          "coreCreated": 1778830680750,
+          "coreStatus": null,
+          "coreUpdated": 1778922243580,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "3m6SuMDBkjLEPNeHFo9oCL1iDYFVXyfHFgbBfKzSo8VtQi3GLeEjgzVVBsuKJ1XpHtVRtWjTxh1angCbKhwqdgdC",
+          "latestTransaction": {
+            "blockHeight": 2580470,
+            "creatorAddress": "QPw4vnk5CBDWkgdXB4vUXCc4DXGEjHVxCA",
+            "fee": "0.01000000",
+            "signature": "3m6SuMDBkjLEPNeHFo9oCL1iDYFVXyfHFgbBfKzSo8VtQi3GLeEjgzVVBsuKJ1XpHtVRtWjTxh1angCbKhwqdgdC",
+            "timestamp": 1778922243580,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "unavailable",
+          "payloadClaims": {},
+          "payloadError": "The read operation timed out",
+          "publisher": "Shadow Archives",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778876780389,
+          "coreStatus": null,
+          "coreUpdated": 1778920819015,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4UD2fraW353GjdbsMAUF2AQFBKAbEBChhRMsxdjnoJqU6evmbvjJfERNmsSyYpNuvY3nUCvebTwWT1N5TXSnTiw2",
+          "latestTransaction": {
+            "blockHeight": 2580450,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "4UD2fraW353GjdbsMAUF2AQFBKAbEBChhRMsxdjnoJqU6evmbvjJfERNmsSyYpNuvY3nUCvebTwWT1N5TXSnTiw2",
+            "timestamp": 1778920819015,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Qortal-Video-Bridge",
+            "createdAt": "2026-05-15T07:28:39.215Z",
+            "id": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+            "likes": 1,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01krn8k49fyuaj_zvy2wgjcg98yps19",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01krn8k49fyuaj_k2prcwk1nwe778c9",
+                  "label": "Good idea"
+                },
+                {
+                  "id": "option_01krn8k49fyuaj_4anggp8x72r25jcq",
+                  "label": "Bad idea"
+                }
+              ],
+              "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-15T07:28:59.974Z",
+                  "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-16T08:40:15.913Z",
+                  "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01krn8ff0hyuaj_dwmrj8gmv551nq9e",
+            "type": "post",
+            "updatedAt": 1778920815913
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778909938092,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "56CtxV5TwHhebMzT9ZuWdugTHea3LkSBgfLZhCLZC7etVUb8ii27XNxBjfMufWHqhSpcrcFY34NuKi48fQVfaoDP",
+          "latestTransaction": {
+            "blockHeight": 2580301,
+            "creatorAddress": "QNLCcmfyoMBop4b9XP2hCrJxzjPcWDKw5T",
+            "fee": "0.01000000",
+            "signature": "56CtxV5TwHhebMzT9ZuWdugTHea3LkSBgfLZhCLZC7etVUb8ii27XNxBjfMufWHqhSpcrcFY34NuKi48fQVfaoDP",
+            "timestamp": 1778909938092,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Qortal-Video-Bridge",
+            "createdAt": "2026-05-15T07:28:39.215Z",
+            "id": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+            "likes": 1,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01krn8k49fyuaj_zvy2wgjcg98yps19",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01krn8k49fyuaj_k2prcwk1nwe778c9",
+                  "label": "Good idea"
+                },
+                {
+                  "id": "option_01krn8k49fyuaj_4anggp8x72r25jcq",
+                  "label": "Bad idea"
+                }
+              ],
+              "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-15T07:28:59.974Z",
+                  "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-16T05:38:54.985Z",
+                  "voterId": "QNLCcmfyoMBop4b9XP2hCrJxzjPcWDKw5T"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01krn8ff0hyuaj_dwmrj8gmv551nq9e",
+            "type": "post",
+            "updatedAt": 1778909934985
+          },
+          "payloadError": null,
+          "publisher": "russian",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778926153138,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "4njbS19ZbYc7MpApJk6tyzdCbtYGsiG3FfqDdH7xBgoN4DqcVBuNt3TjQNXNVFUFPPmKDEF1v8WatcxCBf7GoGCG",
+          "latestTransaction": {
+            "blockHeight": 2580523,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "4njbS19ZbYc7MpApJk6tyzdCbtYGsiG3FfqDdH7xBgoN4DqcVBuNt3TjQNXNVFUFPPmKDEF1v8WatcxCBf7GoGCG",
+            "timestamp": 1778926153138,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Qortal-Video-Bridge",
+            "createdAt": "2026-05-15T07:28:39.215Z",
+            "id": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+            "likes": 1,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01krn8k49fyuaj_zvy2wgjcg98yps19",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01krn8k49fyuaj_k2prcwk1nwe778c9",
+                  "label": "Good idea"
+                },
+                {
+                  "id": "option_01krn8k49fyuaj_4anggp8x72r25jcq",
+                  "label": "Bad idea"
+                }
+              ],
+              "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-15T07:28:59.974Z",
+                  "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-16T08:40:15.913Z",
+                  "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-16T10:09:10.202Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01krn8ff0hyuaj_dwmrj8gmv551nq9e",
+            "type": "post",
+            "updatedAt": 1778926150203
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1778984902795,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-post-011a8wn5-post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+          "identifierFamily": "partitioned",
+          "latestSignature": "2bFj9EtaHTkv5Qxs3y3cqPYgebGo4npdTs5uEBonptE5NZob1ZXC5ABc1Mwjp6MwsZdJmSjQZHMYUWv7JXswgZu8",
+          "latestTransaction": {
+            "blockHeight": 2581327,
+            "creatorAddress": "QfMPvGEBJMhhNSfhNqRy6qRYvybdnQAiuJ",
+            "fee": "0.01000000",
+            "signature": "2bFj9EtaHTkv5Qxs3y3cqPYgebGo4npdTs5uEBonptE5NZob1ZXC5ABc1Mwjp6MwsZdJmSjQZHMYUWv7JXswgZu8",
+            "timestamp": 1778984902795,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Qortal-Video-Bridge",
+            "createdAt": "2026-05-15T07:28:39.215Z",
+            "id": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
+            "likes": 1,
+            "poll": {
+              "closedAt": null,
+              "closedByUserId": null,
+              "closesAt": null,
+              "description": "",
+              "id": "poll_01krn8k49fyuaj_zvy2wgjcg98yps19",
+              "mode": "single",
+              "options": [
+                {
+                  "id": "option_01krn8k49fyuaj_k2prcwk1nwe778c9",
+                  "label": "Good idea"
+                },
+                {
+                  "id": "option_01krn8k49fyuaj_4anggp8x72r25jcq",
+                  "label": "Bad idea"
+                }
+              ],
+              "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
+              "votes": [
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-15T07:28:59.974Z",
+                  "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-16T08:40:15.913Z",
+                  "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
+                  ],
+                  "votedAt": "2026-05-16T10:09:10.202Z",
+                  "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
+                },
+                {
+                  "optionIds": [
+                    "option_01krn8k49fyuaj_4anggp8x72r25jcq"
+                  ],
+                  "votedAt": "2026-05-17T02:28:20.573Z",
+                  "voterId": "QfMPvGEBJMhhNSfhNqRy6qRYvybdnQAiuJ"
+                }
+              ]
+            },
+            "status": "active",
+            "subTopicId": "subtopic_01krn8ff0hyuaj_dwmrj8gmv551nq9e",
+            "type": "post",
+            "updatedAt": 1778984900574
+          },
+          "payloadError": null,
+          "publisher": "Stonecrow",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "QUARANTINE"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "iffi vaba mees",
+      "candidateCreated": 1775706348580,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knr5h3881bzw_0y550zyta08et086",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knr5h3881bzw_0y550zyta08et086",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knr5h3881bzw_0y550zyta08et086"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "developer iffi",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775706348580,
+          "coreStatus": null,
+          "coreUpdated": 1777312056965,
+          "identifier": "qdbm-sub-subtopic_01knr5h3881bzw_0y550zyta08et086",
+          "identifierFamily": "native",
+          "latestSignature": "qtxtweExPFVg5AGpJ8Lt6RnYC2izYcUW1KULNqHJhaDsAUwENxk8Wv8qTfkP7jhF56FJXR3miWFAPHCYZ8WTmvV",
+          "latestTransaction": {
+            "blockHeight": 2558438,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "qtxtweExPFVg5AGpJ8Lt6RnYC2izYcUW1KULNqHJhaDsAUwENxk8Wv8qTfkP7jhF56FJXR3miWFAPHCYZ8WTmvV",
+            "timestamp": 1777312056965,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-09T03:45:44.712Z",
+            "id": "subtopic_01knr5h3881bzw_0y550zyta08et086",
+            "status": "active",
+            "topicId": "topic_01knrswx5kywsq_4fmxjp0f7wgcw7h9",
+            "type": "subtopic",
+            "updatedAt": 1777312050221,
+            "visibility": "hidden"
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775753640407,
+          "coreStatus": null,
+          "coreUpdated": 1776434087660,
+          "identifier": "qdbm-sub-subtopic_01knr5h3881bzw_0y550zyta08et086",
+          "identifierFamily": "native",
+          "latestSignature": "STgccmYycLY27BQj1Aiv3JWF1uzjtsC7K94iuxwEs8aySkUqgjxoBiRQHBXdamJfBZSjmcWLZTFpmrj2T43HYUM",
+          "latestTransaction": {
+            "blockHeight": 2546435,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "STgccmYycLY27BQj1Aiv3JWF1uzjtsC7K94iuxwEs8aySkUqgjxoBiRQHBXdamJfBZSjmcWLZTFpmrj2T43HYUM",
+            "timestamp": 1776434087660,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "iffi vaba mees",
+            "createdAt": "2026-04-09T03:45:44.712Z",
+            "id": "subtopic_01knr5h3881bzw_0y550zyta08et086",
+            "status": "active",
+            "topicId": "topic_01knmak783ywsq_aptj3yb7h244k7q4",
+            "type": "subtopic",
+            "updatedAt": 1776434082515,
+            "visibility": "hidden"
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776264981964,
+          "coreStatus": null,
+          "coreUpdated": 1776957403275,
+          "identifier": "qdbm-sub-subtopic_01knr5h3881bzw_0y550zyta08et086",
+          "identifierFamily": "native",
+          "latestSignature": "36JSLdY3DxTE3jMaKU2FhCaEL5Txu4sziDQUTCvCp2SQGJkjvwgsFXqpfNsHvVWSNw9Jw8ExSNWD2GCoSfnZXByS",
+          "latestTransaction": {
+            "blockHeight": 2553589,
+            "creatorAddress": "QipPqwJeLtx89dXcSkY7vimMUNT8Gy5k2E",
+            "fee": "0.01000000",
+            "signature": "36JSLdY3DxTE3jMaKU2FhCaEL5Txu4sziDQUTCvCp2SQGJkjvwgsFXqpfNsHvVWSNw9Jw8ExSNWD2GCoSfnZXByS",
+            "timestamp": 1776957403275,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "deleted": true
+          },
+          "payloadError": null,
+          "publisher": "developer iffi",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Qortal-Video-Bridge",
+      "candidateCreated": 1775879582339,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+      "entityType": "Thread",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+        "entityType": "Thread",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Thread:subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "Qortal-Video-Bridge",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775879582339,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+          "identifierFamily": "native",
+          "latestSignature": "42sDqtDpRYoeK2QSuYChEzGbv86UfwMYgpWrSZnauqsePJJvm6HBNV8nY5L96MfE3sozmF6SWfYypkwiVtj21WuM",
+          "latestTransaction": {
+            "blockHeight": 2538855,
+            "creatorAddress": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa",
+            "fee": "0.01000000",
+            "signature": "42sDqtDpRYoeK2QSuYChEzGbv86UfwMYgpWrSZnauqsePJJvm6HBNV8nY5L96MfE3sozmF6SWfYypkwiVtj21WuM",
+            "timestamp": 1775879582339,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Qortal-Video-Bridge",
+            "createdAt": "2026-04-11T03:52:57.004Z",
+            "id": "subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+            "status": "active",
+            "topicId": "topic_01knmahst7ywsq_rp0vq4vw59smcp57",
+            "type": "subtopic",
+            "updatedAt": 1775879577004,
+            "visibility": "visible"
+          },
+          "payloadError": null,
+          "publisher": "Qortal-Video-Bridge",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776263408822,
+          "coreStatus": null,
+          "coreUpdated": 1777602843252,
+          "identifier": "qdbm-sub-subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+          "identifierFamily": "native",
+          "latestSignature": "3HFnR5DsK725tmjLqFgo5ttotTufB3PTdpYhEPa4YJLx8sGHbUYw3ow7W2zdrbK8Hm8U4Cbb6rqtk63hDsSmHDTU",
+          "latestTransaction": {
+            "blockHeight": 2562418,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "3HFnR5DsK725tmjLqFgo5ttotTufB3PTdpYhEPa4YJLx8sGHbUYw3ow7W2zdrbK8Hm8U4Cbb6rqtk63hDsSmHDTU",
+            "timestamp": 1777602843252,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "deleted": true
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1776263621847,
+          "coreStatus": null,
+          "coreUpdated": null,
+          "identifier": "qdbm-sub-subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+          "identifierFamily": "native",
+          "latestSignature": "41qLsNaBLeB9V745oXNnBjcoxBb67Vpo1pgSBLpDRUV3Jgy5GmQDq2AjbQPEkAZse6zwbKi9gaVX3tCvy24UdjHH",
+          "latestTransaction": {
+            "blockHeight": 2544105,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "41qLsNaBLeB9V745oXNnBjcoxBb67Vpo1pgSBLpDRUV3Jgy5GmQDq2AjbQPEkAZse6zwbKi9gaVX3tCvy24UdjHH",
+            "timestamp": 1776263621847,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "authorUserId": "Qortal-Video-Bridge",
+            "createdAt": "2026-04-11T03:52:57.004Z",
+            "id": "subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
+            "status": "active",
+            "topicId": "topic_01knmahst7ywsq_rp0vq4vw59smcp57",
+            "type": "subtopic",
+            "updatedAt": 1776263619149,
+            "visibility": "hidden"
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    },
+    {
+      "availabilityTombstoneAmbiguity": "Envelope present; payload/tombstone status requires enrichment",
+      "candidateCanonicalPublisher": "Discussion_Boards",
+      "candidateCreated": 1775578541415,
+      "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
+      "comparison": {
+        "creatorAgreement": "MANUAL COMPARISON REQUIRED",
+        "historicalFirstTransaction": "UNAVAILABLE from current public surface",
+        "historicalNameOwnership": "UNAVAILABLE; current lookup is not historical",
+        "immutableAgreement": "MANUAL COMPARISON REQUIRED",
+        "mutationPath": "INFERRED from changed fields where present; not proof"
+      },
+      "confidence": "low",
+      "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "entityId": "topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+      "entityType": "Topic",
+      "identifierFamilyConflict": "none observed",
+      "immutableFieldAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "manifestDecision": {
+        "canonicalPublisher": null,
+        "cutoff": {
+          "height": null,
+          "timestamp": null
+        },
+        "decisionReason": "",
+        "entityId": "topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+        "entityType": "Topic",
+        "evidenceRefs": [
+          "legacy-fixture-inventory.json#/duplicateGroups/Topic:topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc"
+        ],
+        "notes": "",
+        "reviewVersion": "TBD",
+        "reviewedAt": "",
+        "reviewedBy": "",
+        "schemaVersion": "qortium.discussion-boards.migration-manifest/v1",
+        "status": "REVIEW-REQUIRED"
+      },
+      "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
+      "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
+      "publishers": [
+        "Discussion_Boards",
+        "developer iffi",
+        "iffi vaba mees"
+      ],
+      "resources": [
+        {
+          "availability": "available",
+          "coreCreated": 1775578541415,
+          "coreStatus": null,
+          "coreUpdated": 1775753518136,
+          "identifier": "qdbm-topic-topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+          "identifierFamily": "native",
+          "latestSignature": "5sHJVmgjwsNmLMMiR8d72Hxt4YAzzPq5bhnoUUT3p2DmvjWJocMEwpAQJk6P25eWJde1PQdMYd3dL8Hsci8SURSH",
+          "latestTransaction": {
+            "blockHeight": 2537131,
+            "creatorAddress": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE",
+            "fee": "0.01000000",
+            "signature": "5sHJVmgjwsNmLMMiR8d72Hxt4YAzzPq5bhnoUUT3p2DmvjWJocMEwpAQJk6P25eWJde1PQdMYd3dL8Hsci8SURSH",
+            "timestamp": 1775753518136,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "createdAt": "2026-04-07T16:15:38.750Z",
+            "createdByUserId": "Discussion_Boards",
+            "id": "topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+            "status": "active",
+            "type": "topic",
+            "updatedAt": 1775753510278,
+            "visibility": "visible"
+          },
+          "payloadError": null,
+          "publisher": "Discussion_Boards",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775845061060,
+          "coreStatus": null,
+          "coreUpdated": 1776957420709,
+          "identifier": "qdbm-topic-topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+          "identifierFamily": "native",
+          "latestSignature": "3GFtQ3Azk9cbqGfXdpKL8vv8sVLyVKiQT5vpC8p96HRNWNAmbqyvARMuprN7L5qwsjUo9UkprB5uPadisnLojjxZ",
+          "latestTransaction": {
+            "blockHeight": 2553589,
+            "creatorAddress": "QipPqwJeLtx89dXcSkY7vimMUNT8Gy5k2E",
+            "fee": "0.01000000",
+            "signature": "3GFtQ3Azk9cbqGfXdpKL8vv8sVLyVKiQT5vpC8p96HRNWNAmbqyvARMuprN7L5qwsjUo9UkprB5uPadisnLojjxZ",
+            "timestamp": 1776957420709,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "deleted": true
+          },
+          "payloadError": null,
+          "publisher": "developer iffi",
+          "tombstone": true,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        },
+        {
+          "availability": "available",
+          "coreCreated": 1775846900338,
+          "coreStatus": null,
+          "coreUpdated": 1775847002019,
+          "identifier": "qdbm-topic-topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+          "identifierFamily": "native",
+          "latestSignature": "42GiEQraSXDfjjrrhamvNWnUZM627BNFQV6uvAmZ8ockZEMWLzzg634zf76gsrSmeUuLor71dtdLiUorQdyoMv1S",
+          "latestTransaction": {
+            "blockHeight": 2538409,
+            "creatorAddress": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q",
+            "fee": "0.01000000",
+            "signature": "42GiEQraSXDfjjrrhamvNWnUZM627BNFQV6uvAmZ8ockZEMWLzzg634zf76gsrSmeUuLor71dtdLiUorQdyoMv1S",
+            "timestamp": 1775847002019,
+            "type": "ARBITRARY"
+          },
+          "payloadAvailability": "available",
+          "payloadClaims": {
+            "createdAt": "2026-04-07T16:15:38.750Z",
+            "createdByUserId": "Discussion_Boards",
+            "id": "topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
+            "status": "active",
+            "type": "topic",
+            "updatedAt": 1775846964893,
+            "visibility": "visible"
+          },
+          "payloadError": null,
+          "publisher": "iffi vaba mees",
+          "tombstone": false,
+          "transactionEvidence": "DIRECTLY VERIFIED latest transaction only"
+        }
+      ],
+      "status": "REVIEW-REQUIRED"
+    }
+  ],
+  "schemaVersion": "qortium.discussion-boards.high-risk-enrichment/v1",
+  "source": "legacy-canonical-publisher-review.json"
+}

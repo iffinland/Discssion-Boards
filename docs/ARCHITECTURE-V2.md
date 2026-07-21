@@ -857,12 +857,15 @@ unavailable:
 - expose a stable quarantine/diagnostic reason;
 - allow a later reviewed manifest revision to resolve the record.
 
-### 17.10 Blocking decision
+### 17.10 Final readiness boundary
 
-**BLOCKING PHASE 1:** the investigation narrows the likely solution to the
-constrained earliest-candidate algorithm plus a reviewed migration manifest,
-but does not yet prove the complete legacy corpus. Phase 1 may not ship
-canonical legacy ownership selection or enable V2 adoption until:
+The investigation narrows the likely solution to the constrained
+earliest-candidate algorithm plus a reviewed migration manifest, but cannot
+prove every historical mapping. This is a **blocking prerequisite for
+automatic legacy authority migration**, not for implementing the fail-closed
+V2 foundation. Phase 1 may begin only under the authority-state boundary in
+section 17.11. Automatic legacy adoption and inherited owner authority remain
+feature-gated until:
 
 1. a cutoff height/timestamp is approved;
 2. the complete paginated pre-cutoff fixture is captured and reviewed;
@@ -883,6 +886,32 @@ publishers). The per-group evidence and blank human decision fields are in
 `docs/migration/legacy-canonical-publisher-review.json`. This classification
 does not resolve the blocker: payload immutable-field checks, tombstone and
 unavailable-payload enrichment, and maintainer decisions remain required.
+
+### 17.11 Legacy authority states and Phase 1 boundary
+
+Every normalized V1 entity has exactly one migration authority state:
+
+| State | Read compatibility | Inherited V2 owner authority | Owner/destructive mutation | Automatic adoption |
+| --- | --- | --- | --- | --- |
+| `APPROVED` | allowed | allowed, subject to current identity validation | allowed only for approved owner and fields | allowed when all adoption checks pass |
+| `UNRESOLVED` | allowed when safely parseable | denied | denied; moderation remains a separate trusted operation domain | denied |
+| `QUARANTINED` | allowed only as explicitly marked compatibility data | denied | denied | denied |
+
+The reducer and migration adapter fail closed for authority but fail open for
+safe read compatibility. `UNRESOLVED` and `QUARANTINED` records cannot obtain
+authority from an embedded author, current name ownership, earliest payload
+timestamp, index, or a later publisher. An explicit V2-native adoption record
+may establish authority only through independently verifiable identity and
+authorization, with a deterministic audit reference; it cannot assert away
+legacy ambiguity.
+
+Phase 1 may implement V2 envelopes and schemas, publisher and wallet
+validation interfaces, deterministic reduction for new V2 entities, stable
+quarantine reasons, V1 compatibility normalization, derived-index boundaries,
+and fail-closed authority tests. It must not enable automatic legacy adoption,
+inherit owner authority for non-`APPROVED` entities, or ship a final universal
+legacy canonical-publisher rule. Those paths are feature-gated behind an
+approved manifest and cutoff.
 
 ## 18. Legacy-to-V2 adoption
 
@@ -1103,7 +1132,9 @@ The GitHub dependency graph remains authoritative. Current planned order:
 1. **Architecture V2 documentation (#2):** approve this design and resolve
    blocking prerequisites.
 2. **Phase 1 (#3):** entity ownership, metadata envelopes, strict validation,
-   deterministic reducer, quarantine, V1 reader, and proven legacy rule.
+   deterministic reducer, quarantine, V1 reader, and explicit legacy
+   authority states. Automatic legacy authority migration is feature-gated,
+   not a Phase 1 prerequisite.
 3. **Phase 2 (#4):** independent authenticated reactions.
 4. **Phase 3 (#5):** native Core polls and Home bridge writes.
 5. **Phase 4 (#6):** moderation operations and role authorization redesign.
@@ -1154,6 +1185,12 @@ Fixture families:
 20. last-known-good cache with unavailable authoritative resource;
 21. current-name transfer/historical-wallet ambiguity;
 22. malformed/oversized payload and attachment references.
+23. `APPROVED`, `UNRESOLVED`, and `QUARANTINED` legacy entities proving that
+    only approved mappings can authorize owner edits, adoption, transfer, or
+    destructive operations;
+24. safe compatibility rendering when authority metadata is missing, partial,
+    unavailable, or conflicting;
+25. new V2-native entities proving they do not depend on legacy canonicalization.
 
 Fixtures that represent live QDN records must preserve the resource metadata
 needed to reproduce ordering and identity decisions.
@@ -1170,8 +1207,8 @@ needed to reproduce ordering and identity decisions.
 - reducer stages and quarantine behavior are explicit;
 - V1 compatibility, coexistence, and adoption are explicit;
 - indexes are derived and non-authoritative;
-- the unresolved legacy publisher rule is identified as blocking rather than
-  invented.
+- unresolved legacy publisher authority remains readable but cannot authorize
+  V2 owner-sensitive mutations or adoption.
 
 ### 27.2 Phase 1 implementation acceptance
 
@@ -1185,6 +1222,7 @@ After the blocking legacy decision is resolved:
 - valid owner edits change only allowed fields;
 - invalid records receive stable quarantine reasons;
 - legacy fixtures remain readable;
+- unresolved and quarantined legacy fixtures cannot gain V2 authority;
 - reload produces identical canonical state;
 - partial/unavailable data is visible and safe;
 - production build and existing unrelated features continue to work.
@@ -1203,12 +1241,12 @@ Each operation phase tests:
 
 ## 28. Open decisions
 
-### Blocking Phase 1
+### Blocking automatic legacy authority migration
 
 1. Approval of the constrained earliest-candidate algorithm, V1 cutoff, and
-   migration-manifest governance after complete fixture review.
-2. Availability of first-transaction/block evidence and historical wallet
-   binding for ambiguous legacy resources. Current name ownership is
+   migration-manifest governance after maintainer fixture review.
+2. First-transaction/block evidence and historical wallet binding for any
+   mapping a maintainer wishes to mark `APPROVED`; current name ownership is
    insufficient.
 3. Confirmation that required trusted QDN resource metadata is available
    through the current Home bridge.

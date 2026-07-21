@@ -71,6 +71,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/0",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01knmmacwn1jrg_zkkn64nta1n7tbkg",
       "entityType": "Post",
       "identifierFamilyConflict": "legacy+partitioned conflict",
@@ -144,6 +152,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/1",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01knppmj2v1bzw_9rzkpz7wqdre6kye",
       "entityType": "Post",
       "identifierFamilyConflict": "legacy+partitioned conflict",
@@ -217,6 +233,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/2",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01knpwpyteywsq_9wydyhpsrwjvfgfy",
       "entityType": "Post",
       "identifierFamilyConflict": "legacy+partitioned conflict",
@@ -290,6 +314,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/3",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 4,
+        "payloadsAvailable": 4,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01knqavn6q1bzw_97ne0bf123e0x55e",
       "entityType": "Post",
       "identifierFamilyConflict": "legacy+partitioned conflict",
@@ -437,6 +469,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/4",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01knr9sjd31bzw_t0txpmtk2ywnb0dw",
       "entityType": "Post",
       "identifierFamilyConflict": "legacy+partitioned conflict",
@@ -572,6 +612,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/5",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01knsk11p010yp_ffkf9zcyny67kvg1",
       "entityType": "Post",
       "identifierFamilyConflict": "legacy+partitioned conflict",
@@ -707,6 +755,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/6",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 4,
+        "payloadsAvailable": 4,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01kq5hybbvywsq_g2hjtxnyb3836c30",
       "entityType": "Post",
       "identifierFamilyConflict": "none observed",
@@ -793,6 +849,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/7",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01kq5j43tbywsq_k8gwaebq1354k7jb",
       "entityType": "Post",
       "identifierFamilyConflict": "none observed",
@@ -867,6 +931,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/8",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 4,
+        "payloadsAvailable": 4,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01kq7fvw3gywsq_r88c7gcd65zfn5vn",
       "entityType": "Post",
       "identifierFamilyConflict": "none observed",
@@ -1201,6 +1273,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/9",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "post_01krcpfkqv18r2_c8wd7rd1rzd3qcky",
       "entityType": "Post",
       "identifierFamilyConflict": "none observed",
@@ -1275,6 +1355,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/10",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 6,
+        "payloadsAvailable": 5,
+        "payloadsUnavailable": 1
+      },
       "entityId": "post_01krn8k49fyuaj_v8rpxsgwjnn0x8ex",
       "entityType": "Post",
       "identifierFamilyConflict": "none observed",
@@ -1757,6 +1845,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/11",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "subtopic_01knr5h3881bzw_0y550zyta08et086",
       "entityType": "Thread",
       "identifierFamilyConflict": "none observed",
@@ -1831,6 +1927,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/12",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "subtopic_01knxaqqdcyuaj_z04f57tsdskwwxhj",
       "entityType": "Thread",
       "identifierFamilyConflict": "none observed",
@@ -2277,6 +2381,14 @@
       "candidateReason": "minimum Core created metadata; later full snapshots are compatible with V1 mutation republication",
       "confidence": "low",
       "embeddedCreatorAgreement": "NOT-INSPECTED (payload enrichment required)",
+      "enrichmentRef": "high-risk-payload-enrichment.json#/entries/13",
+      "enrichmentSummary": {
+        "firstTransaction": "UNAVAILABLE",
+        "historicalNameOwnership": "UNAVAILABLE",
+        "latestTransactionsDirectlyVerified": 3,
+        "payloadsAvailable": 3,
+        "payloadsUnavailable": 0
+      },
       "entityId": "topic_01knmbmrqyywsq_8bwvdf0kzt8k7atc",
       "entityType": "Topic",
       "identifierFamilyConflict": "none observed",
