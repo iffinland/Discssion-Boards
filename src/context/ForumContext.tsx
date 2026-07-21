@@ -109,8 +109,16 @@ type ForumActionsContextValue = {
     subTopicAccess: TopicAccess;
     allowedAddresses: string[];
   }) => Promise<ForumMutationResult>;
-  updateTopicOwnerContent: (input: { topicId: string; title: string; description: string }) => Promise<ForumMutationResult>;
-  updateSubTopicOwnerContent: (input: { subTopicId: string; title: string; description: string }) => Promise<ForumMutationResult>;
+  updateTopicOwnerContent: (input: {
+    topicId: string;
+    title: string;
+    description: string;
+  }) => Promise<ForumMutationResult>;
+  updateSubTopicOwnerContent: (input: {
+    subTopicId: string;
+    title: string;
+    description: string;
+  }) => Promise<ForumMutationResult>;
   updateSubTopicSettings: (input: {
     subTopicId: string;
     topicId?: string;
@@ -135,6 +143,7 @@ type ForumActionsContextValue = {
     parentPostId?: string | null;
     attachments?: PostAttachment[];
     poll?: ForumPollDraft | null;
+    nativePollRecovery?: import('../services/architectureV2/types').NativePollRecovery;
   }) => Promise<ForumMutationResult>;
   upsertRoleAssignment: (input: {
     address: string;
@@ -194,7 +203,16 @@ const postsFromThreadIndex = (snapshot: ThreadSearchSnapshot): Post[] => {
 };
 
 const applyLoadedReactionFields = (posts: Post[], loaded: Post[]) => {
-  const reactionsByPost = new Map(loaded.map((post) => [post.id, { likes: post.likes, likedByAddresses: post.likedByAddresses }]));
+  const reactionsByPost = new Map(
+    loaded.map((post) => [
+      post.id,
+      {
+        likes: post.likes,
+        likedByAddresses: post.likedByAddresses,
+        poll: post.poll ?? null,
+      },
+    ])
+  );
   return posts.map((post) => {
     const reaction = reactionsByPost.get(post.id);
     return reaction ? { ...post, ...reaction } : post;
@@ -310,16 +328,18 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       if (cached?.posts.length) {
         let cachedPosts = cached.posts;
         try {
-          cachedPosts = await forumQdnService.applyPostReactionState(cached.posts);
+          cachedPosts = await forumQdnService.applyPostOperationState(
+            cached.posts,
+            authenticatedAddress
+          );
         } catch {
           // Preserve readable legacy cache when reaction discovery is unavailable.
         }
         setPosts((current) => {
-          const merged = applyLoadedReactionFields(reconcilePostCollections(
-            current,
-            cachedPosts,
-            recentMutations
-          ), cachedPosts);
+          const merged = applyLoadedReactionFields(
+            reconcilePostCollections(current, cachedPosts, recentMutations),
+            cachedPosts
+          );
           threadPostCache.write(
             normalizedId,
             merged.filter((post) => post.subTopicId === normalizedId)
@@ -353,17 +373,22 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (!loadedPosts) {
-          loadedPosts = await forumQdnService.loadPostsBySubTopic(normalizedId);
+          loadedPosts = await forumQdnService.loadPostsBySubTopic(
+            normalizedId,
+            authenticatedAddress
+          );
         } else {
-          loadedPosts = await forumQdnService.applyPostReactionState(loadedPosts);
+          loadedPosts = await forumQdnService.applyPostOperationState(
+            loadedPosts,
+            authenticatedAddress
+          );
         }
 
         setPosts((current) => {
-          const merged = applyLoadedReactionFields(reconcilePostCollections(
-            current,
-            loadedPosts,
-            recentMutations
-          ), loadedPosts);
+          const merged = applyLoadedReactionFields(
+            reconcilePostCollections(current, loadedPosts, recentMutations),
+            loadedPosts
+          );
           threadPostCache.write(
             normalizedId,
             merged.filter((post) => post.subTopicId === normalizedId)
@@ -392,7 +417,7 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
         setIsThreadPostsLoading(false);
       }
     },
-    [setPosts, setThreadSearchIndexes]
+    [authenticatedAddress, setPosts, setThreadSearchIndexes]
   );
 
   const dataValue = useMemo<ForumDataContextValue>(

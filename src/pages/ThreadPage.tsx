@@ -20,6 +20,7 @@ import { useForumActions, useForumData } from '../hooks/useForumData';
 import {
   buildThreadPostSearchIndex,
   createSearchHaystack,
+  getPollSearchParts,
   searchThreadPosts,
   tokenizeSearchQuery,
 } from '../services/forum/forumSearch';
@@ -34,6 +35,7 @@ import {
 } from '../services/qortium/share';
 import { resolveNameWalletAddress } from '../services/qortium/walletService';
 import { perfDebugLog, perfDebugTimeStart } from '../services/perf/perfDebug';
+import { isNativePostPoll } from '../services/architectureV2/polls.js';
 import type { Post, PostAttachment, UserRole } from '../types';
 
 const THREAD_BATCH_SIZE = 12;
@@ -182,9 +184,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
               postId: post.postId,
               haystack: createSearchHaystack([
                 post.content,
-                post.poll?.question ?? '',
-                post.poll?.description ?? '',
-                ...(post.poll?.options.map((option) => option.label) ?? []),
+                ...getPollSearchParts(post.poll),
                 post.authorUserId,
               ]),
             })),
@@ -736,10 +736,10 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
       return;
     }
 
-    setModerationFeedback('Poll closed.');
+    setModerationFeedback('Native poll closure scheduled.');
     window.setTimeout(() => {
       setModerationFeedback((current) =>
-        current === 'Poll closed.' ? null : current
+        current === 'Native poll closure scheduled.' ? null : current
       );
     }, 2400);
   };
@@ -1301,7 +1301,11 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
               }
               tipCount={post.tips}
               pollVoterId={pollVoterId}
-              canClosePoll={canModerate}
+              canClosePoll={Boolean(
+                isNativePostPoll(post.poll) &&
+                  authenticatedAddress &&
+                  post.poll.creatorAddress === authenticatedAddress
+              )}
               onLike={likePost}
               onVoteOnPoll={handleVoteOnPoll}
               onClosePoll={handleClosePoll}
@@ -1349,7 +1353,11 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
             }
             tipCount={post.tips}
             pollVoterId={pollVoterId}
-            canClosePoll={canModerate}
+            canClosePoll={Boolean(
+              isNativePostPoll(post.poll) &&
+                authenticatedAddress &&
+                post.poll.creatorAddress === authenticatedAddress
+            )}
             onLike={likePost}
             onVoteOnPoll={handleVoteOnPoll}
             onClosePoll={handleClosePoll}

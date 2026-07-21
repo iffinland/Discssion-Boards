@@ -26,6 +26,7 @@ type UseThreadActionsParams = {
     parentPostId?: string | null;
     attachments?: PostAttachment[];
     poll?: ForumPollDraft | null;
+    nativePollRecovery?: import('../../../services/architectureV2/types').NativePollRecovery;
   }) => Promise<ForumMutationResult>;
   uploadPostImage: (file: File) => Promise<ForumUploadImageResult>;
   uploadPostAttachment: (file: File) => Promise<ForumUploadAttachmentResult>;
@@ -63,6 +64,9 @@ export const useThreadActions = ({
     []
   );
   const [pollDraft, setPollDraft] = useState<ForumPollDraft | null>(null);
+  const [nativePollRecovery, setNativePollRecovery] = useState<
+    import('../../../services/architectureV2/types').NativePollRecovery | null
+  >(null);
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [tipAmount, setTipAmount] = useState('0');
   const [tipRecipientName, setTipRecipientName] = useState('');
@@ -88,9 +92,15 @@ export const useThreadActions = ({
       parentPostId: replyTarget?.id ?? null,
       attachments: replyAttachments,
       poll: replyTarget ? null : pollDraft,
+      nativePollRecovery: replyTarget
+        ? undefined
+        : (nativePollRecovery ?? undefined),
     });
 
     if (!result.ok) {
+      if (result.nativePollRecovery) {
+        setNativePollRecovery(result.nativePollRecovery);
+      }
       setFeedback(result.error ?? 'Unable to publish post.');
       return false;
     }
@@ -99,11 +109,13 @@ export const useThreadActions = ({
     setReplyTarget(null);
     setReplyAttachments([]);
     setPollDraft(null);
+    setNativePollRecovery(null);
     setFeedback(replyTarget ? 'Reply published.' : 'Post published.');
     return true;
   }, [
     createPost,
     pollDraft,
+    nativePollRecovery,
     replyAttachments,
     replyTarget,
     replyText,
@@ -128,6 +140,7 @@ export const useThreadActions = ({
     setReplyTarget(null);
     setReplyAttachments([]);
     setPollDraft(null);
+    setNativePollRecovery(null);
   }, []);
 
   const handleEditPost = useCallback(
@@ -365,7 +378,10 @@ export const useThreadActions = ({
     pollDraft,
     setReplyText,
     setReplyAttachments,
-    setPollDraft,
+    setPollDraft: (draft: ForumPollDraft | null) => {
+      setNativePollRecovery(null);
+      setPollDraft(draft);
+    },
     feedback,
     isTipModalOpen,
     tipAmount,

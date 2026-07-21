@@ -22,11 +22,26 @@ import { forumSearchIndexService } from '../../../services/qdn/forumSearchIndexS
 import { forumRolesService } from '../../../services/qdn/forumRolesService';
 import { writeThreadIndexCache } from '../../../services/qdn/threadIndexCache';
 import { authorizeLegacyMutation } from '../../../services/architectureV2/reducer';
+import {
+  confirmNativePoll,
+  createNativePoll,
+  isNativePostPoll,
+  publishNativePollReference,
+  sameNativePollReference,
+  submitNativePollVote,
+  toPersistedNativePollReference,
+} from '../../../services/architectureV2/polls.js';
+import type { NativePollRecovery } from '../../../services/architectureV2/types.js';
+import {
+  closeNativePoll,
+  loadNativePostPoll,
+  qortiumNativePollGateway,
+} from '../../../services/qortium/nativePollService.js';
+import { resolveNameWalletAddress } from '../../../services/qortium/walletService.js';
 import type {
   ForumRoleRegistry,
   Post,
   PostAttachment,
-  PostPoll,
   SubTopic,
   Topic,
   TopicAccess,
@@ -101,6 +116,38 @@ const isSuperAdminRole = (role: User['role']) =>
 const isSysOpRole = (role: User['role']) => role === 'SysOp';
 const TOPIC_DESCRIPTION_MAX_LENGTH = 250;
 
+const loadAuthoritativeNativePollReference = async (post: Post) => {
+  if (!isNativePostPoll(post.poll)) {
+    throw new Error(
+      '[POLL_IDENTITY_MISMATCH] Post does not contain a native poll reference'
+    );
+  }
+  let state;
+  try {
+    state = await forumQdnService.loadV2AuthorityState();
+  } catch (error) {
+    throw new Error(
+      `[POLL_IDENTITY_MISMATCH] V2 Post authority lookup failed: ${
+        error instanceof Error ? error.message : 'unknown authority error'
+      }`
+    );
+  }
+  const entity = state.authoritative.entities[post.id];
+  if (
+    entity?.entityType !== 'post' ||
+    !entity.pollReference ||
+    !sameNativePollReference(
+      entity.pollReference,
+      toPersistedNativePollReference(post.poll)
+    )
+  ) {
+    throw new Error(
+      '[POLL_IDENTITY_MISMATCH] native poll reference is not established by the authoritative V2 Post'
+    );
+  }
+  return entity.pollReference;
+};
+
 const normalizePollDraft = (draft: ForumPollDraft | null) => {
   if (!draft) {
     return null;
@@ -146,16 +193,6 @@ const normalizePollDraft = (draft: ForumPollDraft | null) => {
     options,
     closesAt,
   };
-};
-
-const isPollClosed = (poll: PostPoll) => {
-  if (poll.closedAt) {
-    return true;
-  }
-
-  return Boolean(
-    poll.closesAt && new Date(poll.closesAt).getTime() <= Date.now()
-  );
 };
 
 const sortTopicsByOrder = (items: Topic[]) =>
@@ -328,13 +365,22 @@ export const useForumCommands = ({
           },
           {
             validatePublisher: (metadata, claimed) =>
-              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
+              metadata.publisherName.trim().toLowerCase() ===
+              claimed.trim().toLowerCase()
                 ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'publisher mismatch',
+                  },
             validateWalletBinding: (_name, wallet) =>
               wallet.trim() === authenticatedAddress?.trim()
                 ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'wallet binding unavailable',
+                  },
           }
         );
         v2Committed = true;
@@ -357,7 +403,12 @@ export const useForumCommands = ({
         return { ok: true };
       } catch (error) {
         if (v2Committed) {
-          return { ok: true, partial: { pending: 'compatibility', retryable: true }, error: 'V2 topic committed; legacy compatibility publication is pending.' };
+          return {
+            ok: true,
+            partial: { pending: 'compatibility', retryable: true },
+            error:
+              'V2 topic committed; legacy compatibility publication is pending.',
+          };
         }
         return {
           ok: false,
@@ -367,8 +418,8 @@ export const useForumCommands = ({
       }
     },
     [
-      currentUser,
       authenticatedAddress,
+      currentUser,
       isAuthenticated,
       buildTopicDirectoryIndexResource,
       subTopics,
@@ -681,13 +732,22 @@ export const useForumCommands = ({
           },
           {
             validatePublisher: (metadata, claimed) =>
-              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
+              metadata.publisherName.trim().toLowerCase() ===
+              claimed.trim().toLowerCase()
                 ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'publisher mismatch',
+                  },
             validateWalletBinding: (_name, wallet) =>
               wallet.trim() === authenticatedAddress?.trim()
                 ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'wallet binding unavailable',
+                  },
           }
         );
         v2Committed = true;
@@ -710,7 +770,13 @@ export const useForumCommands = ({
         return { ok: true, subTopicId: newSubTopic.id };
       } catch (error) {
         if (v2Committed) {
-          return { ok: true, subTopicId: newSubTopic.id, partial: { pending: 'compatibility', retryable: true }, error: 'V2 thread committed; legacy compatibility publication is pending.' };
+          return {
+            ok: true,
+            subTopicId: newSubTopic.id,
+            partial: { pending: 'compatibility', retryable: true },
+            error:
+              'V2 thread committed; legacy compatibility publication is pending.',
+          };
         }
         return {
           ok: false,
@@ -735,22 +801,58 @@ export const useForumCommands = ({
   );
 
   const updateTopicOwnerContent = useCallback(
-    async (input: { topicId: string; title: string; description: string }): Promise<ForumMutationResult> => {
+    async (input: {
+      topicId: string;
+      title: string;
+      description: string;
+    }): Promise<ForumMutationResult> => {
       const target = topics.find((topic) => topic.id === input.topicId);
       if (!target) return { ok: false, error: 'Main topic not found.' };
-      if (!isAuthenticated) return { ok: false, error: 'Authenticate with Qortium first.' };
+      if (!isAuthenticated)
+        return { ok: false, error: 'Authenticate with Qortium first.' };
       try {
         await forumQdnService.publishV2OwnerEdit(
-          { operation: 'owner-edit', targetType: 'topic', targetId: target.id, publisherName: currentUser.username, walletAddress: authenticatedAddress ?? '', changes: { title: input.title.trim(), description: input.description.trim() } },
+          {
+            operation: 'owner-edit',
+            targetType: 'topic',
+            targetId: target.id,
+            publisherName: currentUser.username,
+            walletAddress: authenticatedAddress ?? '',
+            changes: {
+              title: input.title.trim(),
+              description: input.description.trim(),
+            },
+          },
           currentUser.username,
           {
-            validatePublisher: (metadata, claimed) => metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
-            validateWalletBinding: (_name, wallet) => wallet.trim() === authenticatedAddress?.trim() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+            validatePublisher: (metadata, claimed) =>
+              metadata.publisherName.trim().toLowerCase() ===
+              claimed.trim().toLowerCase()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'publisher mismatch',
+                  },
+            validateWalletBinding: (_name, wallet) =>
+              wallet.trim() === authenticatedAddress?.trim()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'wallet binding unavailable',
+                  },
           }
         );
         return { ok: true };
       } catch (error) {
-        return { ok: false, error: error instanceof Error ? error.message : '[LEGACY_AUTHORITY_BLOCKED] owner authority unavailable.' };
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : '[LEGACY_AUTHORITY_BLOCKED] owner authority unavailable.',
+        };
       }
     },
     [authenticatedAddress, currentUser.username, isAuthenticated, topics]
@@ -860,22 +962,60 @@ export const useForumCommands = ({
   );
 
   const updateSubTopicOwnerContent = useCallback(
-    async (input: { subTopicId: string; title: string; description: string }): Promise<ForumMutationResult> => {
-      const target = subTopics.find((subTopic) => subTopic.id === input.subTopicId);
+    async (input: {
+      subTopicId: string;
+      title: string;
+      description: string;
+    }): Promise<ForumMutationResult> => {
+      const target = subTopics.find(
+        (subTopic) => subTopic.id === input.subTopicId
+      );
       if (!target) return { ok: false, error: 'Sub-topic not found.' };
-      if (!isAuthenticated) return { ok: false, error: 'Authenticate with Qortium first.' };
+      if (!isAuthenticated)
+        return { ok: false, error: 'Authenticate with Qortium first.' };
       try {
         await forumQdnService.publishV2OwnerEdit(
-          { operation: 'owner-edit', targetType: 'thread', targetId: target.id, publisherName: currentUser.username, walletAddress: authenticatedAddress ?? '', changes: { title: input.title.trim(), description: input.description.trim() } },
+          {
+            operation: 'owner-edit',
+            targetType: 'thread',
+            targetId: target.id,
+            publisherName: currentUser.username,
+            walletAddress: authenticatedAddress ?? '',
+            changes: {
+              title: input.title.trim(),
+              description: input.description.trim(),
+            },
+          },
           currentUser.username,
           {
-            validatePublisher: (metadata, claimed) => metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
-            validateWalletBinding: (_name, wallet) => wallet.trim() === authenticatedAddress?.trim() ? { ok: true } : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+            validatePublisher: (metadata, claimed) =>
+              metadata.publisherName.trim().toLowerCase() ===
+              claimed.trim().toLowerCase()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'publisher mismatch',
+                  },
+            validateWalletBinding: (_name, wallet) =>
+              wallet.trim() === authenticatedAddress?.trim()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'wallet binding unavailable',
+                  },
           }
         );
         return { ok: true };
       } catch (error) {
-        return { ok: false, error: error instanceof Error ? error.message : '[LEGACY_AUTHORITY_BLOCKED] owner authority unavailable.' };
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : '[LEGACY_AUTHORITY_BLOCKED] owner authority unavailable.',
+        };
       }
     },
     [authenticatedAddress, currentUser.username, isAuthenticated, subTopics]
@@ -1372,6 +1512,7 @@ export const useForumCommands = ({
       parentPostId?: string | null;
       attachments?: PostAttachment[];
       poll?: ForumPollDraft | null;
+      nativePollRecovery?: NativePollRecovery;
     }): Promise<ForumMutationResult> => {
       const content = input.content.trim();
       const attachments = input.attachments ?? [];
@@ -1440,7 +1581,7 @@ export const useForumCommands = ({
         }
       }
 
-      if (input.poll && !targetSubTopic.isPoll) {
+      if (normalizedPoll && !targetSubTopic.isPoll) {
         return {
           ok: false,
           error: 'Polls can only be added inside Poll / Voting topics.',
@@ -1448,24 +1589,112 @@ export const useForumCommands = ({
       }
 
       const createdAt = new Date().toISOString();
-      const poll: PostPoll | null = normalizedPoll
-        ? {
-            id: generateForumEntityId('poll', currentUser.username),
-            question: normalizedPoll.question,
-            description: normalizedPoll.description,
-            mode: normalizedPoll.mode,
-            options: normalizedPoll.options.map((label) => ({
-              id: generateForumEntityId('option', currentUser.username),
-              label,
-            })),
-            votes: [],
-            closesAt: normalizedPoll.closesAt,
-            closedAt: null,
-            closedByUserId: null,
+      const postId =
+        input.nativePollRecovery?.postId ??
+        generateForumEntityId('post', currentUser.username);
+      let nativePollRecovery = input.nativePollRecovery;
+      let poll: Post['poll'] = null;
+      if (normalizedPoll) {
+        if (!authenticatedAddress?.trim()) {
+          return {
+            ok: false,
+            error:
+              '[POLL_IDENTITY_MISMATCH] authenticated wallet is required to create a native poll.',
+          };
+        }
+        let boundWallet: string | null = null;
+        try {
+          boundWallet = await resolveNameWalletAddress(currentUser.username);
+        } catch {
+          boundWallet = null;
+        }
+        if (boundWallet?.trim() !== authenticatedAddress.trim()) {
+          return {
+            ok: false,
+            error:
+              '[POLL_IDENTITY_MISMATCH] Current Qortium name is not bound to the authenticated wallet.',
+          };
+        }
+        const definition = {
+          question: normalizedPoll.question,
+          description: normalizedPoll.description,
+          selectionMode: normalizedPoll.mode,
+          options: normalizedPoll.options.map((label, offset) => ({
+            index: offset + 1,
+            label,
+          })),
+          startsAt: null,
+          closesAt: normalizedPoll.closesAt,
+        };
+        if (
+          nativePollRecovery &&
+          (nativePollRecovery.creatorName !== currentUser.username ||
+            nativePollRecovery.creatorAddress !== authenticatedAddress ||
+            JSON.stringify(nativePollRecovery.definition) !==
+              JSON.stringify(definition))
+        ) {
+          return {
+            ok: false,
+            error:
+              '[POLL_IDENTITY_MISMATCH] saved native poll recovery does not match this draft or identity.',
+          };
+        }
+        try {
+          let reference = nativePollRecovery
+            ? await confirmNativePoll(
+                nativePollRecovery,
+                qortiumNativePollGateway
+              )
+            : null;
+          if (!nativePollRecovery) {
+            const created = await createNativePoll(
+              {
+                postId,
+                creatorName: currentUser.username,
+                creatorAddress: authenticatedAddress,
+                definition,
+              },
+              qortiumNativePollGateway
+            );
+            nativePollRecovery = created.recovery;
+            reference = created.reference;
           }
-        : null;
+          if (!reference || !nativePollRecovery) {
+            return {
+              ok: false,
+              partial: {
+                pending: 'native-poll-confirmation',
+                retryable: true,
+              },
+              nativePollRecovery,
+              error:
+                '[NATIVE_POLL_UNAVAILABLE] Native poll was submitted but is not confirmed yet. Retry publishing this post after Core confirms it.',
+            };
+          }
+          nativePollRecovery = {
+            ...nativePollRecovery,
+            pollId: reference.pollId,
+          };
+          poll = await loadNativePostPoll(reference, authenticatedAddress);
+        } catch (error) {
+          return {
+            ok: false,
+            nativePollRecovery,
+            error:
+              error instanceof Error
+                ? error.message
+                : '[POLL_CREATION_FAILED] Failed to create native poll.',
+          };
+        }
+      } else if (nativePollRecovery) {
+        return {
+          ok: false,
+          error:
+            '[POLL_REFERENCE_PUBLICATION_FAILED] Poll recovery cannot be used without its poll draft.',
+        };
+      }
       const newPost: Post = {
-        id: generateForumEntityId('post', currentUser.username),
+        id: postId,
         subTopicId: input.subTopicId,
         authorUserId: currentUser.id,
         parentPostId: input.parentPostId ?? null,
@@ -1485,27 +1714,58 @@ export const useForumCommands = ({
       let v2Committed = false;
       try {
         const nextPosts = [...posts, newPost];
-        await forumQdnService.publishV2Entity(
-          {
-            entityType: 'post',
-            entityId: newPost.id,
-            parentThreadId: newPost.subTopicId,
-            parentPostId: newPost.parentPostId,
-            publisherName: currentUser.username,
-            walletAddress: authenticatedAddress ?? '',
-            content: newPost.content,
-          },
-          {
-            validatePublisher: (metadata, claimed) =>
-              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
-                ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
-            validateWalletBinding: (_name, wallet) =>
-              wallet.trim() === authenticatedAddress?.trim()
-                ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+        const pollReference = isNativePostPoll(newPost.poll)
+          ? toPersistedNativePollReference(newPost.poll)
+          : null;
+        const publishV2Post = () =>
+          forumQdnService.publishV2Entity(
+            {
+              entityType: 'post',
+              entityId: newPost.id,
+              parentThreadId: newPost.subTopicId,
+              parentPostId: newPost.parentPostId,
+              publisherName: currentUser.username,
+              walletAddress: authenticatedAddress ?? '',
+              content: newPost.content,
+              pollReference,
+            },
+            {
+              validatePublisher: (metadata, claimed) =>
+                metadata.publisherName.trim().toLowerCase() ===
+                claimed.trim().toLowerCase()
+                  ? { ok: true }
+                  : {
+                      ok: false,
+                      code: 'IDENTITY_UNVERIFIED',
+                      detail: 'publisher mismatch',
+                    },
+              validateWalletBinding: (_name, wallet) =>
+                wallet.trim() === authenticatedAddress?.trim()
+                  ? { ok: true }
+                  : {
+                      ok: false,
+                      code: 'IDENTITY_UNVERIFIED',
+                      detail: 'wallet binding unavailable',
+                    },
+            }
+          );
+        if (pollReference && nativePollRecovery) {
+          const publication = await publishNativePollReference(
+            pollReference,
+            nativePollRecovery,
+            publishV2Post
+          );
+          if (publication.ok === false) {
+            return {
+              ok: false,
+              partial: { pending: 'poll-reference', retryable: true },
+              nativePollRecovery: publication.recovery,
+              error: `[${publication.code}] ${publication.detail}`,
+            };
           }
-        );
+        } else {
+          await publishV2Post();
+        }
         v2Committed = true;
         const nextSubTopics = subTopics.map((subTopic) =>
           subTopic.id === input.subTopicId
@@ -1562,7 +1822,12 @@ export const useForumCommands = ({
         return { ok: true };
       } catch (error) {
         if (v2Committed) {
-          return { ok: true, partial: { pending: 'compatibility', retryable: true }, error: 'V2 post committed; compatibility/index publication is pending.' };
+          return {
+            ok: true,
+            partial: { pending: 'compatibility', retryable: true },
+            error:
+              'V2 post committed; compatibility/index publication is pending.',
+          };
         }
         return {
           ok: false,
@@ -1626,19 +1891,31 @@ export const useForumCommands = ({
           currentUser.username,
           {
             validatePublisher: (metadata, claimed) =>
-              metadata.publisherName.trim().toLowerCase() === claimed.trim().toLowerCase()
+              metadata.publisherName.trim().toLowerCase() ===
+              claimed.trim().toLowerCase()
                 ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'publisher mismatch' },
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'publisher mismatch',
+                  },
             validateWalletBinding: (_name, wallet) =>
               wallet.trim() === authenticatedAddress?.trim()
                 ? { ok: true }
-                : { ok: false, code: 'IDENTITY_UNVERIFIED', detail: 'wallet binding unavailable' },
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'wallet binding unavailable',
+                  },
           }
         );
       } catch (error) {
         return {
           ok: false,
-          error: error instanceof Error ? error.message : '[LEGACY_AUTHORITY_BLOCKED] V2 owner authority unavailable.',
+          error:
+            error instanceof Error
+              ? error.message
+              : '[LEGACY_AUTHORITY_BLOCKED] V2 owner authority unavailable.',
         };
       }
 
@@ -1697,6 +1974,7 @@ export const useForumCommands = ({
       }
     },
     [
+      authenticatedAddress,
       currentUser,
       buildThreadIndexResource,
       isAuthenticated,
@@ -1800,6 +2078,14 @@ export const useForumCommands = ({
         return { ok: false, error: 'Poll not found.' };
       }
 
+      if (!isNativePostPoll(target.poll)) {
+        return {
+          ok: false,
+          error:
+            '[UNSUPPORTED_CAPABILITY] Legacy embedded polls are historical and read-only.',
+        };
+      }
+
       const targetSubTopic = subTopics.find(
         (subTopic) => subTopic.id === target.subTopicId
       );
@@ -1823,100 +2109,99 @@ export const useForumCommands = ({
         };
       }
 
-      const voterId = authenticatedAddress ?? currentUser.id;
-      if (!voterId) {
-        return { ok: false, error: 'Unable to identify voter.' };
+      if (!authenticatedAddress?.trim()) {
+        return {
+          ok: false,
+          error: '[POLL_IDENTITY_MISMATCH] Unable to identify native voter.',
+        };
       }
-
-      const validOptionIds = new Set(
-        target.poll.options.map((option) => option.id)
-      );
-      const selectedOptionIds = [...new Set(input.optionIds)].filter(
-        (optionId) => validOptionIds.has(optionId)
-      );
-
-      if (selectedOptionIds.length === 0) {
-        return { ok: false, error: 'Choose at least one poll option.' };
-      }
-
-      if (target.poll.mode === 'single' && selectedOptionIds.length > 1) {
-        return { ok: false, error: 'This poll allows one answer only.' };
-      }
-
-      if (isPollClosed(target.poll)) {
-        return { ok: false, error: 'This poll is closed.' };
-      }
-
-      const votedAt = new Date().toISOString();
-      const updatedPost: Post = {
-        ...target,
-        updatedAt: votedAt,
-        poll: {
-          ...target.poll,
-          votes: [
-            ...target.poll.votes.filter((vote) => vote.voterId !== voterId),
-            {
-              voterId,
-              optionIds: selectedOptionIds,
-              votedAt,
-            },
-          ],
-        },
-      };
-
+      let authoritativeReference;
       try {
-        const nextPosts = posts.map((post) =>
-          post.id === input.postId ? updatedPost : post
-        );
-        const postResource = forumQdnService.buildPostPublishResource(
-          updatedPost,
-          currentUser.username
-        );
-        const threadIndexResource = buildThreadIndexResource(
-          updatedPost.subTopicId,
-          nextPosts
-        );
-        await publishMultipleQortiumResources([
-          postResource.resource,
-          threadIndexResource.resource,
-        ]);
-
-        recordRecentPostMutation(updatedPost);
-        setPosts((current) => {
-          const next = current.map((post) =>
-            post.id === input.postId ? updatedPost : post
-          );
-          threadPostCache.write(
-            updatedPost.subTopicId,
-            next.filter((post) => post.subTopicId === updatedPost.subTopicId)
-          );
-          return next;
-        });
-        setThreadSearchIndexes((current) => ({
-          ...current,
-          [updatedPost.subTopicId]: threadIndexResource.snapshot,
-        }));
-        writeThreadIndexCache(
-          updatedPost.subTopicId,
-          threadIndexResource.snapshot
-        );
-        return { ok: true };
+        authoritativeReference =
+          await loadAuthoritativeNativePollReference(target);
       } catch (error) {
         return {
           ok: false,
           error:
-            error instanceof Error ? error.message : 'Failed to submit vote.',
+            error instanceof Error
+              ? error.message
+              : '[POLL_IDENTITY_MISMATCH] Native poll authority is unavailable.',
+        };
+      }
+      if (target.poll.runtime?.isClosed) {
+        return { ok: false, error: 'This poll is closed.' };
+      }
+
+      try {
+        const optionIndexes = input.optionIds.map((optionId) => {
+          const match = /^native:(\d+)$/.exec(optionId);
+          return match ? Number(match[1]) : Number.NaN;
+        });
+        const submitted = await submitNativePollVote(
+          authoritativeReference,
+          optionIndexes,
+          qortiumNativePollGateway
+        );
+        const refreshedPoll = await loadNativePostPoll(
+          authoritativeReference,
+          authenticatedAddress
+        );
+        let cacheWriteFailed = false;
+        try {
+          const refreshedPosts = posts.map((post) =>
+            post.id === input.postId ? { ...post, poll: refreshedPoll } : post
+          );
+          threadPostCache.write(
+            target.subTopicId,
+            refreshedPosts.filter(
+              (post) => post.subTopicId === target.subTopicId
+            )
+          );
+        } catch {
+          cacheWriteFailed = true;
+        }
+        setPosts((current) => {
+          return current.map((post) =>
+            post.id === input.postId ? { ...post, poll: refreshedPoll } : post
+          );
+        });
+        if (refreshedPoll.runtime?.availability !== 'available') {
+          return {
+            ok: true,
+            transactionSignature: submitted.transactionSignature,
+            partial: { pending: 'poll-result-refresh', retryable: true },
+            error: 'Native vote committed; Core result refresh is pending.',
+          };
+        }
+        if (cacheWriteFailed) {
+          return {
+            ok: true,
+            transactionSignature: submitted.transactionSignature,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'Native vote committed; local derived poll cache update is pending.',
+          };
+        }
+        return {
+          ok: true,
+          transactionSignature: submitted.transactionSignature,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : '[POLL_VOTE_FAILED] Failed to submit native vote.',
         };
       }
     },
     [
       authenticatedAddress,
-      buildThreadIndexResource,
       currentUser,
       isAuthenticated,
       posts,
       setPosts,
-      setThreadSearchIndexes,
       subTopics,
     ]
   );
@@ -1927,88 +2212,117 @@ export const useForumCommands = ({
         return { ok: false, error: 'Authenticate with Qortium first.' };
       }
 
-      if (!isModeratorRole(currentUser.role)) {
-        return {
-          ok: false,
-          error:
-            'Only moderators, admins, Super Admins and SysOp can close polls.',
-        };
-      }
-
       const target = posts.find((post) => post.id === input.postId);
       if (!target?.poll) {
         return { ok: false, error: 'Poll not found.' };
       }
-
-      if (target.poll.closedAt) {
-        return { ok: false, error: 'This poll is already closed.' };
+      if (!isNativePostPoll(target.poll)) {
+        return {
+          ok: false,
+          error:
+            '[UNSUPPORTED_CAPABILITY] Legacy embedded polls are historical and read-only.',
+        };
       }
-
-      const closedAt = new Date().toISOString();
-      const updatedPost: Post = {
-        ...target,
-        updatedAt: closedAt,
-        poll: {
-          ...target.poll,
-          closedAt,
-          closedByUserId: currentUser.id,
-        },
-      };
-
+      if (!authenticatedAddress?.trim()) {
+        return {
+          ok: false,
+          error:
+            '[POLL_IDENTITY_MISMATCH] Authenticated wallet is required to update a native poll.',
+        };
+      }
+      let authoritativeReference;
       try {
-        const nextPosts = posts.map((post) =>
-          post.id === input.postId ? updatedPost : post
-        );
-        const postResource = forumQdnService.buildPostPublishResource(
-          updatedPost,
-          currentUser.username
-        );
-        const threadIndexResource = buildThreadIndexResource(
-          updatedPost.subTopicId,
-          nextPosts
-        );
-        await publishMultipleQortiumResources([
-          postResource.resource,
-          threadIndexResource.resource,
-        ]);
-
-        recordRecentPostMutation(updatedPost);
-        setPosts((current) => {
-          const next = current.map((post) =>
-            post.id === input.postId ? updatedPost : post
-          );
-          threadPostCache.write(
-            updatedPost.subTopicId,
-            next.filter((post) => post.subTopicId === updatedPost.subTopicId)
-          );
-          return next;
-        });
-        setThreadSearchIndexes((current) => ({
-          ...current,
-          [updatedPost.subTopicId]: threadIndexResource.snapshot,
-        }));
-        writeThreadIndexCache(
-          updatedPost.subTopicId,
-          threadIndexResource.snapshot
-        );
-        return { ok: true };
+        authoritativeReference =
+          await loadAuthoritativeNativePollReference(target);
       } catch (error) {
         return {
           ok: false,
           error:
-            error instanceof Error ? error.message : 'Failed to close poll.',
+            error instanceof Error
+              ? error.message
+              : '[POLL_IDENTITY_MISMATCH] Native poll authority is unavailable.',
+        };
+      }
+      let boundWallet: string | null = null;
+      try {
+        boundWallet = await resolveNameWalletAddress(currentUser.username);
+      } catch {
+        boundWallet = null;
+      }
+      if (
+        authoritativeReference.creatorAddress !== authenticatedAddress ||
+        boundWallet?.trim() !== authenticatedAddress.trim()
+      ) {
+        return {
+          ok: false,
+          error:
+            '[POLL_IDENTITY_MISMATCH] Current Qortium identity does not own this native poll.',
+        };
+      }
+
+      try {
+        const transactionSignature = await closeNativePoll(
+          authoritativeReference,
+          authenticatedAddress
+        );
+        const refreshedPoll = await loadNativePostPoll(
+          authoritativeReference,
+          authenticatedAddress
+        );
+        let cacheWriteFailed = false;
+        try {
+          const refreshedPosts = posts.map((post) =>
+            post.id === input.postId ? { ...post, poll: refreshedPoll } : post
+          );
+          threadPostCache.write(
+            target.subTopicId,
+            refreshedPosts.filter(
+              (post) => post.subTopicId === target.subTopicId
+            )
+          );
+        } catch {
+          cacheWriteFailed = true;
+        }
+        setPosts((current) => {
+          return current.map((post) =>
+            post.id === input.postId ? { ...post, poll: refreshedPoll } : post
+          );
+        });
+        if (refreshedPoll.runtime?.availability !== 'available') {
+          return {
+            ok: true,
+            transactionSignature,
+            partial: { pending: 'poll-result-refresh', retryable: true },
+            error:
+              'Native poll update committed; Core result refresh is pending.',
+          };
+        }
+        if (cacheWriteFailed) {
+          return {
+            ok: true,
+            transactionSignature,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'Native poll update committed; local derived poll cache update is pending.',
+          };
+        }
+        return { ok: true, transactionSignature };
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : '[POLL_UPDATE_REJECTED] Failed to update native poll.',
         };
       }
     },
     [
-      buildThreadIndexResource,
-      currentUser.id,
-      currentUser.role,
+      authenticatedAddress,
       currentUser.username,
       isAuthenticated,
       posts,
       setPosts,
-      setThreadSearchIndexes,
     ]
   );
 
@@ -2070,18 +2384,37 @@ export const useForumCommands = ({
       const target = posts.find((post) => post.id === postId);
       if (!target) return;
       const actorId = `addr:${authenticatedAddress.trim().toLowerCase()}`;
-      const nextState = target.likedByAddresses.includes(actorId) ? 'inactive' : 'active';
+      const nextState = target.likedByAddresses.includes(actorId)
+        ? 'inactive'
+        : 'active';
       try {
-        await forumQdnService.publishPostReaction(postId, nextState, currentUser.username, authenticatedAddress.trim());
+        await forumQdnService.publishPostReaction(
+          postId,
+          nextState,
+          currentUser.username,
+          authenticatedAddress.trim()
+        );
         const reactions = await forumQdnService.loadPostReactions(postId);
-        const activeActors = Object.values(reactions.actors).filter((reaction) => reaction.state === 'active');
+        const activeActors = Object.values(reactions.actors).filter(
+          (reaction) => reaction.state === 'active'
+        );
         setPosts((current) => {
-          const next = current.map((post) => post.id === postId ? {
-            ...post,
-            likes: reactions.count,
-            likedByAddresses: activeActors.map((reaction) => `addr:${reaction.walletAddress.trim().toLowerCase()}`),
-          } : post);
-          threadPostCache.write(target.subTopicId, next.filter((post) => post.subTopicId === target.subTopicId));
+          const next = current.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  likes: reactions.count,
+                  likedByAddresses: activeActors.map(
+                    (reaction) =>
+                      `addr:${reaction.walletAddress.trim().toLowerCase()}`
+                  ),
+                }
+              : post
+          );
+          threadPostCache.write(
+            target.subTopicId,
+            next.filter((post) => post.subTopicId === target.subTopicId)
+          );
           return next;
         });
       } catch {

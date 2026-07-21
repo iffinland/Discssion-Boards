@@ -36,11 +36,11 @@ targets.
 
 ### 2.1 Reference state inspected
 
-| Repository | Path | Verified commit |
-| --- | --- | --- |
-| Discussion Boards | this repository | `c3c9638da72e2ab529042cffd079d3e49be9fb51` |
-| Qortium Core | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` |
-| Qortium Home | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e` |
+| Repository        | Path                               | Verified commit                                                    |
+| ----------------- | ---------------------------------- | ------------------------------------------------------------------ |
+| Discussion Boards | this repository                    | `aa8ebc088b505d210ba3e11867d172e8bd0c96c4` (Phase 3 worktree base) |
+| Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                         |
+| Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                         |
 
 The Discussion Boards production source reviewed by architecture issue #1
 remains commit `f20f93c833ef74dc83a22a59be2d1c6682e96bde`.
@@ -52,6 +52,8 @@ GitHub specification inspected:
 - issue #1, architecture review;
 - issue #2, Architecture V2 prerequisite and acceptance criteria;
 - issue #3, Phase 1 ownership/state authorization;
+- issue #4, Phase 2 independent reactions;
+- issue #5, Phase 3 native polls;
 - the dependent phased issue workflow through issue #14.
 
 ### 2.2 Three classes of platform statement
@@ -145,7 +147,7 @@ The reducer must enforce authority independently.
 Every V2 entity creation record contains:
 
 ```ts
-type EntityType = "topic" | "thread" | "post";
+type EntityType = 'topic' | 'thread' | 'post';
 
 interface EntityCreateBody {
   entityType: EntityType;
@@ -229,9 +231,9 @@ All V2 application records use this logical envelope:
 
 ```ts
 interface QdbV2Payload<TBody> {
-  schema: "qdb-v2";
+  schema: 'qdb-v2';
   schemaVersion: 2;
-  kind: "entity-create" | "operation" | "index";
+  kind: 'entity-create' | 'operation' | 'index';
   recordType: string;
   recordId: string;
   targetId: string | null;
@@ -267,7 +269,7 @@ interface QdnRecordEnvelope<T> {
     status?: unknown;
   };
   payload: T;
-  provenance: "v2" | "legacy-v1" | "derived-index";
+  provenance: 'v2' | 'legacy-v1' | 'derived-index';
 }
 ```
 
@@ -290,7 +292,7 @@ patch:
 
 ```ts
 interface EntityEditBody {
-  targetType: "topic" | "thread" | "post";
+  targetType: 'topic' | 'thread' | 'post';
   targetId: string;
   expectedOwnerPublisher: string;
   patch: Record<string, unknown>;
@@ -308,8 +310,8 @@ A reaction is independent actor state for a target Post:
 ```ts
 interface ReactionStateBody {
   targetId: string;
-  reaction: "like";
-  state: "active" | "inactive";
+  reaction: 'like';
+  state: 'active' | 'inactive';
   publisherName: string;
   walletAddress: string;
 }
@@ -390,22 +392,22 @@ claiming an administrative role.
 
 ## 9. Field-level mutation permissions
 
-| State | Entity owner edit | Moderation op | Reaction op | Poll/Core | Tip reference | Derived only |
-| --- | --- | --- | --- | --- | --- | --- |
-| Topic title/description | yes | no | no | no | no | no |
-| Topic access configuration | yes, within policy | no | no | no | no | no |
-| Topic visibility/lock | no | yes | no | no | no | no |
-| Thread title/description | yes | no | no | no | no | no |
-| Thread access configuration | yes, within parent policy | no | no | no | no | no |
-| Thread pin/lock/hidden/solved | no | yes | no | no | no | no |
-| Thread activity summaries | no | no | no | no | no | yes |
-| Post content/attachments | yes | no | no | no | no | no |
-| Post pin/hidden/removal | no | yes | no | no | no | no |
-| Owner deletion | tombstone op | no | no | no | no | no |
-| Reaction state/count | no | no | yes | no | no | count derived |
-| Poll definition/votes/results | no | no | no | Core authority | no | display cache only |
-| Tip count/total | no | no | no | no | references only | verified aggregate |
-| Role membership | no | authorized role op | no | no | no | reduced role state |
+| State                         | Entity owner edit         | Moderation op      | Reaction op | Poll/Core      | Tip reference   | Derived only       |
+| ----------------------------- | ------------------------- | ------------------ | ----------- | -------------- | --------------- | ------------------ |
+| Topic title/description       | yes                       | no                 | no          | no             | no              | no                 |
+| Topic access configuration    | yes, within policy        | no                 | no          | no             | no              | no                 |
+| Topic visibility/lock         | no                        | yes                | no          | no             | no              | no                 |
+| Thread title/description      | yes                       | no                 | no          | no             | no              | no                 |
+| Thread access configuration   | yes, within parent policy | no                 | no          | no             | no              | no                 |
+| Thread pin/lock/hidden/solved | no                        | yes                | no          | no             | no              | no                 |
+| Thread activity summaries     | no                        | no                 | no          | no             | no              | yes                |
+| Post content/attachments      | yes                       | no                 | no          | no             | no              | no                 |
+| Post pin/hidden/removal       | no                        | yes                | no          | no             | no              | no                 |
+| Owner deletion                | tombstone op              | no                 | no          | no             | no              | no                 |
+| Reaction state/count          | no                        | no                 | yes         | no             | no              | count derived      |
+| Poll definition/votes/results | no                        | no                 | no          | Core authority | no              | display cache only |
+| Tip count/total               | no                        | no                 | no          | no             | references only | verified aggregate |
+| Role membership               | no                        | authorized role op | no          | no             | no              | reduced role state |
 
 Unknown or cross-domain fields make an operation invalid. Reducers do not
 silently ignore forbidden patch fields.
@@ -505,7 +507,7 @@ Home, the ordering design must be revised and reviewed before implementation.
 
 - Byte-equivalent records with the same resource key are one input.
 - Repeated search results with the same `(service, publisher, identifier,
-  latestSignature)` are deduplicated.
+latestSignature)` are deduplicated.
 - Duplicate tip signatures count once globally.
 - One actor-state resource contributes at most one current reaction state.
 - Two operation resources with different record IDs are distinct even if their
@@ -561,26 +563,26 @@ publication.
 
 Every excluded record receives a machine-readable reason:
 
-| Code | Meaning |
-| --- | --- |
-| `unsupported-schema` | Unknown schema/version |
-| `malformed-payload` | Shape, type, or safety-limit failure |
-| `identifier-mismatch` | Resource identifier and payload identity disagree |
-| `invalid-entity-reference` | Target or parent does not exist or has wrong type |
-| `publisher-mismatch` | Embedded publisher claim differs from resource publisher |
-| `identity-unresolved` | Required authoritative identity cannot be resolved |
-| `wallet-mismatch` | Claimed wallet differs from verified publisher wallet |
-| `unauthorized-creation` | Publisher lacks creation permission |
-| `conflicting-creation` | Valid-looking non-canonical creation for an existing ID |
-| `unauthorized-owner-operation` | Publisher is not canonical owner |
-| `unauthorized-moderation` | Actor lacks role at effective operation order |
-| `forbidden-fields` | Operation attempts cross-domain mutation |
-| `duplicate-record` | Trusted or semantic duplicate |
-| `invalid-order-metadata` | Required trusted ordering metadata is absent/invalid |
-| `suspicious-client-time` | Client time is implausible; retained only if otherwise safe |
-| `unverified-transaction` | Tip/poll transaction reference cannot be verified |
-| `index-entry-unverified` | Index hint has no matching valid authority record |
-| `resource-unavailable` | Discovered resource could not be fetched |
+| Code                           | Meaning                                                     |
+| ------------------------------ | ----------------------------------------------------------- |
+| `unsupported-schema`           | Unknown schema/version                                      |
+| `malformed-payload`            | Shape, type, or safety-limit failure                        |
+| `identifier-mismatch`          | Resource identifier and payload identity disagree           |
+| `invalid-entity-reference`     | Target or parent does not exist or has wrong type           |
+| `publisher-mismatch`           | Embedded publisher claim differs from resource publisher    |
+| `identity-unresolved`          | Required authoritative identity cannot be resolved          |
+| `wallet-mismatch`              | Claimed wallet differs from verified publisher wallet       |
+| `unauthorized-creation`        | Publisher lacks creation permission                         |
+| `conflicting-creation`         | Valid-looking non-canonical creation for an existing ID     |
+| `unauthorized-owner-operation` | Publisher is not canonical owner                            |
+| `unauthorized-moderation`      | Actor lacks role at effective operation order               |
+| `forbidden-fields`             | Operation attempts cross-domain mutation                    |
+| `duplicate-record`             | Trusted or semantic duplicate                               |
+| `invalid-order-metadata`       | Required trusted ordering metadata is absent/invalid        |
+| `suspicious-client-time`       | Client time is implausible; retained only if otherwise safe |
+| `unverified-transaction`       | Tip/poll transaction reference cannot be verified           |
+| `index-entry-unverified`       | Index hint has no matching valid authority record           |
+| `resource-unavailable`         | Discovered resource could not be fetched                    |
 
 `resource-unavailable` is a data-availability state, not proof of malicious
 content. Quarantine diagnostics must avoid rendering unsafe payload content and
@@ -603,12 +605,12 @@ Canonical normalization produces:
 
 ```ts
 interface CanonicalEntityView {
-  entityType: "topic" | "thread" | "post";
+  entityType: 'topic' | 'thread' | 'post';
   entityId: string;
   ownerPublisherName: string | null;
   ownerWalletAddress: string | null;
-  provenance: "legacy-v1" | "v2";
-  authorityStatus: "canonical" | "compatibility" | "blocked" | "quarantined";
+  provenance: 'legacy-v1' | 'v2';
+  authorityStatus: 'canonical' | 'compatibility' | 'blocked' | 'quarantined';
   content: unknown;
   legacyState?: {
     reactions?: unknown;
@@ -701,11 +703,11 @@ a prerequisite for recognizing that a publisher/resource key existed.
 
 The V1 source confirms the following full-snapshot publications:
 
-| Entity | Original creation | Legitimate later cross-publisher copies |
-| --- | --- | --- |
-| Topic | An authorized admin creates the ID and publishes the Topic under the current QDN name | Another admin can change settings; a Super Admin/SysOp reorder republishes every Topic under the reordering user's name |
-| Thread | An allowed user creates the ID and publishes the SubTopic under the current QDN name | Moderators/admins can publish lock/settings/visibility/pin/solved snapshots; pinned-thread reorder republishes affected Threads under the staff user's name |
-| Post | The author creates the ID and publishes the Post under the current QDN name | Likes, poll votes, poll closure, staff pinning, staff deletion, and tip-counter synchronization publish complete Post state under the actor's name; author edits republish under the author's current name |
+| Entity | Original creation                                                                     | Legitimate later cross-publisher copies                                                                                                                                                                    |
+| ------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Topic  | An authorized admin creates the ID and publishes the Topic under the current QDN name | Another admin can change settings; a Super Admin/SysOp reorder republishes every Topic under the reordering user's name                                                                                    |
+| Thread | An allowed user creates the ID and publishes the SubTopic under the current QDN name  | Moderators/admins can publish lock/settings/visibility/pin/solved snapshots; pinned-thread reorder republishes affected Threads under the staff user's name                                                |
+| Post   | The author creates the ID and publishes the Post under the current QDN name           | Likes, poll votes, poll closure, staff pinning, staff deletion, and tip-counter synchronization publish complete Post state under the actor's name; author edits republish under the author's current name |
 
 Indexes are also republished under every mutating user's name, but index
 publishers are never entity-owner candidates. Role registry duplicates are a
@@ -750,17 +752,17 @@ sequence number.
 
 ### 17.5 Candidate rules and risks
 
-| Candidate | Benefit | Risk |
-| --- | --- | --- |
+| Candidate                                                                            | Benefit                                                                                                                                   | Risk                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Earliest Core resource `created` for a logical entity across all identifier variants | Matches the observed create-before-mutate flow; resistant to payload future timestamps; preserves deleted/unavailable first resource keys | Incomplete discovery can omit the original; a transaction timestamp is signer-supplied within bounds; imports or failed multi-resource creation can make the first visible resource non-original |
-| Latest Core resource/payload | Preserves the most recent V1 UI result | Known live later publishers are voters, reactors, moderators, tippers, or reordering admins; grants ownership to an operation actor |
-| Publisher whose current wallet matches embedded creator | Easy with current name API | Current ownership is not historical ownership; embedded creator is forgeable; name transfer can produce a false match or mismatch |
-| Publisher named by the majority of embedded creator claims | Later legitimate copies often preserve creator fields | An attacker can mass-publish copies; unavailable records bias the sample; the claim remains untrusted |
-| Publisher/identifier found in earliest trusted index | May reflect live historical structure | Index is derived, replaceable, and sometimes newer than entities |
-| Known deployment/bootstrap authority for Topics only | May fit administrator-created top-level structure | Cannot safely generalize to user Threads/Posts |
-| Reviewed migration manifest recording evidence and canonical publisher | Freezes an auditable result for the bounded legacy corpus and supports explicit exceptions | Requires complete fixture capture, governance, reproducibility, and a rule for newly discovered legacy records |
-| Quarantine every ambiguous entity pending review | Safest against takeover | Hides legitimate existing content and damages compatibility |
-| Earliest-candidate algorithm plus reviewed manifest and quarantine | Uses the strongest observed general signal while refusing unsupported ownership | More complex; cannot unblock until full corpus fixtures and exceptions are reviewed |
+| Latest Core resource/payload                                                         | Preserves the most recent V1 UI result                                                                                                    | Known live later publishers are voters, reactors, moderators, tippers, or reordering admins; grants ownership to an operation actor                                                              |
+| Publisher whose current wallet matches embedded creator                              | Easy with current name API                                                                                                                | Current ownership is not historical ownership; embedded creator is forgeable; name transfer can produce a false match or mismatch                                                                |
+| Publisher named by the majority of embedded creator claims                           | Later legitimate copies often preserve creator fields                                                                                     | An attacker can mass-publish copies; unavailable records bias the sample; the claim remains untrusted                                                                                            |
+| Publisher/identifier found in earliest trusted index                                 | May reflect live historical structure                                                                                                     | Index is derived, replaceable, and sometimes newer than entities                                                                                                                                 |
+| Known deployment/bootstrap authority for Topics only                                 | May fit administrator-created top-level structure                                                                                         | Cannot safely generalize to user Threads/Posts                                                                                                                                                   |
+| Reviewed migration manifest recording evidence and canonical publisher               | Freezes an auditable result for the bounded legacy corpus and supports explicit exceptions                                                | Requires complete fixture capture, governance, reproducibility, and a rule for newly discovered legacy records                                                                                   |
+| Quarantine every ambiguous entity pending review                                     | Safest against takeover                                                                                                                   | Hides legitimate existing content and damages compatibility                                                                                                                                      |
+| Earliest-candidate algorithm plus reviewed manifest and quarantine                   | Uses the strongest observed general signal while refusing unsupported ownership                                                           | More complex; cannot unblock until full corpus fixtures and exceptions are reviewed                                                                                                              |
 
 No inspected live example proved that a later publisher was the original
 creator. Multiple examples proved that the latest publisher was not the
@@ -910,11 +912,11 @@ unavailable-payload enrichment, and maintainer decisions remain required.
 
 Every normalized V1 entity has exactly one migration authority state:
 
-| State | Read compatibility | Inherited V2 owner authority | Owner/destructive mutation | Automatic adoption |
-| --- | --- | --- | --- | --- |
-| `APPROVED` | allowed | allowed, subject to current identity validation | allowed only for approved owner and fields | allowed when all adoption checks pass |
-| `UNRESOLVED` | allowed when safely parseable | denied | denied; moderation remains a separate trusted operation domain | denied |
-| `QUARANTINED` | allowed only as explicitly marked compatibility data | denied | denied | denied |
+| State         | Read compatibility                                   | Inherited V2 owner authority                    | Owner/destructive mutation                                     | Automatic adoption                    |
+| ------------- | ---------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------- | ------------------------------------- |
+| `APPROVED`    | allowed                                              | allowed, subject to current identity validation | allowed only for approved owner and fields                     | allowed when all adoption checks pass |
+| `UNRESOLVED`  | allowed when safely parseable                        | denied                                          | denied; moderation remains a separate trusted operation domain | denied                                |
+| `QUARANTINED` | allowed only as explicitly marked compatibility data | denied                                          | denied                                                         | denied                                |
 
 The reducer and migration adapter fail closed for authority but fail open for
 safe read compatibility. `UNRESOLVED` and `QUARANTINED` records cannot obtain
@@ -958,7 +960,7 @@ authority:
 
 ```ts
 interface EntityIndexEntry {
-  entityType: "topic" | "thread" | "post";
+  entityType: 'topic' | 'thread' | 'post';
   entityId: string;
   publisherName: string;
   identifier: string;
@@ -992,7 +994,7 @@ is marked cached/index-derived and cannot become authoritative.
 Every load result carries:
 
 ```ts
-type Completeness = "complete" | "partial" | "unknown";
+type Completeness = 'complete' | 'partial' | 'unknown';
 
 interface LoadDiagnostics {
   completeness: Completeness;
@@ -1031,7 +1033,12 @@ and optional non-authoritative display cache. Voting never republishes a Post.
 
 ### 21.2 Currently verified capability
 
-At the recorded Core commit:
+The Phase 3 implementation re-verified Core commit
+`c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` and Home commit
+`a41e5f9678d7f20d7fb77a223c45fddc0096632e` on 2026-07-21. These
+commits are traceability points, not frozen capability targets.
+
+At that Core commit:
 
 - polls have stable numeric `pollId`;
 - Core supports create, vote, and update transactions;
@@ -1044,6 +1051,25 @@ At the recorded Core commit:
 - vote removal/change and multiple selections exist at Core transaction level,
   subject to current validation rules.
 
+Core option indexes are one-based. Zero removes a vote, duplicate/invalid
+indexes are rejected, and multiple selections are normalized. Discussion
+Boards Phase 3 intentionally does not expose vote removal. It submits one or
+more positive indexes according to the Post reference's UI selection policy.
+
+`GET /polls/id/{pollId}` is the authoritative definition/status read and
+`GET /polls/votes/id/{pollId}` is the authoritative results/current-voter
+read. `totalVotes` is displayed as raw option selections and `totalVoters` as
+unique voters. The current UI does not present weighted results; it preserves
+the returned effective/raw weight fields in runtime state so a future UI cannot
+mistake a client percentage for Core weighting.
+
+Core currently permits an owner-only `UPDATE_POLL`, but closure is not a
+general moderation operation. Once votes exist, definition/start/options must
+remain unchanged and an existing future end may only be extended. Before votes
+exist, the owner may schedule an earlier future end. Phase 3 therefore exposes
+only owner scheduling before votes and never claims that a moderator can close
+an active voted poll. Normal closure is the authoritative Core `endTime`.
+
 At the recorded Home commit:
 
 - `CREATE_POLL`, `VOTE_ON_POLL`, and `UPDATE_POLL` are bridge actions;
@@ -1053,13 +1079,143 @@ At the recorded Home commit:
 - Home handles approval, unsigned construction, signing, processing, and
   capability-gated public-node poll writes.
 
+Local-node writes use the configured Core write endpoints. Public-node writes
+require a zero fee and use the public poll capability response's MemoryPoW
+difficulty. Discussion Boards sends `fee: 0`; Home remains responsible for
+choosing the local or public path, approval, signing, MemoryPoW, and processing.
+All three write actions return a transaction signature.
+
+Home does not currently expose a separate poll-read bridge action. QDN apps are
+rendered from the configured Core origin, with same-origin access preserved,
+so Phase 3 reads `/polls/...` from the current origin (or an explicitly
+configured `VITE_QORTIUM_CORE_API_URL` during development). This is a verified
+implementation detail that must be re-checked before a future poll migration
+slice; the architectural invariant is authoritative Core reads, not this URL
+mechanism.
+
 This is newer than issue #1's historical observation that Home creation omitted
 start time and voting exposed only one option. The historical observation
 describes the bridge version reviewed then, not the current reference.
 
-### 21.3 Phase 3 re-verification
+### 21.3 V2 native poll reference
 
-Before integration, re-check:
+The persisted Post field is:
+
+```ts
+interface NativePollReference {
+  kind: 'native';
+  schema: 'qdb-native-poll';
+  schemaVersion: 1;
+  pollId: number;
+  pollName: string;
+  creatorName: string;
+  creatorAddress: string;
+  creationSignature: string;
+  provenance: 'qortium-core';
+  status: 'confirmed';
+  displayCache: {
+    question: string;
+    description: string;
+    selectionMode: 'single' | 'multiple';
+    options: Array<{ index: number; label: string }>;
+    startsAt: string | null;
+    closesAt: string | null;
+  };
+}
+```
+
+The cache contains no votes, results, weights, closure transaction state, or
+current-voter state. It preserves minimal readable/searchable context while
+Core is unavailable. On a successful read, the Core definition/options/schedule
+and Core result model replace cached display values at runtime. A mismatch of
+poll ID, poll name, or owner is `POLL_IDENTITY_MISMATCH` and is not silently
+reconciled.
+
+The app stores its question, explanatory text, and single/multiple UI policy in
+a versioned JSON definition inside the native Core poll description. Core
+remains authoritative for that description. The single-choice value is a
+Discussion Boards UI policy; current Core itself accepts multi-index votes, so
+clients must not describe single choice as a consensus restriction.
+
+The V2 Post create envelope may contain this strict reference. Owner edits do
+not allow `pollReference` changes. Poll votes/updates are native transaction
+operations and never enter the Post reducer or republish a Post snapshot.
+
+### 21.4 Creation, recovery, and reads
+
+Creation order is deterministic and fail closed:
+
+1. allocate the future Post ID and derive `qdb-{postId}` as the poll name;
+2. verify the current Qortium name-to-authenticated-wallet binding;
+3. submit `CREATE_POLL` and retain its transaction signature;
+4. query Core by poll name (or known ID) and require a positive `pollId`, the
+   expected poll name, owner address, app definition, option order, and
+   schedule;
+5. only after confirmation, publish the V2 Post containing the reference;
+6. publish the V1 compatibility snapshot and derived indexes, with only the
+   native reference and no runtime result state.
+
+There is no currently verified direct create-signature-to-poll-ID response in
+Home. Confirmation therefore binds the deterministic name and expected owner
+to a Core poll while retaining the returned creation signature as traceability
+evidence. Future phases must re-verify whether a stronger transaction-to-poll
+lookup has become available.
+
+`creatorName` records the verified QDN context at creation; native update
+authority remains the Core poll owner address. A later current name is accepted
+only when it resolves to the authenticated owner address. The name field alone
+never grants poll authority.
+
+If creation is submitted but not yet visible, the command returns
+`native-poll-confirmation` plus a versioned recovery record. Retrying queries
+the existing poll and never creates a second one. If the poll is confirmed but
+V2 Post publication fails, `poll-reference` records the orphan-safe,
+retryable state. If V2 succeeds and compatibility/index publication fails, V2
+authority remains committed under the existing Phase 1 partial-success rules.
+No path falls back to an embedded authoritative poll.
+
+An existing reference with an unavailable Core poll remains readable using
+its explicitly non-authoritative cache, reports `NATIVE_POLL_UNAVAILABLE`, and
+disables voting/update. A submitted vote/update whose result refresh fails
+returns its transaction signature with retryable `poll-result-refresh`; it
+does not roll back the native transaction or mutate the Post.
+If a local thread-cache write fails after a confirmed vote/update, the command
+returns successful native authority with retryable `derived-index`; cache
+failure cannot turn into a Post or poll-authority rollback.
+
+### 21.5 Legacy boundary and diagnostics
+
+V1 embedded poll definitions and historical vote arrays remain readable and
+are labelled read-only. They are not converted to authenticated native votes,
+not combined with native counts, and never override a native reference.
+Malformed objects that mix native markers with legacy fields are rejected
+rather than treated as legacy.
+
+Stable Phase 3 diagnostics are:
+
+- `MALFORMED_POLL_REFERENCE`;
+- `MISSING_POLL_ID`;
+- `NATIVE_POLL_UNAVAILABLE`;
+- `INVALID_OPTION_SELECTION`;
+- `UNSUPPORTED_CAPABILITY`;
+- `POLL_CREATION_FAILED`;
+- `POLL_REFERENCE_PUBLICATION_FAILED`;
+- `POLL_VOTE_FAILED`;
+- `POLL_UPDATE_REJECTED`;
+- `POLL_IDENTITY_MISMATCH`;
+- `INCONSISTENT_LEGACY_NATIVE_POLL`.
+
+Derived thread indexes may cache the strict reference only. Runtime Core
+results are stripped before compatibility or index publication. Index content
+cannot create, mutate, or replace Post or poll authority. Before a native vote
+or update, the command reloads the V2 Post with trusted QDN metadata/current
+V2 identity validation and requires its reference to match the displayed
+reference; an index-only or compatibility-only reference cannot authorize a
+poll transaction.
+
+### 21.6 Future re-verification
+
+Before any later poll migration or feature extension, re-check:
 
 - bridge action availability via current capability discovery;
 - exact create/vote/update request and response shapes;

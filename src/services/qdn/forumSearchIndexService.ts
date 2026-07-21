@@ -14,6 +14,11 @@ import {
 } from '../qortium/qortiumClient';
 import { getUserAccount } from '../qortium/walletService';
 import { perfDebugTimeStart } from '../perf/perfDebug';
+import {
+  isNativePollReference,
+  isNativePostPoll,
+  toPersistedNativePollReference,
+} from '../architectureV2/polls.js';
 
 const FORUM_SERVICE = import.meta.env.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_NAMESPACE =
@@ -212,6 +217,13 @@ const sanitizePostPoll = (value: unknown): Post['poll'] => {
     return null;
   }
 
+  if (isNativePollReference(value)) {
+    return value;
+  }
+  if (value.kind === 'native' || value.schema === 'qdb-native-poll') {
+    return null;
+  }
+
   const options = Array.isArray(value.options)
     ? value.options
         .filter((item) => isObject(item))
@@ -249,6 +261,7 @@ const sanitizePostPoll = (value: unknown): Post['poll'] => {
     : [];
 
   return {
+    kind: 'legacy',
     id: value.id,
     question: value.question.trim(),
     description:
@@ -818,7 +831,9 @@ export const forumSearchIndexService = {
             parentPostId: post.parentPostId,
             content: post.content,
             attachments: post.attachments,
-            poll: post.poll ?? null,
+            poll: isNativePostPoll(post.poll)
+              ? toPersistedNativePollReference(post.poll)
+              : (post.poll ?? null),
             createdAt: post.createdAt,
             updatedAt: post.updatedAt ?? post.editedAt ?? post.createdAt,
             editedAt: post.editedAt ?? null,

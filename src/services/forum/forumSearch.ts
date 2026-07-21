@@ -1,4 +1,21 @@
 import type { Post, SubTopic, Topic, User } from '../../types';
+import { isNativePostPoll } from '../architectureV2/polls.js';
+
+export const getPollSearchParts = (poll: Post['poll']): string[] => {
+  if (!poll) return [];
+  if (isNativePostPoll(poll)) {
+    return [
+      poll.displayCache.question,
+      poll.displayCache.description,
+      ...poll.displayCache.options.map((option) => option.label),
+    ];
+  }
+  return [
+    poll.question,
+    poll.description,
+    ...poll.options.map((option) => option.label),
+  ];
+};
 
 const normalizeText = (value: string) =>
   value
@@ -177,9 +194,7 @@ export const buildThreadPostSearchIndex = (
       haystack: normalizeText(
         [
           post.content,
-          post.poll?.question ?? '',
-          post.poll?.description ?? '',
-          ...(post.poll?.options.map((option) => option.label) ?? []),
+          ...getPollSearchParts(post.poll),
           userMap.get(post.authorUserId) ?? post.authorUserId,
         ].join(' ')
       ),

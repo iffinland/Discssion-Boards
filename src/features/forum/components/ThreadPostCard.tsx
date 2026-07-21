@@ -4,6 +4,7 @@ import UserRoleBadge from '../../../components/common/UserRoleBadge';
 import RichTextContent from '../../../components/forum/RichTextContent';
 import type { Post, User, UserRole } from '../../../types';
 import PostAttachmentList from './PostAttachmentList';
+import { isNativePostPoll } from '../../../services/architectureV2/polls.js';
 
 type ThreadPostCardProps = {
   post: Post;
@@ -85,30 +86,79 @@ const ThreadPostCard = ({
   const [selectedPollOptionIds, setSelectedPollOptionIds] = useState<string[]>(
     []
   );
-  const existingPollVote = post.poll?.votes.find(
-    (vote) => vote.voterId === pollVoterId
-  );
-  const totalPollVotes = post.poll?.votes.length ?? 0;
+  const nativePoll = isNativePostPoll(post.poll) ? post.poll : null;
+  const legacyPoll =
+    post.poll && !isNativePostPoll(post.poll) ? post.poll : null;
+  const nativeRuntime = nativePoll?.runtime;
+  const existingPollVote = nativePoll
+    ? nativeRuntime && nativeRuntime.currentUserOptionIndexes.length > 0
+      ? {
+          optionIds: nativeRuntime.currentUserOptionIndexes.map(
+            (index) => `native:${index}`
+          ),
+        }
+      : undefined
+    : legacyPoll?.votes.find((vote) => vote.voterId === pollVoterId);
+  const totalPollVoters = nativePoll
+    ? (nativeRuntime?.totalVoters ?? 0)
+    : (legacyPoll?.votes.length ?? 0);
+  const totalPollSelections = nativePoll
+    ? (nativeRuntime?.totalSelections ?? 0)
+    : (legacyPoll?.votes.length ?? 0);
   const pollClosedByDate = Boolean(
-    post.poll?.closesAt && new Date(post.poll.closesAt).getTime() <= Date.now()
+    legacyPoll?.closesAt &&
+      new Date(legacyPoll.closesAt).getTime() <= Date.now()
   );
-  const isPollClosed = Boolean(post.poll?.closedAt || pollClosedByDate);
-  const pollClosedAt = post.poll?.closedAt ?? post.poll?.closesAt ?? null;
+  const isPollClosed = nativePoll
+    ? (nativeRuntime?.isClosed ?? false)
+    : Boolean(legacyPoll?.closedAt || pollClosedByDate);
+  const pollClosedAt = nativePoll
+    ? (nativeRuntime?.closesAt ?? nativePoll.displayCache.closesAt)
+    : (legacyPoll?.closedAt ?? legacyPoll?.closesAt ?? null);
+  const pollMode = nativePoll
+    ? (nativeRuntime?.selectionMode ?? nativePoll.displayCache.selectionMode)
+    : (legacyPoll?.mode ?? 'single');
+  const pollQuestion = nativePoll
+    ? (nativeRuntime?.question ?? nativePoll.displayCache.question)
+    : (legacyPoll?.question ?? '');
+  const pollDescription = nativePoll
+    ? (nativeRuntime?.description ?? nativePoll.displayCache.description)
+    : (legacyPoll?.description ?? '');
+  const pollClosesAt = nativePoll
+    ? (nativeRuntime?.closesAt ?? nativePoll.displayCache.closesAt)
+    : (legacyPoll?.closesAt ?? null);
   const canShowPollResults = Boolean(existingPollVote || isPollClosed);
-  const pollOptionStats =
-    post.poll?.options.map((option) => {
-      const voteCount =
-        post.poll?.votes.filter((vote) => vote.optionIds.includes(option.id))
-          .length ?? 0;
-      const percentage =
-        totalPollVotes > 0 ? Math.round((voteCount / totalPollVotes) * 100) : 0;
+  const pollOptionStats = nativePoll
+    ? (
+        nativeRuntime?.options ??
+        nativePoll.displayCache.options.map((option) => ({
+          ...option,
+          id: `native:${option.index}`,
+          rawVoteCount: 0,
+        }))
+      ).map((option) => {
+        const voteCount = option.rawVoteCount;
+        const percentage =
+          totalPollSelections > 0
+            ? Math.round((voteCount / totalPollSelections) * 100)
+            : 0;
+        return { id: option.id, label: option.label, voteCount, percentage };
+      })
+    : (legacyPoll?.options.map((option) => {
+        const voteCount = legacyPoll.votes.filter((vote) =>
+          vote.optionIds.includes(option.id)
+        ).length;
+        const percentage =
+          totalPollSelections > 0
+            ? Math.round((voteCount / totalPollSelections) * 100)
+            : 0;
 
-      return {
-        ...option,
-        voteCount,
-        percentage,
-      };
-    }) ?? [];
+        return {
+          ...option,
+          voteCount,
+          percentage,
+        };
+      }) ?? []);
   const winningVoteCount = Math.max(
     0,
     ...pollOptionStats.map((option) => option.voteCount)
@@ -121,12 +171,17 @@ const ThreadPostCard = ({
       : [];
 
   const togglePollOption = (optionId: string) => {
-    if (!post.poll || existingPollVote || isPollClosed) {
+    if (
+      !nativePoll ||
+      existingPollVote ||
+      isPollClosed ||
+      nativeRuntime?.availability !== 'available'
+    ) {
       return;
     }
 
     setSelectedPollOptionIds((current) => {
-      if (post.poll?.mode === 'single') {
+      if (pollMode === 'single') {
         return current.includes(optionId) ? [] : [optionId];
       }
 
@@ -138,9 +193,10 @@ const ThreadPostCard = ({
 
   const submitPollVote = () => {
     if (
-      !post.poll ||
+      !nativePoll ||
       existingPollVote ||
       isPollClosed ||
+      nativeRuntime?.availability !== 'available' ||
       selectedPollOptionIds.length === 0
     ) {
       return;
@@ -240,18 +296,18 @@ const ThreadPostCard = ({
         <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50/60 p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <span className="inline-flex rounded-md border border-cyan-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-cyan-800">
-              Poll / Voting
+              {nativePoll ? 'Native Poll / Voting' : 'Legacy Poll (read-only)'}
             </span>
             <span className="text-ui-muted text-xs">
-              {post.poll.mode === 'multiple'
+              {pollMode === 'multiple'
                 ? 'Multiple answers allowed'
-                : 'Single answer only'}
+                : 'Single answer in Discussion Boards'}
             </span>
           </div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            {post.poll.closesAt ? (
+            {pollClosesAt ? (
               <span className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700">
-                Closes {formatDateTime(post.poll.closesAt)}
+                Closes {formatDateTime(pollClosesAt)}
               </span>
             ) : null}
             {isPollClosed ? (
@@ -259,7 +315,7 @@ const ThreadPostCard = ({
                 Closed {pollClosedAt ? formatDateTime(pollClosedAt) : ''}
               </span>
             ) : null}
-            {canClosePoll && !isPollClosed ? (
+            {nativePoll && canClosePoll && !isPollClosed ? (
               <button
                 type="button"
                 onClick={() => onClosePoll(post.id)}
@@ -270,11 +326,21 @@ const ThreadPostCard = ({
             ) : null}
           </div>
           <p className="text-ui-strong text-base font-semibold">
-            {post.poll.question}
+            {pollQuestion}
           </p>
-          {post.poll.description ? (
-            <p className="text-ui-muted mt-1 text-sm">
-              {post.poll.description}
+          {pollDescription ? (
+            <p className="text-ui-muted mt-1 text-sm">{pollDescription}</p>
+          ) : null}
+          {nativePoll && nativeRuntime?.availability !== 'available' ? (
+            <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+              Native poll results are currently unavailable. Voting is disabled
+              until Core can verify this poll.
+            </p>
+          ) : null}
+          {legacyPoll ? (
+            <p className="mt-2 rounded-md border border-slate-200 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700">
+              Historical embedded votes are shown for compatibility only. This
+              poll cannot accept new votes.
             </p>
           ) : null}
           <p className="mt-2 rounded-md border border-cyan-100 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700">
@@ -328,8 +394,9 @@ const ThreadPostCard = ({
                 Poll statistics
               </p>
               <div className="mt-2 grid gap-1 text-xs text-slate-700 sm:grid-cols-3">
-                <span>Total votes: {totalPollVotes}</span>
-                <span>Options: {post.poll.options.length}</span>
+                <span>Voters: {totalPollVoters}</span>
+                <span>Raw selections: {totalPollSelections}</span>
+                <span>Options: {pollOptionStats.length}</span>
                 <span>
                   Result:{' '}
                   {winningOptions.length > 0
@@ -342,12 +409,15 @@ const ThreadPostCard = ({
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-ui-muted text-xs">
               {canShowPollResults
-                ? `${totalPollVotes} total vote${totalPollVotes === 1 ? '' : 's'}`
+                ? `${totalPollVoters} voter${totalPollVoters === 1 ? '' : 's'} • ${totalPollSelections} raw selection${totalPollSelections === 1 ? '' : 's'}`
                 : 'Results hidden until you vote or the poll closes'}
               {existingPollVote ? ' • You have voted' : ''}
               {isPollClosed ? ' • Poll closed' : ''}
             </p>
-            {!existingPollVote && !isPollClosed ? (
+            {nativePoll &&
+            nativeRuntime?.availability === 'available' &&
+            !existingPollVote &&
+            !isPollClosed ? (
               <button
                 type="button"
                 onClick={submitPollVote}

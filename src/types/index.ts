@@ -33,6 +33,7 @@ export interface PostPollVote {
 }
 
 export interface PostPoll {
+  kind?: 'legacy';
   id: string;
   question: string;
   description: string;
@@ -43,6 +44,9 @@ export interface PostPoll {
   closedAt: string | null;
   closedByUserId: string | null;
 }
+
+export type NativePostPoll =
+  import('../services/architectureV2/polls').NativePostPoll;
 
 export interface User {
   id: string;
@@ -100,7 +104,7 @@ export interface Post {
   parentPostId: string | null;
   content: string;
   attachments: PostAttachment[];
-  poll?: PostPoll | null;
+  poll?: PostPoll | NativePostPoll | null;
   createdAt: string;
   updatedAt?: string | null;
   editedAt?: string | null;

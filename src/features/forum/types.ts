@@ -2,7 +2,17 @@ export type ForumMutationResult = {
   ok: boolean;
   error?: string;
   subTopicId?: string;
-  partial?: { pending: 'compatibility' | 'derived-index'; retryable: true };
+  partial?: {
+    pending:
+      | 'compatibility'
+      | 'derived-index'
+      | 'native-poll-confirmation'
+      | 'poll-reference'
+      | 'poll-result-refresh';
+    retryable: true;
+  };
+  nativePollRecovery?: import('../../services/architectureV2/types').NativePollRecovery;
+  transactionSignature?: string;
 };
 
 export type ForumPollDraft = {

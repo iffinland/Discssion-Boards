@@ -29,6 +29,7 @@ import {
 } from '../services/qortium/share';
 import { getAccountNames } from '../services/qortium/walletService';
 import { perfDebugTimeStart } from '../services/perf/perfDebug';
+import { getPollSearchParts } from '../services/forum/forumSearch';
 import type { SubTopic, TopicAccess } from '../types';
 
 type TopicPageProps = {
@@ -203,23 +204,13 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
         const indexedPostText =
           threadSearchIndexes[subTopic.id]?.posts
             .map((post) =>
-              [
-                post.content,
-                post.poll?.question ?? '',
-                post.poll?.description ?? '',
-                ...(post.poll?.options.map((option) => option.label) ?? []),
-              ].join(' ')
+              [post.content, ...getPollSearchParts(post.poll)].join(' ')
             )
             .join(' ') ?? '';
         const localPostText = posts
           .filter((post) => post.subTopicId === subTopic.id)
           .map((post) =>
-            [
-              post.content,
-              post.poll?.question ?? '',
-              post.poll?.description ?? '',
-              ...(post.poll?.options.map((option) => option.label) ?? []),
-            ].join(' ')
+            [post.content, ...getPollSearchParts(post.poll)].join(' ')
           )
           .join(' ');
         const haystack =
