@@ -200,6 +200,12 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     [deferredSearchQuery, postSearchIndex, threadPosts]
   );
   const hasActiveThreadSearch = deferredSearchQuery.trim().length > 0;
+  const incompleteThreadData = threadPosts.some(
+    (post) =>
+      post.dataAvailability === 'partial' ||
+      post.dataAvailability === 'cached-last-known-good' ||
+      post.dataAvailability === 'index-only'
+  );
   const orderedThreadPosts = useMemo(() => {
     const sorted = [...filteredThreadPosts].sort(
       (a, b) =>
@@ -1053,6 +1059,15 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
 
   return (
     <div className="space-y-6">
+      {incompleteThreadData ? (
+        <div
+          role="status"
+          className="forum-card border-amber-300 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/20 dark:text-amber-200"
+        >
+          Some thread data is partial or cached. It remains read-only evidence;
+          missing posts are not treated as deleted.
+        </div>
+      ) : null}
       <nav
         aria-label="Breadcrumb"
         className="flex flex-wrap items-center gap-2 text-sm"

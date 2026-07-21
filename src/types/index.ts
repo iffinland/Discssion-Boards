@@ -10,6 +10,18 @@ export type TopicAccess = 'everyone' | 'moderators' | 'admins' | 'custom';
 export type SubTopicStatus = 'open' | 'locked';
 export type SubTopicVisibility = 'visible' | 'hidden';
 export type PostPollMode = 'single' | 'multiple';
+export type ForumDataAvailability =
+  | 'verified-current'
+  | 'partial'
+  | 'cached-last-known-good'
+  | 'index-only'
+  | 'unavailable';
+export type ForumDataProvenance =
+  | 'authoritative-qdn'
+  | 'legacy-v1'
+  | 'legacy-index'
+  | 'v2-index-fragment'
+  | 'local-cache';
 
 export interface PostAttachment {
   id: string;
@@ -70,6 +82,8 @@ export interface Topic {
   visibility: TopicVisibility;
   subTopicAccess: TopicAccess;
   allowedAddresses: string[];
+  dataAvailability?: ForumDataAvailability;
+  dataProvenance?: ForumDataProvenance;
 }
 
 export interface SubTopic {
@@ -96,6 +110,8 @@ export interface SubTopic {
   lastModeratedByUserId?: string | null;
   lastModeratedAt?: string | null;
   moderationOrder?: number | null;
+  dataAvailability?: ForumDataAvailability;
+  dataProvenance?: ForumDataProvenance;
 }
 
 export interface Post {
@@ -125,6 +141,8 @@ export interface Post {
   likedByAddresses: string[];
   moderationHidden?: boolean;
   moderationRemoved?: boolean;
+  dataAvailability?: ForumDataAvailability;
+  dataProvenance?: ForumDataProvenance;
 }
 
 export interface ForumRoleRegistry {

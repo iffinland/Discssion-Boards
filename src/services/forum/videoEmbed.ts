@@ -1,4 +1,5 @@
 import { ensureQdnResourceReady } from '../qdn/qdnReadiness';
+import { discoverQdnResources } from '../qdn/qdnPagination';
 import { requestQortium } from '../qortium/qortiumClient';
 
 export type ForumVideoReference = {
@@ -9,18 +10,11 @@ export type ForumVideoReference = {
   source: 'qdn' | 'qtube' | 'embed';
 };
 
-type SearchQdnResourceResult = {
-  name?: string;
-  identifier?: string;
-};
-
 const QDN_VIDEO_TAG_PATTERN = /\[videoqdn\]([\s\S]*?)\[\/videoqdn\]/gi;
-const QDN_VIDEO_LINK_PATTERN =
-  /qdn:\/\/VIDEO\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
+const QDN_VIDEO_LINK_PATTERN = /qdn:\/\/VIDEO\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
 const QTUBE_LINK_PATTERN =
   /qdn:\/\/APP\/Q-Tube\/video\/([^"'<>\s]+)\/([^"'<>\s]+)/i;
-const USE_EMBED_LINK_PATTERN =
-  /qdn:\/\/use-embed\/VIDEO\?([^"'<>\s]+)/i;
+const USE_EMBED_LINK_PATTERN = /qdn:\/\/use-embed\/VIDEO\?([^"'<>\s]+)/i;
 
 const decodePart = (value: string) => {
   try {
@@ -378,19 +372,18 @@ const resolveQTubeReference = async (
     reference.identifier,
   ]) {
     try {
-      const result = await requestQortium<SearchQdnResourceResult[]>({
-        action: 'SEARCH_QDN_RESOURCES',
-        service: 'VIDEO',
-        mode: 'ALL',
-        name: reference.name,
-        identifier,
-        prefix: true,
-        limit: 20,
-        offset: 0,
-        reverse: true,
-        exactMatchNames: true,
-      });
-      const matches = Array.isArray(result) ? result : [];
+      const result = await discoverQdnResources(
+        {
+          service: 'VIDEO',
+          mode: 'ALL',
+          name: reference.name,
+          identifier,
+          prefix: true,
+          reverse: true,
+        },
+        { pageSize: 20, maxPages: 5, maxResources: 100 }
+      );
+      const matches = result.items;
       matches.forEach((match) => {
         if (!match.identifier) {
           return;

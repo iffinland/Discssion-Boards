@@ -174,10 +174,27 @@ export const loadThreadIndexCached = async (
     return existingInflight;
   }
 
+  const lastKnownGood = cachedEntry?.snapshot ?? storedEntry?.snapshot ?? null;
   const requestPromise = loader(normalizedId)
     .then((snapshot) => {
       writeThreadIndexCache(normalizedId, snapshot);
       return snapshot;
+    })
+    .catch((error) => {
+      if (lastKnownGood)
+        return {
+          ...lastKnownGood,
+          dataAvailability: 'cached-last-known-good' as const,
+          diagnostics: [
+            ...(lastKnownGood.diagnostics ?? []),
+            {
+              code: 'CACHED_LAST_KNOWN_GOOD',
+              detail:
+                'thread index refresh failed; stale derived data retained read-only',
+            },
+          ],
+        };
+      throw error;
     })
     .finally(() => {
       inflight.delete(normalizedId);

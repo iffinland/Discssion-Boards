@@ -12,25 +12,20 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import HighlightedText from '../components/common/HighlightedText';
 import { useForumActions, useForumData } from '../hooks/useForumData';
 import { canAccessSubTopic } from '../services/forum/forumAccess';
-import { isThreadQuarantined } from '../services/forum/threadLoadQuarantine';
 import {
   buildForumStructureSearchIndex,
   createSearchHaystack,
   searchForumStructure,
   tokenizeSearchQuery,
 } from '../services/forum/forumSearch';
-import { mapWithConcurrency } from '../services/qdn/qdnReadiness';
-import {
-  forumSearchIndexService,
-  type ThreadSearchSnapshot,
-} from '../services/qdn/forumSearchIndexService';
-import { loadThreadIndexCached } from '../services/qdn/threadIndexCache';
+import { forumSearchIndexService } from '../services/qdn/forumSearchIndexService';
 import {
   buildTopicShareLink,
   copyToClipboard,
 } from '../services/qortium/share';
 import { getAccountNames } from '../services/qortium/walletService';
-import { perfDebugTimeStart } from '../services/perf/perfDebug';
+import type { ValidatedV2IndexEntry } from '../services/architectureV2/indexes';
+import { forumQdnService } from '../services/qdn/forumQdnService';
 import type { SubTopic, Topic, TopicAccess } from '../types';
 
 const parseAddressInput = (value: string) =>
@@ -111,10 +106,6 @@ type DisplayTopic = Topic & {
 
 const TOPIC_DESCRIPTION_MAX_LENGTH = 250;
 const ACTIVE_SUBTOPIC_LIMIT = 5;
-const SEARCH_THREAD_INDEX_MAX_CANDIDATES = 18;
-const SEARCH_THREAD_INDEX_INITIAL_BATCH_SIZE = 6;
-const SEARCH_THREAD_INDEX_BATCH_SIZE = 4;
-const SEARCH_THREAD_INDEX_DEBOUNCE_MS = 250;
 const ROLE_NAME_BATCH_SIZE = 6;
 const roleLabelByType: Record<'SuperAdmin' | 'Admin' | 'Moderator', string> = {
   SuperAdmin: 'Super Admin',
@@ -124,6 +115,7 @@ const roleLabelByType: Record<'SuperAdmin' | 'Admin' | 'Moderator', string> = {
 const MINUTE_IN_MS = 60 * 1000;
 const HOUR_IN_MS = 60 * MINUTE_IN_MS;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const V2_SEARCH_MODERATION_CACHE_TTL_MS = 30 * 1000;
 
 const formatActiveTopicTime = (value: string, nowMs: number) => {
   const parsedMs = new Date(value).getTime();
@@ -213,13 +205,18 @@ const Home = ({ searchQuery }: HomeProps) => {
   const [activeTopicsNowMs, setActiveTopicsNowMs] = useState<number>(() =>
     Date.now()
   );
-  const [searchThreadIndexes, setSearchThreadIndexes] = useState<
-    Record<string, ThreadSearchSnapshot>
-  >({});
-  const [searchThreadIndexFailures, setSearchThreadIndexFailures] = useState<
-    Record<string, true>
-  >({});
+  const [v2SearchEntries, setV2SearchEntries] = useState<
+    ValidatedV2IndexEntry[]
+  >([]);
+  const [v2SearchAvailability, setV2SearchAvailability] = useState<
+    'current' | 'partial' | 'cached'
+  >('current');
   const requestedRoleNameAddressesRef = useRef<Set<string>>(new Set());
+  const v2SearchModerationCacheRef = useRef<{
+    authority: object;
+    targets: Record<string, { removed?: boolean; hidden?: boolean }>;
+    cachedAt: number;
+  } | null>(null);
 
   const isAdmin =
     currentUser.role === 'Admin' ||
@@ -259,7 +256,6 @@ const Home = ({ searchQuery }: HomeProps) => {
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const normalizedDeferredSearchQuery = deferredSearchQuery.trim();
   const hasDeferredActiveSearch = normalizedDeferredSearchQuery.length > 0;
-  const requestedSearchThreadIndexesRef = useRef<Set<string>>(new Set());
 
   const topicQueryParam = searchParams.get('topic');
   useEffect(() => {
@@ -308,14 +304,6 @@ const Home = ({ searchQuery }: HomeProps) => {
     return grouped;
   }, [visibleSubTopics]);
 
-  const searchableThreadIndexes = useMemo(
-    () => ({
-      ...searchThreadIndexes,
-      ...threadSearchIndexes,
-    }),
-    [searchThreadIndexes, threadSearchIndexes]
-  );
-
   const structureTopics = useMemo(
     () =>
       visibleTopics.map((topic) => ({
@@ -334,184 +322,69 @@ const Home = ({ searchQuery }: HomeProps) => {
       searchForumStructure(structureSearchIndex, structureTopics, searchQuery),
     [searchQuery, structureSearchIndex, structureTopics]
   );
-  const searchThreadIndexCandidateIds = useMemo(() => {
-    if (!hasDeferredActiveSearch) {
-      return [];
-    }
-
-    const prioritizedIds: string[] = [];
-    const seen = new Set<string>();
-    const pushSubTopicId = (subTopicId: string) => {
-      const normalizedId = subTopicId.trim();
-      if (!normalizedId || seen.has(normalizedId)) {
-        return;
-      }
-
-      seen.add(normalizedId);
-      prioritizedIds.push(normalizedId);
-    };
-
-    const structureMatchedTopicIds = new Set(
-      structureSearchResult.topics.map((topic) => topic.id)
-    );
-
-    visibleSubTopics
-      .filter((subTopic) => structureMatchedTopicIds.has(subTopic.topicId))
-      .forEach((subTopic) => {
-        pushSubTopicId(subTopic.id);
-      });
-
-    sortSubTopics(visibleSubTopics).forEach((subTopic) => {
-      pushSubTopicId(subTopic.id);
-    });
-
-    return prioritizedIds.slice(0, SEARCH_THREAD_INDEX_MAX_CANDIDATES);
-  }, [hasDeferredActiveSearch, structureSearchResult.topics, visibleSubTopics]);
-
   useEffect(() => {
-    if (
-      !hasDeferredActiveSearch ||
-      searchThreadIndexCandidateIds.length === 0
-    ) {
+    if (!hasDeferredActiveSearch) {
+      setV2SearchEntries([]);
+      setV2SearchAvailability('current');
       return;
     }
-
-    const missingSubTopicIds = searchThreadIndexCandidateIds.filter(
-      (subTopicId) =>
-        !isThreadQuarantined(subTopicId) &&
-        !searchableThreadIndexes[subTopicId] &&
-        !searchThreadIndexFailures[subTopicId] &&
-        !requestedSearchThreadIndexesRef.current.has(subTopicId)
-    );
-
-    if (missingSubTopicIds.length === 0) {
-      return;
-    }
-
     let active = true;
-    missingSubTopicIds.forEach((subTopicId) => {
-      requestedSearchThreadIndexesRef.current.add(subTopicId);
-    });
-
-    const maybeWindow = window as Window & {
-      requestIdleCallback?: (
-        callback: IdleRequestCallback,
-        options?: IdleRequestOptions
-      ) => number;
-      cancelIdleCallback?: (id: number) => void;
-    };
-
-    const loadBatch = async (subTopicIds: string[]) => {
-      const resolved = await mapWithConcurrency(
-        subTopicIds,
-        async (subTopicId) => {
-          try {
-            const snapshot = await loadThreadIndexCached(
-              subTopicId,
-              forumSearchIndexService.loadThreadIndex
-            );
-            return [subTopicId, snapshot] as const;
-          } catch {
-            return [subTopicId, null] as const;
-          }
-        },
-        2
-      );
-
-      if (!active) {
-        return;
-      }
-
-      const nextIndexes: Record<string, ThreadSearchSnapshot> = {};
-      const failedSubTopicIds: string[] = [];
-
-      resolved.forEach(([subTopicId, snapshot]) => {
-        if (!snapshot) {
-          failedSubTopicIds.push(subTopicId);
-          return;
-        }
-
-        nextIndexes[subTopicId] = snapshot;
-      });
-
-      if (Object.keys(nextIndexes).length > 0) {
-        setSearchThreadIndexes((current) => ({
-          ...current,
-          ...nextIndexes,
-        }));
-      }
-
-      if (failedSubTopicIds.length > 0) {
-        setSearchThreadIndexFailures((current) => ({
-          ...current,
-          ...Object.fromEntries(failedSubTopicIds.map((id) => [id, true])),
-        }));
-      }
-    };
-
-    const loadMissingThreadIndexes = async () => {
-      const endTiming = perfDebugTimeStart('home-search-thread-index-load', {
-        queryLength: normalizedDeferredSearchQuery.length,
-        candidateCount: searchThreadIndexCandidateIds.length,
-        subTopicCount: missingSubTopicIds.length,
-      });
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, SEARCH_THREAD_INDEX_DEBOUNCE_MS);
-      });
-
-      if (!active) {
-        return;
-      }
-
-      await loadBatch(
-        missingSubTopicIds.slice(0, SEARCH_THREAD_INDEX_INITIAL_BATCH_SIZE)
-      );
-
-      for (
-        let startIndex = SEARCH_THREAD_INDEX_INITIAL_BATCH_SIZE;
-        startIndex < missingSubTopicIds.length && active;
-        startIndex += SEARCH_THREAD_INDEX_BATCH_SIZE
-      ) {
-        await new Promise<void>((resolve) => {
-          if (typeof maybeWindow.requestIdleCallback === 'function') {
-            maybeWindow.requestIdleCallback(() => resolve(), { timeout: 1500 });
-            return;
-          }
-
-          window.setTimeout(resolve, 150);
-        });
-
-        if (!active) {
-          return;
-        }
-
-        await loadBatch(
-          missingSubTopicIds.slice(
-            startIndex,
-            startIndex + SEARCH_THREAD_INDEX_BATCH_SIZE
-          )
+    const load = async () => {
+      try {
+        const authority = await forumQdnService.loadV2AuthorityState();
+        const cachedModeration = v2SearchModerationCacheRef.current;
+        const useCachedModeration = Boolean(
+          cachedModeration &&
+            cachedModeration.authority === authority.authoritative &&
+            Date.now() - cachedModeration.cachedAt <=
+              V2_SEARCH_MODERATION_CACHE_TTL_MS
         );
+        const moderationTargets = useCachedModeration
+          ? (cachedModeration?.targets ?? {})
+          : (await forumQdnService.loadV2ModerationState({ authority }))
+              .targets;
+        if (!useCachedModeration)
+          v2SearchModerationCacheRef.current = {
+            authority: authority.authoritative,
+            targets: moderationTargets,
+            cachedAt: Date.now(),
+          };
+        const unavailableTargets = Object.fromEntries(
+          Object.entries(moderationTargets)
+            .filter(
+              ([, state]) =>
+                state.removed === true ||
+                (!canModerate && state.hidden === true)
+            )
+            .map(([targetId]) => [targetId, 'tombstoned' as const])
+        );
+        const result = await forumSearchIndexService.searchV2Index(
+          normalizedDeferredSearchQuery,
+          authority,
+          unavailableTargets
+        );
+        if (!active) return;
+        setV2SearchEntries(result.entries);
+        setV2SearchAvailability(
+          result.discovery.completeness !== 'complete'
+            ? 'partial'
+            : result.discovery.source !== 'network' ||
+                authority.discovery.source !== 'network' ||
+                useCachedModeration
+              ? 'cached'
+              : 'current'
+        );
+      } catch {
+        if (!active) return;
+        setV2SearchEntries([]);
+        setV2SearchAvailability('partial');
       }
-
-      endTiming({
-        queryLength: normalizedDeferredSearchQuery.length,
-        loadedSubTopicCount: missingSubTopicIds.length,
-      });
     };
-
-    void loadMissingThreadIndexes();
-
+    void load();
     return () => {
       active = false;
     };
-  }, [
-    hasDeferredActiveSearch,
-    normalizedDeferredSearchQuery.length,
-    searchThreadIndexCandidateIds,
-    searchableThreadIndexes,
-    searchThreadIndexFailures,
-  ]);
-
+  }, [canModerate, hasDeferredActiveSearch, normalizedDeferredSearchQuery]);
   const postMatchCountBySubTopicId = useMemo(() => {
     if (!hasActiveSearch) {
       return {} as Record<string, number>;
@@ -544,25 +417,15 @@ const Home = ({ searchQuery }: HomeProps) => {
       seenPostIds.add(post.id);
     });
 
-    Object.entries(searchableThreadIndexes).forEach(
-      ([subTopicId, snapshot]) => {
-        snapshot.posts.forEach((post) => {
-          if (seenPostIds.has(post.postId)) {
-            return;
-          }
-
-          if (!matches(post.content, post.authorUserId)) {
-            return;
-          }
-
-          counts[subTopicId] = (counts[subTopicId] ?? 0) + 1;
-          seenPostIds.add(post.postId);
-        });
-      }
-    );
+    v2SearchEntries.forEach(({ entity }) => {
+      if (entity.entityType !== 'post' || seenPostIds.has(entity.entityId))
+        return;
+      counts[entity.parentThreadId] = (counts[entity.parentThreadId] ?? 0) + 1;
+      seenPostIds.add(entity.entityId);
+    });
 
     return counts;
-  }, [hasActiveSearch, posts, searchQuery, searchableThreadIndexes, users]);
+  }, [hasActiveSearch, posts, searchQuery, users, v2SearchEntries]);
 
   const filteredTopics = useMemo<DisplayTopic[]>(() => {
     if (!hasActiveSearch) {
@@ -649,6 +512,28 @@ const Home = ({ searchQuery }: HomeProps) => {
       ),
     [filteredTopics]
   );
+  const effectiveSearchAvailability = useMemo(() => {
+    if (!hasActiveSearch) return 'current' as const;
+    if (
+      v2SearchAvailability === 'partial' ||
+      posts.some(
+        (post) =>
+          post.dataAvailability === 'partial' ||
+          post.dataAvailability === 'unavailable'
+      )
+    )
+      return 'partial' as const;
+    if (
+      v2SearchAvailability === 'cached' ||
+      posts.some(
+        (post) =>
+          post.dataAvailability === 'cached-last-known-good' ||
+          post.dataAvailability === 'index-only'
+      )
+    )
+      return 'cached' as const;
+    return 'current' as const;
+  }, [hasActiveSearch, posts, v2SearchAvailability]);
 
   const activeSubTopics = useMemo(() => {
     const userMap = new Map(users.map((user) => [user.id, user.displayName]));
@@ -1248,6 +1133,27 @@ const Home = ({ searchQuery }: HomeProps) => {
 
   return (
     <div className="space-y-6">
+      {loadStatus === 'partial' || loadStatus === 'cached' ? (
+        <div
+          role="status"
+          className="forum-card border-amber-300 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/20 dark:text-amber-200"
+        >
+          {loadingStage}
+          {loadStatus === 'cached'
+            ? ' Cached/index data is read-only and cannot grant authority.'
+            : ' Missing results are not treated as deleted.'}
+        </div>
+      ) : null}
+      {hasActiveSearch && effectiveSearchAvailability !== 'current' ? (
+        <div
+          role="status"
+          className="forum-card border-amber-300 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/20 dark:text-amber-200"
+        >
+          {effectiveSearchAvailability === 'cached'
+            ? 'Search is using a validated recent cache. Cached results cannot grant authority.'
+            : 'Search discovery is partial. Results shown are validated, but more matching resources may exist.'}
+        </div>
+      ) : null}
       <section className="forum-card-accent p-5">
         <h2 className="text-brand-accent text-base font-semibold">
           Active Topics

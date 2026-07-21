@@ -1,6 +1,6 @@
 # Discussion Boards Architecture V2
 
-Status: **Implemented through Phase 5 and delegated-role persistence issue #7**
+Status: **Implemented through Phase 6 and delegated-role persistence issue #7**
 
 This document defines the Architecture V2 state, authority, validation, and
 migration model for Discussion Boards. It is the prerequisite deliverable for
@@ -36,11 +36,11 @@ targets.
 
 ### 2.1 Reference state inspected
 
-| Repository        | Path                               | Verified commit                                                     |
-| ----------------- | ---------------------------------- | ------------------------------------------------------------------- |
-| Discussion Boards | this repository                    | `1f82bf2c7d8e249a1d60f7ca16936aacdc72f265` (issue #8 worktree base) |
-| Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                          |
-| Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                          |
+| Repository        | Path                               | Verified commit                                                    |
+| ----------------- | ---------------------------------- | ------------------------------------------------------------------ |
+| Discussion Boards | this repository                    | `3f17fb329f8f2419454c18b6c1f3c383027b858f` (Phase 6 worktree base) |
+| Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                         |
+| Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                         |
 
 The Discussion Boards production source reviewed by architecture issue #1
 remains commit `f20f93c833ef74dc83a22a59be2d1c6682e96bde`.
@@ -57,6 +57,7 @@ GitHub specification inspected:
 - issue #6, Phase 4 moderation and role authorization;
 - issue #7, delegated role-registry persistence;
 - issue #8, verified transaction-reference tips;
+- issue #10, scalable QDN pagination and rebuildable indexes;
 - the dependent phased issue workflow through issue #14.
 
 ### 2.2 Three classes of platform statement
@@ -992,12 +993,92 @@ Rules:
 Legacy indexes may help find unavailable resources but their embedded content
 is marked cached/index-derived and cannot become authoritative.
 
+### 19.1 Phase 6 fragment schema and namespaces
+
+Phase 6 replaces active new-V2 whole-directory and whole-thread writes with
+one independently rebuildable locator fragment per entity. The strict envelope
+is:
+
+```ts
+interface V2IndexFragmentEnvelope {
+  schema: 'qdb-v2-index';
+  schemaVersion: 1;
+  kind: 'derived-index-fragment';
+  recordType: 'entity-locator';
+  recordId: string;
+  targetId: string;
+  body: {
+    entityType: 'topic' | 'thread' | 'post';
+    entityId: string;
+    parentId: string | null;
+    authority: { publisherName: string; identifier: string };
+    hint: { title?: string; excerpt?: string };
+  };
+}
+```
+
+Fragments contain only an authority locator, parent locator, and bounded search
+hint. They never contain reaction state, native-poll results, moderation, role
+state, tip totals, access authority, or a complete entity snapshot.
+
+The enabled namespaces are:
+
+```text
+qdbm-v2-idx-t-{entityBucket}-{entityKey}
+qdbm-v2-idx-h-{parentTopicBucket}-{entityKey}
+qdbm-v2-idx-p-{parentThreadBucket}-{entityKey}
+```
+
+`qdbm` is replaced by the configured application namespace. The eight-character
+stable bucket partitions thread/post locators by parent. The 14-character
+deterministic entity key combines independent hashes of the entity ID and its
+reverse, keeping even maximum accepted entity IDs within QDN's 64-character
+identifier constraint. The full entity ID remains in the strictly validated
+payload. The existing immutable V2 authority namespaces (`qdbm-v2-topic-`,
+`qdbm-v2-thread-`, `qdbm-v2-post-`, and `qdbm-v2-edit-`) remain readable.
+Independent reaction, moderation, role, tip, and poll domains retain their
+already-published identifiers. Entity-type authority prefixes plus
+operation-specific prefixes prevent unrelated domains competing in one search;
+parent-bucketed fragments make thread/post discovery narrower for new indexes.
+
+Fragment reduction first applies strict schema and identifier validation. Each
+candidate resource publisher and its embedded authority locator must match the
+accepted V2 entity owner before it may compete for selection; an invalid newer
+fragment therefore cannot suppress a valid owner fragment. Eligible candidates
+are then selected by trusted Core `updated ?? created`, latest signature,
+normalized publisher, and identifier. Entity type, entity ID, parent, canonical
+publisher, and authoritative identifier must all agree with the accepted V2
+entity. A stale hint is diagnosed and the authoritative entity content is used.
+An unavailable, invalid, or tombstoned target does not become an entity through
+its fragment.
+
+All normal V2 Topic, Thread, and Post creation and owner-content edit commands
+publish a single entity fragment. Reactions, poll votes/updates, moderation,
+role changes, and tips publish no entity-index rewrite. The old
+`qdbm-index-topics` and `qdbm-index-thread-*` builders/loaders remain only for
+V1 compatibility and last-known-good discovery; no active V2 mutation command
+publishes them. Active commands update local compatibility caches through pure
+snapshot builders and do not serialize or prepare whole-index QDN resources.
+
+### 19.2 Phase 6 search
+
+Search discovers the three fragment families through the shared paginator,
+strictly validates them against reduced V2 authority, and matches the accepted
+authoritative content rather than fragment hints. Results are ordered by entity
+ID after validation. Stale hints can locate authority but cannot create a match
+or replace content. Current moderation state excludes removed targets and
+hidden targets for non-moderators; unavailable moderation fails search closed.
+Partial fragment or authority discovery produces partial search status and a UI
+warning. Legacy thread indexes remain readable as
+explicit index/cache evidence and as a last-known-good thread fallback; they do
+not establish a verified result or authority.
+
 ## 20. Partial and unavailable data
 
 Every load result carries:
 
 ```ts
-type Completeness = 'complete' | 'partial' | 'unknown';
+type Completeness = 'complete' | 'partial' | 'unavailable';
 
 interface LoadDiagnostics {
   completeness: Completeness;
@@ -1025,6 +1106,136 @@ Rules:
 
 Pagination and production safety budgets are implemented in Phase 6, but Phase
 1 data types and reducers must not encode “first 1,000 equals all.”
+
+### 20.1 Verified Phase 6 resource-search contract
+
+Phase 6 re-verified Core commit
+`c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` and Home commit
+`a41e5f9678d7f20d7fb77a223c45fddc0096632e` on 2026-07-21.
+These commits are traceability points, not frozen targets.
+
+At those commits:
+
+- Home forwards Q-App resource search `service`, identifier, prefix, mode,
+  name/exact-name, `limit`, `offset`, `reverse`, metadata, and status fields;
+- Home does not currently forward Core's `before` and `after` resource-search
+  parameters;
+- Core prefix matching is case-insensitive `prefix%`; without prefix mode an
+  identifier search is a contains search, so exact lookups also filter the
+  returned identifier in the application;
+- service and exact-name filters are applied by Core;
+- `mode=ALL` exposes all resource keys rather than only the latest resource per
+  name/service;
+- Core orders resource results by resource `created_when`, descending when
+  `reverse=true`, then applies positive SQL `LIMIT` and `OFFSET`;
+- no separate documented maximum page size is enforced in this endpoint;
+- a non-positive Core limit means no SQL limit, but the application never uses
+  that unbounded mode at runtime;
+- results can include service, name, identifier, `created`, nullable `updated`,
+  latest signature, metadata, and status when requested;
+- one current result represents each `(service, name, identifier)` resource
+  key, while live changes between offset requests can still cause overlap;
+- Home/Core request errors reject the request rather than returning a typed
+  pagination cursor or total count.
+
+Core's primary ordering column does not add a documented stable tie-break for
+equal creation timestamps, and offset paging is not snapshot-isolated while new
+resources arrive. The client therefore sorts/deduplicates deterministically,
+detects repeated pages, and reports partial state on any anomaly; it does not
+claim stronger snapshot consistency than the platform supplies.
+
+### 20.2 Shared pagination result and budgets
+
+All production `SEARCH_QDN_RESOURCES` calls use the shared paginator and retain:
+
+```ts
+interface QdnDiscoveryResult<T> {
+  items: T[];
+  completeness: 'complete' | 'partial' | 'unavailable';
+  pagesFetched: number;
+  resourcesSeen: number;
+  stoppedReason:
+    | 'exhausted'
+    | 'page-budget'
+    | 'resource-budget'
+    | 'repeated-page'
+    | 'request-failed'
+    | 'malformed-response';
+  diagnostics: PaginationDiagnostic[];
+}
+```
+
+The runtime defaults are 100 resources per page, 100 pages, 10,000 unique
+resources, one repeated-page occurrence, and two paginator retries with
+150/300 ms linear backoff. The existing bridge client also performs its bounded
+read retries. One hundred is a conservative request size for interactive Q-App
+traffic; the 10,000-resource/100-page ceiling is ten times the removed V1 cap
+while bounding browser memory, network fan-out, and malicious namespace cost.
+Roles and tips use the same 10,000-resource ceiling. Narrow Q-Tube resolution
+uses the same primitive with a deliberate 100-resource media-variant budget.
+
+An empty first page is `complete` with zero items. A failed/malformed first page
+is `unavailable`. A later failure, page/resource budget, or loop preserves valid
+earlier items but is `partial`. Combining partitions is unavailable only when
+all partitions are unavailable and none yielded data; otherwise any incomplete
+partition makes the combined result partial. Repeated resource keys are merged
+by trusted Core ordering and diagnosed.
+
+Payload fetching uses bounded concurrency. A discovered V2 authority payload
+that is unavailable or lacks required trusted metadata downgrades V2 discovery
+to partial even if metadata pagination exhausted normally. Owner edits,
+moderation writes, tip submission/recipient resolution, and native-poll writes
+force a fresh complete authority load and fail closed on partial state. Cached
+authority is used only for read performance.
+
+### 20.3 Current/cache/index UI states
+
+Runtime entities carry one of `verified-current`, `partial`,
+`cached-last-known-good`, `index-only`, or `unavailable`, plus QDN/index/cache
+provenance. Direct V1 payloads are explicitly marked `legacy-v1`; only reduced
+V2 entities use authoritative-QDN provenance. The authoritative forum structure and direct Post discovery are
+always attempted before legacy indexes. The bootstrap uses a legacy directory
+only when the authoritative read fails, marks it index-only/read-only, and
+shows a non-intrusive warning. Thread post cache and thread-index fallback are
+similarly marked; a fresh authoritative result supersedes them.
+
+Current cache horizons are deliberately bounded implementation details:
+
+- 30 seconds for read-only reduced V2 authority;
+- 30 seconds for validated V2 index fragments keyed to the reduced authority
+  state;
+- 30 seconds for the expensive paginated legacy Post discovery/fetch set;
+- 30 seconds for forum structure;
+- 15 seconds for the in-memory legacy topic directory;
+- six hours for legacy thread-index last-known-good storage;
+- five minutes before local thread Post cache is considered stale.
+
+Authority-sensitive commands bypass the V2 authority cache. Cached/index-only
+Topic or Thread state cannot authorize child creation, owner mutation,
+moderation, roles, tips, poll writes, or ownership. Cache refresh failure keeps
+last-known-good display data instead of erasing it; a successful verified read
+replaces the cache.
+
+### 20.4 Stable Phase 6 diagnostics
+
+Phase 6 defines:
+
+- `PAGINATION_INCOMPLETE`;
+- `PAGINATION_BUDGET_REACHED`;
+- `PAGINATION_LOOP_DETECTED`;
+- `PAGINATION_REQUEST_FAILED`;
+- `DUPLICATE_RESOURCE`;
+- `INVALID_INDEX_ENTRY`;
+- `STALE_INDEX_ENTRY`;
+- `INDEX_TARGET_UNAVAILABLE`;
+- `INDEX_AUTHORITY_MISMATCH`;
+- `INVALID_PARENT_RELATION`;
+- `CACHED_LAST_KNOWN_GOOD`;
+- `AUTHORITATIVE_RESOURCE_UNAVAILABLE`;
+- `PARTIAL_DISCOVERY`;
+- `NAMESPACE_BUDGET_PRESSURE`.
+
+Expected complete empty results do not emit warnings.
 
 ## 21. Native poll reference architecture
 
@@ -1698,7 +1909,9 @@ The GitHub dependency graph remains authoritative. Current planned order:
 4. **Phase 3 (#5):** native Core polls and Home bridge writes.
 5. **Phase 4 (#6):** moderation operations and role authorization redesign.
 6. **Phase 5 (#8):** verified transaction-based tips (implemented).
-7. **Phase 6:** paginated QDN discovery and rebuildable indexes.
+7. **Phase 6 (#10):** paginated QDN discovery, explicit partial/unavailable
+   state, validated rebuildable fragments, and read-only last-known-good
+   compatibility (implemented).
 8. Correct restricted-access/privacy terminology.
 9. **Delegated-role persistence (#7):** append-only authenticated role
    operations over the trusted legacy bootstrap (completed before Phase 5).
@@ -1740,17 +1953,21 @@ Fixture families:
 15. every known live duplicate-publisher pattern;
 16. mixed V1/V2 state before and after adoption;
 17. V1 snapshot published after V2 adoption;
-18. valid, stale, poisoned, incomplete, and unavailable-resource indexes;
-19. paged discovery, safety-budget exhaustion, and prefix flooding;
-20. last-known-good cache with unavailable authoritative resource;
-21. current-name transfer/historical-wallet ambiguity;
-22. malformed/oversized payload and attachment references.
-23. `APPROVED`, `UNRESOLVED`, and `QUARANTINED` legacy entities proving that
+18. zero, boundary, multi-page, greater-than-1,000, duplicate, failed,
+    repeated, page-budget, resource-budget, and prefix-flooded QDN discovery;
+19. valid, stale, malformed, poisoned, conflicting, wrong-authority,
+    wrong-parent, unavailable, tombstoned, and index-only V2 fragments;
+20. verified-current, partial, cached-last-known-good, index-only, and
+    unavailable UI/query states;
+21. last-known-good cache with unavailable authoritative resource;
+22. current-name transfer/historical-wallet ambiguity;
+23. malformed/oversized payload and attachment references;
+24. `APPROVED`, `UNRESOLVED`, and `QUARANTINED` legacy entities proving that
     only approved mappings can authorize owner edits, adoption, transfer, or
     destructive operations;
-24. safe compatibility rendering when authority metadata is missing, partial,
+25. safe compatibility rendering when authority metadata is missing, partial,
     unavailable, or conflicting;
-25. new V2-native entities proving they do not depend on legacy canonicalization.
+26. new V2-native entities proving they do not depend on legacy canonicalization.
 
 Fixtures that represent live QDN records must preserve the resource metadata
 needed to reproduce ordering and identity decisions.
@@ -1799,6 +2016,26 @@ Each operation phase tests:
 - deterministic reload;
 - indexes remaining non-authoritative.
 
+### 27.4 Phase 6 implementation acceptance
+
+- complete-empty, partial, and unavailable discovery are distinct;
+- exact-boundary and greater-than-1,000 fixtures paginate to exhaustion;
+- request failure, retry exhaustion, repeated pages, duplicates, and safety
+  budgets preserve valid earlier results with stable diagnostics;
+- namespace flooding cannot silently turn a capped set into complete state;
+- strict fragments reduce identically across page/input permutations;
+- malformed, stale, conflicting, unauthorized, wrong-parent, unavailable, and
+  tombstoned entries cannot establish or replace authority;
+- search matches validated authoritative content and exposes partial state;
+- current authority supersedes cache, while cache/index-only data remains
+  explicitly read-only;
+- normal V2 create/edit/moderation/reaction/poll/role/tip commands do not
+  require whole-directory or whole-thread publication;
+- legacy identifiers and index snapshots remain readable as compatibility
+  evidence;
+- prior Architecture V2 suites, rich-text checks, lint/format checks, and the
+  production build pass.
+
 ## 28. Open decisions
 
 ### Blocking automatic legacy authority migration
@@ -1808,18 +2045,13 @@ Each operation phase tests:
 2. First-transaction/block evidence and historical wallet binding for any
    mapping a maintainer wishes to mark `APPROVED`; current name ownership is
    insufficient.
-3. Confirmation that required trusted QDN resource metadata is available
-   through the current Home bridge.
-4. Final compact identifier grammar/hash after current Core constraints are
-   re-verified.
 
 ### Deferred to their workflow phases
 
 1. Native poll UI result model and create-signature-to-poll-ID resolution.
 2. A future, explicitly reviewed SysOp-transfer mechanism. The fixed trust root
    is intentionally immutable in the current role-operation model.
-3. Pagination safety budgets and index partition sizes.
-4. Encryption design, if true confidentiality is ever required.
-5. Large-file source-token behavior on every supported Home platform.
+3. Encryption design, if true confidentiality is ever required.
+4. Large-file source-token behavior on every supported Home platform.
 
 Deferred decisions may not violate the invariants in section 3.

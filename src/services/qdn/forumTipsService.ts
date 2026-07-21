@@ -19,6 +19,7 @@ import {
 } from '../architectureV2/tips.js';
 import { fetchWithQdnReadyFallback } from './qdnReadiness.js';
 import { requestQortium } from '../qortium/qortiumClient.js';
+import { discoverQdnResources } from './qdnPagination.js';
 import {
   getUserAccount,
   resolveNameWalletAddressUncached,
@@ -28,8 +29,7 @@ import {
 const FORUM_SERVICE = import.meta.env?.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_NAMESPACE =
   import.meta.env?.VITE_QORTIUM_QDN_IDENTIFIER?.trim() || 'qdbm';
-const TIP_PAGE_SIZE = 100;
-const TIP_DISCOVERY_BUDGET = 5000;
+const TIP_DISCOVERY_BUDGET = 10_000;
 const MAX_SAFE_QDN_IDENTIFIER_LENGTH = 64;
 
 type TipDiscoveryResult = {
@@ -818,25 +818,20 @@ export const createForumTipsService = (dependencies: ForumTipsDependencies) => {
 };
 
 const discoverTipResources = async (): Promise<TipDiscoveryResult> => {
-  const resources: DiscoveredTipResource[] = [];
-  for (let offset = 0; offset < TIP_DISCOVERY_BUDGET; offset += TIP_PAGE_SIZE) {
-    const page = await requestQortium<DiscoveredTipResource[]>({
-      action: 'SEARCH_QDN_RESOURCES',
+  const discovery = await discoverQdnResources(
+    {
       service: FORUM_SERVICE,
       identifier: buildTipReferencePrefix(FORUM_NAMESPACE),
       prefix: true,
       mode: 'ALL',
       reverse: false,
-      limit: TIP_PAGE_SIZE,
-      offset,
-      includeMetadata: true,
-      includeStatus: true,
-    });
-    const normalized = Array.isArray(page) ? page : [];
-    resources.push(...normalized);
-    if (normalized.length < TIP_PAGE_SIZE) return { resources, complete: true };
-  }
-  return { resources, complete: false };
+    },
+    { maxResources: TIP_DISCOVERY_BUDGET }
+  );
+  return {
+    resources: discovery.items,
+    complete: discovery.completeness === 'complete',
+  };
 };
 
 const fetchPayload = async (resource: DiscoveredTipResource) => {
@@ -868,19 +863,21 @@ const fetchCoreTransaction = async (signature: string) =>
 export const forumTipsService = createForumTipsService({
   discoverResources: discoverTipResources,
   referenceExists: async (publisherName, identifier) => {
-    const result = await requestQortium<DiscoveredTipResource[]>({
-      action: 'SEARCH_QDN_RESOURCES',
-      service: FORUM_SERVICE,
-      name: publisherName,
-      identifier,
-      prefix: false,
-      mode: 'ALL',
-      includeMetadata: true,
-      includeStatus: true,
-      limit: 10,
-      offset: 0,
-    });
-    return (Array.isArray(result) ? result : []).some(
+    const result = await discoverQdnResources(
+      {
+        service: FORUM_SERVICE,
+        name: publisherName,
+        identifier,
+        prefix: true,
+        mode: 'ALL',
+      },
+      { pageSize: 25, maxPages: 4, maxResources: 100 }
+    );
+    if (result.completeness !== 'complete')
+      throw new Error(
+        '[PARTIAL_DISCOVERY] exact tip-reference lookup is incomplete'
+      );
+    return result.items.some(
       (resource) =>
         resource.name?.trim().toLowerCase() ===
           publisherName.trim().toLowerCase() &&

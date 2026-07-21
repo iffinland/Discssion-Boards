@@ -205,6 +205,8 @@ const postsFromThreadIndex = (snapshot: ThreadSearchSnapshot): Post[] => {
     likes: post.likes,
     tips: post.tips,
     likedByAddresses: post.likedByAddresses,
+    dataAvailability: 'index-only',
+    dataProvenance: 'legacy-index',
   }));
 };
 
@@ -334,10 +336,14 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       const cached = threadPostCache.read(normalizedId);
       const recentMutations = readRecentPostMutations(normalizedId);
       if (cached?.posts.length) {
-        let cachedPosts = cached.posts;
+        let cachedPosts: Post[] = cached.posts.map((post) => ({
+          ...post,
+          dataAvailability: 'cached-last-known-good' as const,
+          dataProvenance: 'local-cache' as const,
+        }));
         try {
           cachedPosts = await forumQdnService.applyPostOperationState(
-            cached.posts,
+            cachedPosts,
             authenticatedAddress
           );
         } catch {
@@ -354,15 +360,11 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
           );
           return merged;
         });
-        if (!cached.isStale) {
-          loadedThreadsRef.current.add(normalizedId);
-          return { ok: true };
-        }
       }
 
       setIsThreadPostsLoading(true);
       try {
-        let loadedPosts: Post[] | null = null;
+        let indexFallback: Post[] | null = null;
 
         try {
           const loadedThreadIndex = await loadThreadIndexCached(
@@ -374,20 +376,22 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
               ...current,
               [normalizedId]: loadedThreadIndex,
             }));
-            loadedPosts = postsFromThreadIndex(loadedThreadIndex);
+            indexFallback = postsFromThreadIndex(loadedThreadIndex);
           }
         } catch {
-          // Fall back to direct QDN post loading when the thread index is unavailable.
+          // Direct authoritative discovery below remains the primary path.
         }
 
-        if (!loadedPosts) {
+        let loadedPosts: Post[];
+        try {
           loadedPosts = await forumQdnService.loadPostsBySubTopic(
             normalizedId,
             authenticatedAddress
           );
-        } else {
+        } catch (error) {
+          if (!indexFallback) throw error;
           loadedPosts = await forumQdnService.applyPostOperationState(
-            loadedPosts,
+            indexFallback,
             authenticatedAddress
           );
         }

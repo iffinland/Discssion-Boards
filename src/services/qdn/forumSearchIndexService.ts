@@ -1,13 +1,6 @@
 import type { Post, PostAttachment, SubTopic, Topic } from '../../types';
-import {
-  fetchWithQdnReadyFallback,
-  isMissingResourceError,
-  mapWithConcurrency,
-} from './qdnReadiness';
-import {
-  isThreadQuarantined,
-  quarantineThread,
-} from '../forum/threadLoadQuarantine';
+import { fetchWithQdnReadyFallback, mapWithConcurrency } from './qdnReadiness';
+import { isThreadQuarantined } from '../forum/threadLoadQuarantine';
 import {
   requestQortium,
   type QortiumResourceToPublish,
@@ -19,6 +12,27 @@ import {
   isNativePostPoll,
   toPersistedNativePollReference,
 } from '../architectureV2/polls.js';
+import {
+  buildV2IndexFragmentEnvelope,
+  buildV2IndexFragmentPrefix,
+  isV2IndexFragmentEnvelope,
+  reduceV2IndexFragments,
+  type ReducedV2Index,
+  type V2IndexFragmentRecord,
+  type V2IndexTargetAvailability,
+} from '../architectureV2/indexes.js';
+import type { V2RuntimeState } from '../architectureV2/runtime.js';
+import type {
+  QdbV2ResourceMetadata,
+  V2EntityCreate,
+} from '../architectureV2/types.js';
+import {
+  combineQdnDiscoveryResults,
+  compareDiscoveredQdnResources,
+  discoverQdnResources,
+  type DiscoveredQdnResource,
+  type QdnDiscoveryResult,
+} from './qdnPagination.js';
 
 const FORUM_SERVICE = import.meta.env.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_NAMESPACE =
@@ -29,13 +43,16 @@ const VERIFY_RETRIES = 5;
 const VERIFY_DELAY_MS = 1500;
 const MAX_SAFE_QDN_IDENTIFIER_LENGTH = 64;
 const TOPIC_DIRECTORY_CACHE_TTL_MS = 15 * 1000;
+const V2_INDEX_CACHE_TTL_MS = 30 * 1000;
 
-type SearchQdnResourceResult = {
-  name: string;
-  identifier: string;
+type SearchQdnResourceResult = DiscoveredQdnResource;
+
+type IndexLoadState = {
+  dataAvailability?: 'index-only' | 'partial' | 'cached-last-known-good';
+  diagnostics?: Array<{ code: string; detail: string }>;
 };
 
-export type TopicDirectorySnapshot = {
+export type TopicDirectorySnapshot = IndexLoadState & {
   updatedAt: number;
   topics: Array<{
     topicId: string;
@@ -72,7 +89,7 @@ export type TopicDirectorySnapshot = {
   }>;
 };
 
-export type ThreadSearchSnapshot = {
+export type ThreadSearchSnapshot = IndexLoadState & {
   subTopicId: string;
   updatedAt: number;
   posts: Array<{
@@ -107,6 +124,75 @@ type ThreadIndexPayload = {
   updatedAt: number;
   snapshot: ThreadSearchSnapshot;
 };
+
+const createTopicDirectorySnapshot = (
+  topics: Topic[],
+  subTopics: SubTopic[]
+): TopicDirectorySnapshot => ({
+  updatedAt: Date.now(),
+  topics: topics.map((topic) => ({
+    topicId: topic.id,
+    title: topic.title,
+    description: topic.description,
+    sortOrder: topic.sortOrder,
+    status: topic.status,
+    visibility: topic.visibility,
+    subTopicAccess: topic.subTopicAccess,
+    allowedAddresses: topic.allowedAddresses,
+  })),
+  subTopics: subTopics.map((subTopic) => ({
+    subTopicId: subTopic.id,
+    topicId: subTopic.topicId,
+    title: subTopic.title,
+    description: subTopic.description,
+    isPinned: subTopic.isPinned,
+    pinnedAt: subTopic.pinnedAt,
+    isSolved: subTopic.isSolved,
+    solvedAt: subTopic.solvedAt,
+    solvedByUserId: subTopic.solvedByUserId,
+    isPoll: subTopic.isPoll,
+    access: subTopic.access,
+    allowedAddresses: subTopic.allowedAddresses,
+    status: subTopic.status,
+    visibility: subTopic.visibility,
+    authorUserId: subTopic.authorUserId,
+    lastPostAt: subTopic.lastPostAt,
+    lastPostAuthorUserId: subTopic.lastPostAuthorUserId,
+    lastModerationAction: subTopic.lastModerationAction ?? null,
+    lastModerationReason: subTopic.lastModerationReason ?? null,
+    lastModeratedByUserId: subTopic.lastModeratedByUserId ?? null,
+    lastModeratedAt: subTopic.lastModeratedAt ?? null,
+  })),
+});
+
+const createThreadSearchSnapshot = (
+  subTopicId: string,
+  posts: Post[]
+): ThreadSearchSnapshot => ({
+  subTopicId,
+  updatedAt: Date.now(),
+  posts: posts
+    .filter((post) => post.subTopicId === subTopicId)
+    .map((post) => ({
+      postId: post.id,
+      authorUserId: post.authorUserId,
+      parentPostId: post.parentPostId,
+      content: post.content,
+      attachments: post.attachments,
+      poll: isNativePostPoll(post.poll)
+        ? toPersistedNativePollReference(post.poll)
+        : (post.poll ?? null),
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt ?? post.editedAt ?? post.createdAt,
+      editedAt: post.editedAt ?? null,
+      isPinned: post.isPinned === true,
+      pinnedAt: post.pinnedAt ?? null,
+      pinnedByUserId: post.pinnedByUserId ?? null,
+      likes: post.likes,
+      tips: post.tips,
+      likedByAddresses: post.likedByAddresses,
+    })),
+});
 
 let topicDirectoryIndexCache: {
   value: TopicDirectorySnapshot | null;
@@ -313,20 +399,14 @@ const resolveOwnerName = async (providedName?: string): Promise<string> => {
 
 const searchByPrefix = async (
   prefix: string
-): Promise<SearchQdnResourceResult[]> => {
-  const search = await requestQortium<SearchQdnResourceResult[]>({
-    action: 'SEARCH_QDN_RESOURCES',
+): Promise<QdnDiscoveryResult<SearchQdnResourceResult>> =>
+  discoverQdnResources({
     service: FORUM_SERVICE,
     identifier: prefix,
     prefix: true,
     mode: 'ALL',
     reverse: true,
-    limit: 1000,
-    offset: 0,
   });
-
-  return Array.isArray(search) ? search : [];
-};
 
 const fetchResource = async (
   name: string,
@@ -630,63 +710,275 @@ const verifyPublication = async (
   throw new Error('Search index was submitted but could not be verified yet.');
 };
 
-const pickLatest = <TPayload extends { updatedAt: number }>(
-  payloads: Array<TPayload | null>
-) => {
-  return (
-    payloads
-      .filter((item): item is TPayload => item !== null)
-      .sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null
-  );
+const pickLatestTrusted = <TPayload>(
+  candidates: Array<{
+    payload: TPayload;
+    resource: SearchQdnResourceResult;
+  } | null>
+) =>
+  candidates
+    .filter(
+      (
+        candidate
+      ): candidate is {
+        payload: TPayload;
+        resource: SearchQdnResourceResult;
+      } => candidate !== null
+    )
+    .sort((left, right) =>
+      compareDiscoveredQdnResources(right.resource, left.resource)
+    )[0] ?? null;
+
+const toTrustedMetadata = (
+  resource: SearchQdnResourceResult
+): QdbV2ResourceMetadata | null => {
+  if (
+    typeof resource.service !== 'string' ||
+    typeof resource.created !== 'number' ||
+    !Number.isSafeInteger(resource.created) ||
+    (resource.updated !== undefined &&
+      resource.updated !== null &&
+      (!Number.isSafeInteger(resource.updated) ||
+        typeof resource.updated !== 'number'))
+  )
+    return null;
+  return {
+    service: resource.service,
+    publisherName: resource.name,
+    identifier: resource.identifier,
+    created: resource.created,
+    updated: resource.updated ?? null,
+    latestSignature: resource.latestSignature,
+  };
+};
+
+export type V2IndexLoadResult = ReducedV2Index & {
+  discovery: {
+    completeness: 'complete' | 'partial' | 'unavailable';
+    pagesFetched: number;
+    resourcesSeen: number;
+    stoppedReason: string;
+    source: 'network' | 'cache';
+  };
+};
+
+let v2IndexCache: {
+  authority: V2RuntimeState['authoritative'];
+  availabilityKey: string;
+  value: V2IndexLoadResult;
+  cachedAt: number;
+} | null = null;
+
+const unavailableV2Targets = (authority: V2RuntimeState) => {
+  const result: Record<string, 'unavailable'> = {};
+  for (const diagnostic of authority.diagnostics) {
+    if (diagnostic.code !== 'AUTHORITATIVE_RESOURCE_UNAVAILABLE') continue;
+    for (const entityType of ['topic', 'thread', 'post'] as const) {
+      const prefix = `${FORUM_NAMESPACE}-v2-${entityType}-`;
+      if (diagnostic.identifier.startsWith(prefix)) {
+        result[diagnostic.identifier.slice(prefix.length)] = 'unavailable';
+      }
+    }
+  }
+  return result;
 };
 
 export const forumSearchIndexService = {
+  buildTopicDirectorySnapshot(topics: Topic[], subTopics: SubTopic[]) {
+    return createTopicDirectorySnapshot(topics, subTopics);
+  },
+
+  buildThreadSearchSnapshot(subTopicId: string, posts: Post[]) {
+    return createThreadSearchSnapshot(subTopicId, posts);
+  },
+
+  buildV2IndexFragmentPublishResource(
+    entity: V2EntityCreate,
+    ownerName: string
+  ) {
+    const envelope = buildV2IndexFragmentEnvelope(FORUM_NAMESPACE, entity);
+    assertIdentifierLength(envelope.recordId);
+    return {
+      identifier: envelope.recordId,
+      envelope,
+      resource: {
+        service: FORUM_SERVICE,
+        name: ownerName,
+        identifier: envelope.recordId,
+        title: `Forum ${entity.entityType} discovery locator`,
+        description:
+          'Rebuildable non-authoritative Discussion Boards V2 index fragment',
+        tags: ['forum', 'qdb-v2', 'derived-index', entity.entityType],
+        data64: encodeBase64Json(envelope),
+      } satisfies QortiumResourceToPublish,
+    };
+  },
+
+  async publishV2IndexFragment(entity: V2EntityCreate, ownerName?: string) {
+    const resolvedOwner = await resolveOwnerName(ownerName);
+    const built = this.buildV2IndexFragmentPublishResource(
+      entity,
+      resolvedOwner
+    );
+    await requestQortium<unknown>({
+      action: 'PUBLISH_QDN_RESOURCE',
+      ...built.resource,
+    });
+    v2IndexCache = null;
+    return built.envelope;
+  },
+
+  invalidateV2IndexCache() {
+    v2IndexCache = null;
+  },
+
+  async loadV2IndexFragments(
+    authority: V2RuntimeState,
+    availability: Record<string, V2IndexTargetAvailability> = {}
+  ): Promise<V2IndexLoadResult> {
+    const availabilityKey = JSON.stringify(
+      Object.entries(availability).sort(([left], [right]) =>
+        left.localeCompare(right)
+      )
+    );
+    if (
+      v2IndexCache &&
+      v2IndexCache.authority === authority.authoritative &&
+      v2IndexCache.availabilityKey === availabilityKey &&
+      Date.now() - v2IndexCache.cachedAt <= V2_INDEX_CACHE_TTL_MS
+    )
+      return {
+        ...v2IndexCache.value,
+        discovery: { ...v2IndexCache.value.discovery, source: 'cache' },
+      };
+    const discoveries = await Promise.all(
+      (['topic', 'thread', 'post'] as const).map((entityType) =>
+        searchByPrefix(buildV2IndexFragmentPrefix(FORUM_NAMESPACE, entityType))
+      )
+    );
+    const discovery = combineQdnDiscoveryResults(discoveries, {
+      keyOf: (resource) =>
+        `${resource.service ?? ''}\u0000${resource.name.trim().toLowerCase()}\u0000${resource.identifier}`,
+      compareItems: compareDiscoveredQdnResources,
+    });
+    const records: V2IndexFragmentRecord[] = [];
+    const loaderDiagnostics: ReducedV2Index['diagnostics'] = [];
+    let unavailableFragmentCount = 0;
+    await mapWithConcurrency(discovery.items, async (resource) => {
+      const metadata = toTrustedMetadata(resource);
+      if (!metadata) {
+        loaderDiagnostics.push({
+          code: 'INVALID_INDEX_ENTRY',
+          identifier: resource.identifier,
+          detail: 'index fragment lacks trusted Core metadata',
+        });
+        return;
+      }
+      try {
+        const payload = await fetchResource(resource.name, resource.identifier);
+        if (!isV2IndexFragmentEnvelope(payload)) {
+          loaderDiagnostics.push({
+            code: 'INVALID_INDEX_ENTRY',
+            identifier: resource.identifier,
+            detail: 'index fragment payload is malformed',
+          });
+          return;
+        }
+        records.push({ metadata, envelope: payload });
+      } catch {
+        unavailableFragmentCount += 1;
+        loaderDiagnostics.push({
+          code: 'INDEX_TARGET_UNAVAILABLE',
+          identifier: resource.identifier,
+          detail: 'discovered index fragment payload is unavailable',
+        });
+      }
+    });
+    const reduced = reduceV2IndexFragments(
+      FORUM_NAMESPACE,
+      records,
+      authority.authoritative,
+      { ...availability, ...unavailableV2Targets(authority) }
+    );
+    const result: V2IndexLoadResult = {
+      entries: reduced.entries,
+      diagnostics: [
+        ...loaderDiagnostics,
+        ...reduced.diagnostics,
+        ...discovery.diagnostics.map((item) => ({
+          code: item.code,
+          identifier: `${FORUM_NAMESPACE}-v2-idx`,
+          detail: item.detail,
+        })),
+      ].sort(
+        (left, right) =>
+          left.identifier.localeCompare(right.identifier) ||
+          left.code.localeCompare(right.code) ||
+          left.detail.localeCompare(right.detail)
+      ),
+      discovery: {
+        completeness:
+          authority.discovery.completeness === 'unavailable'
+            ? 'unavailable'
+            : unavailableFragmentCount > 0
+              ? 'partial'
+              : authority.discovery.completeness === 'complete'
+                ? discovery.completeness
+                : authority.discovery.completeness,
+        pagesFetched: discovery.pagesFetched,
+        resourcesSeen: discovery.resourcesSeen,
+        stoppedReason:
+          unavailableFragmentCount > 0
+            ? 'index-fragment-unavailable'
+            : discovery.stoppedReason,
+        source: 'network',
+      },
+    };
+    v2IndexCache = {
+      authority: authority.authoritative,
+      availabilityKey,
+      value: result,
+      cachedAt: Date.now(),
+    };
+    return result;
+  },
+
+  async searchV2Index(
+    query: string,
+    authority: V2RuntimeState,
+    availability: Record<string, V2IndexTargetAvailability> = {}
+  ): Promise<V2IndexLoadResult> {
+    const loaded = await this.loadV2IndexFragments(authority, availability);
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return loaded;
+    return {
+      ...loaded,
+      entries: loaded.entries
+        .filter(({ entity }) => {
+          const text =
+            entity.entityType === 'post'
+              ? entity.content
+              : `${entity.title} ${entity.description}`;
+          return text.toLowerCase().includes(normalized);
+        })
+        .sort((left, right) =>
+          left.entity.entityId.localeCompare(right.entity.entityId)
+        ),
+    };
+  },
+
+  /** Legacy V1 compatibility publisher input; active V2 commands do not call it. */
   buildTopicDirectoryIndexPublishResource(
     topics: Topic[],
     subTopics: SubTopic[],
     ownerName: string
   ) {
-    const updatedAt = Date.now();
+    const snapshot = createTopicDirectorySnapshot(topics, subTopics);
     const payload: TopicDirectoryPayload = {
       version: 1,
       type: 'topic-directory-index',
-      updatedAt,
-      snapshot: {
-        updatedAt,
-        topics: topics.map((topic) => ({
-          topicId: topic.id,
-          title: topic.title,
-          description: topic.description,
-          sortOrder: topic.sortOrder,
-          status: topic.status,
-          visibility: topic.visibility,
-          subTopicAccess: topic.subTopicAccess,
-          allowedAddresses: topic.allowedAddresses,
-        })),
-        subTopics: subTopics.map((subTopic) => ({
-          subTopicId: subTopic.id,
-          topicId: subTopic.topicId,
-          title: subTopic.title,
-          description: subTopic.description,
-          isPinned: subTopic.isPinned,
-          pinnedAt: subTopic.pinnedAt,
-          isSolved: subTopic.isSolved,
-          solvedAt: subTopic.solvedAt,
-          solvedByUserId: subTopic.solvedByUserId,
-          isPoll: subTopic.isPoll,
-          access: subTopic.access,
-          allowedAddresses: subTopic.allowedAddresses,
-          status: subTopic.status,
-          visibility: subTopic.visibility,
-          authorUserId: subTopic.authorUserId,
-          lastPostAt: subTopic.lastPostAt,
-          lastPostAuthorUserId: subTopic.lastPostAuthorUserId,
-          lastModerationAction: subTopic.lastModerationAction ?? null,
-          lastModerationReason: subTopic.lastModerationReason ?? null,
-          lastModeratedByUserId: subTopic.lastModeratedByUserId ?? null,
-          lastModeratedAt: subTopic.lastModeratedAt ?? null,
-        })),
-      },
+      updatedAt: snapshot.updatedAt,
+      snapshot,
     };
 
     return {
@@ -716,7 +1008,17 @@ export const forumSearchIndexService = {
         topicCount: topicDirectoryIndexCache.value.topics.length,
         subTopicCount: topicDirectoryIndexCache.value.subTopics.length,
       });
-      return topicDirectoryIndexCache.value;
+      return {
+        ...topicDirectoryIndexCache.value,
+        dataAvailability: 'cached-last-known-good' as const,
+        diagnostics: [
+          ...(topicDirectoryIndexCache.value.diagnostics ?? []),
+          {
+            code: 'CACHED_LAST_KNOWN_GOOD',
+            detail: 'topic directory was served from the bounded local cache',
+          },
+        ],
+      };
     }
 
     if (topicDirectoryIndexCache.inflight) {
@@ -725,17 +1027,61 @@ export const forumSearchIndexService = {
     }
 
     const loadPromise = (async () => {
-      const resources = await searchByPrefix(TOPIC_DIRECTORY_IDENTIFIER);
-      const payloads = await mapWithConcurrency(resources, async (item) => {
-        try {
-          const raw = await fetchResource(item.name, item.identifier);
-          return parseTopicDirectoryPayload(raw);
-        } catch {
-          return null;
+      const discovery = await searchByPrefix(TOPIC_DIRECTORY_IDENTIFIER);
+      let unavailableResourceCount = 0;
+      const payloads = await mapWithConcurrency(
+        discovery.items.filter(
+          (item) => item.identifier === TOPIC_DIRECTORY_IDENTIFIER
+        ),
+        async (item) => {
+          try {
+            const raw = await fetchResource(item.name, item.identifier);
+            const payload = parseTopicDirectoryPayload(raw);
+            return payload ? { payload, resource: item } : null;
+          } catch {
+            unavailableResourceCount += 1;
+            return null;
+          }
         }
-      });
-
-      return pickLatest(payloads)?.snapshot ?? null;
+      );
+      const selected = pickLatestTrusted(payloads)?.payload.snapshot ?? null;
+      if (!selected && discovery.completeness !== 'complete')
+        throw new Error(
+          '[PARTIAL_DISCOVERY] legacy topic-directory refresh is incomplete'
+        );
+      if (
+        !selected &&
+        discovery.items.some(
+          (item) => item.identifier === TOPIC_DIRECTORY_IDENTIFIER
+        )
+      )
+        throw new Error(
+          '[INDEX_TARGET_UNAVAILABLE] discovered legacy topic directory could not be loaded or validated'
+        );
+      return selected
+        ? {
+            ...selected,
+            dataAvailability:
+              discovery.completeness === 'complete' &&
+              unavailableResourceCount === 0
+                ? ('index-only' as const)
+                : ('partial' as const),
+            diagnostics: [
+              ...discovery.diagnostics.map((item) => ({
+                code: item.code,
+                detail: item.detail,
+              })),
+              ...(unavailableResourceCount > 0
+                ? [
+                    {
+                      code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
+                      detail: `${unavailableResourceCount} discovered legacy topic-directory resource(s) could not be loaded.`,
+                    },
+                  ]
+                : []),
+            ],
+          }
+        : null;
     })()
       .then((result) => {
         topicDirectoryIndexCache = {
@@ -746,10 +1092,24 @@ export const forumSearchIndexService = {
         return result;
       })
       .catch((error) => {
+        const fallback = topicDirectoryIndexCache.value;
         topicDirectoryIndexCache = {
           ...topicDirectoryIndexCache,
           inflight: null,
         };
+        if (fallback)
+          return {
+            ...fallback,
+            dataAvailability: 'cached-last-known-good' as const,
+            diagnostics: [
+              ...(fallback.diagnostics ?? []),
+              {
+                code: 'CACHED_LAST_KNOWN_GOOD',
+                detail:
+                  'topic directory refresh failed; stale derived index retained read-only',
+              },
+            ],
+          };
         throw error;
       });
 
@@ -769,6 +1129,7 @@ export const forumSearchIndexService = {
     });
   },
 
+  /** Legacy V1 compatibility only; active V2 commands publish fragments. */
   async publishTopicDirectoryIndex(
     topics: Topic[],
     subTopics: SubTopic[],
@@ -809,42 +1170,19 @@ export const forumSearchIndexService = {
     return snapshot;
   },
 
+  /** Legacy V1 compatibility publisher input; active V2 commands do not call it. */
   buildThreadIndexPublishResource(
     subTopicId: string,
     posts: Post[],
     ownerName: string
   ) {
-    const updatedAt = Date.now();
     const identifier = `${THREAD_INDEX_PREFIX}${subTopicId}`;
+    const snapshot = createThreadSearchSnapshot(subTopicId, posts);
     const payload: ThreadIndexPayload = {
       version: 1,
       type: 'thread-search-index',
-      updatedAt,
-      snapshot: {
-        subTopicId,
-        updatedAt,
-        posts: posts
-          .filter((post) => post.subTopicId === subTopicId)
-          .map((post) => ({
-            postId: post.id,
-            authorUserId: post.authorUserId,
-            parentPostId: post.parentPostId,
-            content: post.content,
-            attachments: post.attachments,
-            poll: isNativePostPoll(post.poll)
-              ? toPersistedNativePollReference(post.poll)
-              : (post.poll ?? null),
-            createdAt: post.createdAt,
-            updatedAt: post.updatedAt ?? post.editedAt ?? post.createdAt,
-            editedAt: post.editedAt ?? null,
-            isPinned: post.isPinned === true,
-            pinnedAt: post.pinnedAt ?? null,
-            pinnedByUserId: post.pinnedByUserId ?? null,
-            likes: post.likes,
-            tips: post.tips,
-            likedByAddresses: post.likedByAddresses,
-          })),
-      },
+      updatedAt: snapshot.updatedAt,
+      snapshot,
     };
 
     return {
@@ -869,32 +1207,65 @@ export const forumSearchIndexService = {
     }
 
     const identifier = `${THREAD_INDEX_PREFIX}${subTopicId}`;
-    const resources = await searchByPrefix(identifier);
-    let sawMissingResourceError = false;
-    const payloads = await mapWithConcurrency(resources, async (item) => {
+    const discovery = await searchByPrefix(identifier);
+    const exactResources = discovery.items.filter(
+      (item) => item.identifier === identifier
+    );
+    let unavailableResourceCount = 0;
+    const payloads = await mapWithConcurrency(exactResources, async (item) => {
       try {
         const raw = await fetchResource(item.name, item.identifier);
-        return parseThreadIndexPayload(raw);
-      } catch (error) {
-        if (isMissingResourceError(error)) {
-          sawMissingResourceError = true;
-        }
+        const payload = parseThreadIndexPayload(raw);
+        return payload ? { payload, resource: item } : null;
+      } catch {
+        unavailableResourceCount += 1;
         return null;
       }
     });
 
-    const snapshot =
-      pickLatest(
-        payloads.filter((item) => item?.snapshot.subTopicId === subTopicId)
-      )?.snapshot ?? null;
+    const snapshotCandidate = pickLatestTrusted(
+      payloads.filter(
+        (item) => item?.payload.snapshot.subTopicId === subTopicId
+      )
+    );
+    const snapshot = snapshotCandidate
+      ? {
+          ...snapshotCandidate.payload.snapshot,
+          dataAvailability:
+            discovery.completeness === 'complete' &&
+            unavailableResourceCount === 0
+              ? ('index-only' as const)
+              : ('partial' as const),
+          diagnostics: [
+            ...discovery.diagnostics.map((item) => ({
+              code: item.code,
+              detail: item.detail,
+            })),
+            ...(unavailableResourceCount > 0
+              ? [
+                  {
+                    code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
+                    detail: `${unavailableResourceCount} discovered legacy thread-index resource(s) could not be loaded.`,
+                  },
+                ]
+              : []),
+          ],
+        }
+      : null;
 
-    if (!snapshot && sawMissingResourceError) {
-      quarantineThread(subTopicId);
-    }
+    if (!snapshot && discovery.completeness !== 'complete')
+      throw new Error(
+        '[PARTIAL_DISCOVERY] legacy thread-index refresh is incomplete'
+      );
+    if (!snapshot && exactResources.length > 0)
+      throw new Error(
+        '[INDEX_TARGET_UNAVAILABLE] discovered legacy thread index could not be loaded or validated'
+      );
 
     return snapshot;
   },
 
+  /** Legacy V1 compatibility only; active V2 commands publish fragments. */
   async publishThreadIndex(
     subTopicId: string,
     posts: Post[],

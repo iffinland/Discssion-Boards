@@ -34,6 +34,8 @@ export type ForumLoadStatus =
   | 'loading-roles'
   | 'loading-index'
   | 'loading-qdn'
+  | 'partial'
+  | 'cached'
   | 'ready'
   | 'empty-confirmed'
   | 'error';
@@ -145,6 +147,8 @@ const toForumStructureFromTopicDirectory = (
     visibility: topic.visibility,
     subTopicAccess: topic.subTopicAccess,
     allowedAddresses: topic.allowedAddresses,
+    dataAvailability: 'index-only' as const,
+    dataProvenance: 'legacy-index' as const,
   }));
 
   const subTopicsFromIndex: SubTopic[] = snapshot.subTopics.map((subTopic) => ({
@@ -171,6 +175,8 @@ const toForumStructureFromTopicDirectory = (
     lastModerationReason: subTopic.lastModerationReason ?? null,
     lastModeratedByUserId: subTopic.lastModeratedByUserId ?? null,
     lastModeratedAt: subTopic.lastModeratedAt ?? null,
+    dataAvailability: 'index-only' as const,
+    dataProvenance: 'legacy-index' as const,
   }));
 
   return {
@@ -445,80 +451,75 @@ export const useForumDataQuery = () => {
         }
         setTopicDirectoryIndex(nextTopicDirectoryIndex);
 
-        if (
-          nextTopicDirectoryIndex &&
-          hasForumStructure(nextTopicDirectoryIndex)
-        ) {
-          const indexedStructure = toForumStructureFromTopicDirectory(
-            nextTopicDirectoryIndex
-          );
-          const moderatedStructure =
-            await forumQdnService.applyForumModerationState(
-              indexedStructure.topics,
-              indexedStructure.subTopics
-            );
-          applyForumStructure(
-            [session.user],
-            moderatedStructure.topics,
-            moderatedStructure.subTopics
-          );
-          endTiming({
-            usedTopicDirectoryIndex: true,
-            topicCount: moderatedStructure.topics.length,
-            subTopicCount: moderatedStructure.subTopics.length,
-          });
-          setLoadingStage('Ready');
-          setLoadStatus('ready');
-          setIsAuthReady(true);
-        } else {
-          setLoadingStage(
-            nextTopicDirectoryIndex
-              ? 'Topic index is empty, checking QDN resources...'
-              : 'Loading topics from QDN...'
-          );
-          setLoadStatus('loading-qdn');
+        setLoadingStage('Loading authoritative forum resources from QDN...');
+        setLoadStatus('loading-qdn');
+        try {
           let remoteData = await forumQdnService.loadForumStructureCached({
-            force: Boolean(nextTopicDirectoryIndex),
+            force: true,
           });
-          if (!active) {
-            return;
-          }
-
-          if (!hasForumStructure(remoteData)) {
+          if (!active) return;
+          if (
+            !hasForumStructure(remoteData) &&
+            remoteData.discovery.completeness === 'complete'
+          ) {
             setLoadingStage('No topics found yet, rechecking QDN resources...');
             await sleep(2000);
             remoteData = await forumQdnService.loadForumStructureCached({
               force: true,
             });
-            if (!active) {
-              return;
-            }
+            if (!active) return;
           }
-
-          if (nextTopicDirectoryIndex && !hasForumStructure(remoteData)) {
-            throw new Error(
-              'The topic index is empty and direct QDN fallback did not return forum topics yet. This node may still be syncing QDN resources.'
-            );
-          }
-
           applyForumStructure(
             [session.user],
             remoteData.topics,
             remoteData.subTopics
           );
+          const partial = remoteData.discovery.completeness !== 'complete';
           endTiming({
             usedTopicDirectoryIndex: false,
+            partial,
             topicCount: remoteData.topics.length,
             subTopicCount: remoteData.subTopics.length,
           });
           setLoadingStage(
-            hasForumStructure(remoteData)
-              ? 'Ready'
-              : 'No forum topics were found after QDN sync checks.'
+            partial
+              ? 'Forum discovery is incomplete; showing verified resources found so far.'
+              : hasForumStructure(remoteData)
+                ? 'Ready'
+                : 'No forum topics were found after complete QDN discovery.'
           );
           setLoadStatus(
-            hasForumStructure(remoteData) ? 'ready' : 'empty-confirmed'
+            partial
+              ? 'partial'
+              : hasForumStructure(remoteData)
+                ? 'ready'
+                : 'empty-confirmed'
           );
+          setIsAuthReady(true);
+        } catch (directError) {
+          if (
+            !nextTopicDirectoryIndex ||
+            !hasForumStructure(nextTopicDirectoryIndex)
+          )
+            throw directError;
+          const indexedStructure = toForumStructureFromTopicDirectory(
+            nextTopicDirectoryIndex
+          );
+          applyForumStructure(
+            [session.user],
+            indexedStructure.topics,
+            indexedStructure.subTopics
+          );
+          endTiming({
+            usedTopicDirectoryIndex: true,
+            cached: true,
+            topicCount: indexedStructure.topics.length,
+            subTopicCount: indexedStructure.subTopics.length,
+          });
+          setLoadingStage(
+            'Authoritative QDN data is unavailable; showing read-only cached index hints.'
+          );
+          setLoadStatus('cached');
           setIsAuthReady(true);
         }
       } catch (error) {

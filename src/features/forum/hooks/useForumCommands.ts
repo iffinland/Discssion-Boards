@@ -12,7 +12,10 @@ import { encodeQdnImageTag } from '../../../services/forum/richText';
 import { encodeQdnVideoTag } from '../../../services/forum/videoEmbed';
 import { threadPostCache } from '../../../services/forum/threadPostCache';
 import { recordRecentPostMutation } from '../../../services/forum/postReconciliation';
-import { publishMultipleQortiumResources } from '../../../services/qortium/qortiumClient';
+import {
+  publishMultipleQortiumResources,
+  type QortiumResourceToPublish,
+} from '../../../services/qortium/qortiumClient';
 import { forumQdnService } from '../../../services/qdn/forumQdnService';
 import type {
   ThreadSearchSnapshot,
@@ -31,7 +34,10 @@ import {
   submitNativePollVote,
   toPersistedNativePollReference,
 } from '../../../services/architectureV2/polls.js';
-import type { NativePollRecovery } from '../../../services/architectureV2/types.js';
+import type {
+  NativePollRecovery,
+  V2EntityCreate,
+} from '../../../services/architectureV2/types.js';
 import type { ModerationAction } from '../../../services/architectureV2/moderation.js';
 import { resolveTipDisplay } from '../../../services/architectureV2/tips.js';
 import {
@@ -90,6 +96,26 @@ const ensureCurrentUserPresent = (users: User[], currentUser: User) => {
     : [currentUser, ...users];
 };
 
+const publishCompatibilityAndDerivedFragment = async (
+  compatibility: QortiumResourceToPublish,
+  fragment: QortiumResourceToPublish
+) => {
+  let compatibilityFailed = false;
+  let derivedIndexFailed = false;
+  try {
+    await publishMultipleQortiumResources([compatibility]);
+  } catch {
+    compatibilityFailed = true;
+  }
+  try {
+    await publishMultipleQortiumResources([fragment]);
+  } catch {
+    derivedIndexFailed = true;
+  }
+  if (!derivedIndexFailed) forumSearchIndexService.invalidateV2IndexCache();
+  return { compatibilityFailed, derivedIndexFailed };
+};
+
 const normalizeAddressList = (input: string[]) => {
   const seen = new Set<string>();
   const next: string[] = [];
@@ -127,7 +153,9 @@ const loadAuthoritativeNativePollReference = async (post: Post) => {
   }
   let state;
   try {
-    state = await forumQdnService.loadV2AuthorityState();
+    state = await forumQdnService.loadV2AuthorityState(undefined, {
+      force: true,
+    });
   } catch (error) {
     throw new Error(
       `[POLL_IDENTITY_MISMATCH] V2 Post authority lookup failed: ${
@@ -135,6 +163,10 @@ const loadAuthoritativeNativePollReference = async (post: Post) => {
       }`
     );
   }
+  if (state.discovery.completeness !== 'complete')
+    throw new Error(
+      '[PARTIAL_DISCOVERY] Native poll authority discovery is incomplete'
+    );
   const entity = state.authoritative.entities[post.id];
   if (
     entity?.entityType !== 'post' ||
@@ -249,23 +281,23 @@ export const useForumCommands = ({
   setPosts,
 }: UseForumCommandsParams) => {
   const buildTopicDirectoryIndexResource = useCallback(
-    (nextTopics: Topic[], nextSubTopics: SubTopic[]) =>
-      forumSearchIndexService.buildTopicDirectoryIndexPublishResource(
+    (nextTopics: Topic[], nextSubTopics: SubTopic[]) => ({
+      snapshot: forumSearchIndexService.buildTopicDirectorySnapshot(
         nextTopics,
-        nextSubTopics,
-        currentUser.username
+        nextSubTopics
       ),
-    [currentUser.username]
+    }),
+    []
   );
 
   const buildThreadIndexResource = useCallback(
-    (subTopicId: string, nextPosts: Post[]) =>
-      forumSearchIndexService.buildThreadIndexPublishResource(
+    (subTopicId: string, nextPosts: Post[]) => ({
+      snapshot: forumSearchIndexService.buildThreadSearchSnapshot(
         subTopicId,
-        nextPosts,
-        currentUser.username
+        nextPosts
       ),
-    [currentUser.username]
+    }),
+    []
   );
 
   const publishModeration = useCallback(
@@ -373,35 +405,33 @@ export const useForumCommands = ({
       let v2Committed = false;
       try {
         const nextTopics = [newTopic, ...topics];
-        await forumQdnService.publishV2Entity(
-          {
-            entityType: 'topic',
-            entityId: newTopic.id,
-            publisherName: currentUser.username,
-            walletAddress: authenticatedAddress ?? '',
-            title: newTopic.title,
-            description: newTopic.description,
-          },
-          {
-            validatePublisher: (metadata, claimed) =>
-              metadata.publisherName.trim().toLowerCase() ===
-              claimed.trim().toLowerCase()
-                ? { ok: true }
-                : {
-                    ok: false,
-                    code: 'IDENTITY_UNVERIFIED',
-                    detail: 'publisher mismatch',
-                  },
-            validateWalletBinding: (_name, wallet) =>
-              wallet.trim() === authenticatedAddress?.trim()
-                ? { ok: true }
-                : {
-                    ok: false,
-                    code: 'IDENTITY_UNVERIFIED',
-                    detail: 'wallet binding unavailable',
-                  },
-          }
-        );
+        const v2Entity: V2EntityCreate = {
+          entityType: 'topic',
+          entityId: newTopic.id,
+          publisherName: currentUser.username,
+          walletAddress: authenticatedAddress ?? '',
+          title: newTopic.title,
+          description: newTopic.description,
+        };
+        await forumQdnService.publishV2Entity(v2Entity, {
+          validatePublisher: (metadata, claimed) =>
+            metadata.publisherName.trim().toLowerCase() ===
+            claimed.trim().toLowerCase()
+              ? { ok: true }
+              : {
+                  ok: false,
+                  code: 'IDENTITY_UNVERIFIED',
+                  detail: 'publisher mismatch',
+                },
+          validateWalletBinding: (_name, wallet) =>
+            wallet.trim() === authenticatedAddress?.trim()
+              ? { ok: true }
+              : {
+                  ok: false,
+                  code: 'IDENTITY_UNVERIFIED',
+                  detail: 'wallet binding unavailable',
+                },
+        });
         v2Committed = true;
         const topicResource = forumQdnService.buildTopicPublishResource(
           newTopic,
@@ -411,14 +441,34 @@ export const useForumCommands = ({
           nextTopics,
           subTopics
         );
-        await publishMultipleQortiumResources([
+        const fragmentResource =
+          forumSearchIndexService.buildV2IndexFragmentPublishResource(
+            v2Entity,
+            currentUser.username
+          );
+        const followup = await publishCompatibilityAndDerivedFragment(
           topicResource.resource,
-          topicDirectoryResource.resource,
-        ]);
+          fragmentResource.resource
+        );
 
         setTopics((current) => [newTopic, ...current]);
         setUsers((current) => ensureCurrentUserPresent(current, currentUser));
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
+        if (followup.compatibilityFailed)
+          return {
+            ok: true,
+            partial: { pending: 'compatibility', retryable: true },
+            error: followup.derivedIndexFailed
+              ? 'V2 topic committed; legacy compatibility and derived-index publications are pending.'
+              : 'V2 topic committed; legacy compatibility publication is pending.',
+          };
+        if (followup.derivedIndexFailed)
+          return {
+            ok: true,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'V2 topic committed; the rebuildable search fragment is pending.',
+          };
         return { ok: true };
       } catch (error) {
         if (v2Committed) {
@@ -507,25 +557,9 @@ export const useForumCommands = ({
           throw error;
         }
 
-        let indexPending = false;
-        try {
-          await publishMultipleQortiumResources([
-            topicDirectoryResource.resource,
-          ]);
-        } catch {
-          indexPending = true;
-        }
-
         setTopics(nextTopics);
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return indexPending
-          ? {
-              ok: true,
-              partial: { pending: 'derived-index', retryable: true },
-              error:
-                'Topic order committed; the derived directory index is pending.',
-            }
-          : { ok: true };
+        return { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -652,25 +686,9 @@ export const useForumCommands = ({
           throw error;
         }
 
-        let indexPending = false;
-        try {
-          await publishMultipleQortiumResources([
-            topicDirectoryResource.resource,
-          ]);
-        } catch {
-          indexPending = true;
-        }
-
         setSubTopics(nextSubTopics);
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return indexPending
-          ? {
-              ok: true,
-              partial: { pending: 'derived-index', retryable: true },
-              error:
-                'Pinned-thread order committed; the derived directory index is pending.',
-            }
-          : { ok: true };
+        return { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -729,6 +747,15 @@ export const useForumCommands = ({
       if (!parentTopic) {
         return { ok: false, error: 'Main topic not found.' };
       }
+      if (
+        parentTopic.dataAvailability &&
+        parentTopic.dataAvailability !== 'verified-current'
+      )
+        return {
+          ok: false,
+          error:
+            '[PARTIAL_DISCOVERY] Topic authority is partial or cached; thread creation failed closed.',
+        };
 
       if (
         !canCreateSubTopicForTopic(
@@ -792,36 +819,34 @@ export const useForumCommands = ({
       let v2Committed = false;
       try {
         const nextSubTopics = [newSubTopic, ...subTopics];
-        await forumQdnService.publishV2Entity(
-          {
-            entityType: 'thread',
-            entityId: newSubTopic.id,
-            parentTopicId: newSubTopic.topicId,
-            publisherName: currentUser.username,
-            walletAddress: authenticatedAddress ?? '',
-            title: newSubTopic.title,
-            description: newSubTopic.description,
-          },
-          {
-            validatePublisher: (metadata, claimed) =>
-              metadata.publisherName.trim().toLowerCase() ===
-              claimed.trim().toLowerCase()
-                ? { ok: true }
-                : {
-                    ok: false,
-                    code: 'IDENTITY_UNVERIFIED',
-                    detail: 'publisher mismatch',
-                  },
-            validateWalletBinding: (_name, wallet) =>
-              wallet.trim() === authenticatedAddress?.trim()
-                ? { ok: true }
-                : {
-                    ok: false,
-                    code: 'IDENTITY_UNVERIFIED',
-                    detail: 'wallet binding unavailable',
-                  },
-          }
-        );
+        const v2Entity: V2EntityCreate = {
+          entityType: 'thread',
+          entityId: newSubTopic.id,
+          parentTopicId: newSubTopic.topicId,
+          publisherName: currentUser.username,
+          walletAddress: authenticatedAddress ?? '',
+          title: newSubTopic.title,
+          description: newSubTopic.description,
+        };
+        await forumQdnService.publishV2Entity(v2Entity, {
+          validatePublisher: (metadata, claimed) =>
+            metadata.publisherName.trim().toLowerCase() ===
+            claimed.trim().toLowerCase()
+              ? { ok: true }
+              : {
+                  ok: false,
+                  code: 'IDENTITY_UNVERIFIED',
+                  detail: 'publisher mismatch',
+                },
+          validateWalletBinding: (_name, wallet) =>
+            wallet.trim() === authenticatedAddress?.trim()
+              ? { ok: true }
+              : {
+                  ok: false,
+                  code: 'IDENTITY_UNVERIFIED',
+                  detail: 'wallet binding unavailable',
+                },
+        });
         v2Committed = true;
         const subTopicResource = forumQdnService.buildSubTopicPublishResource(
           newSubTopic,
@@ -831,14 +856,36 @@ export const useForumCommands = ({
           topics,
           nextSubTopics
         );
-        await publishMultipleQortiumResources([
+        const fragmentResource =
+          forumSearchIndexService.buildV2IndexFragmentPublishResource(
+            v2Entity,
+            currentUser.username
+          );
+        const followup = await publishCompatibilityAndDerivedFragment(
           subTopicResource.resource,
-          topicDirectoryResource.resource,
-        ]);
+          fragmentResource.resource
+        );
 
         setSubTopics((current) => [newSubTopic, ...current]);
         setUsers((current) => ensureCurrentUserPresent(current, currentUser));
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
+        if (followup.compatibilityFailed)
+          return {
+            ok: true,
+            subTopicId: newSubTopic.id,
+            partial: { pending: 'compatibility', retryable: true },
+            error: followup.derivedIndexFailed
+              ? 'V2 thread committed; legacy compatibility and derived-index publications are pending.'
+              : 'V2 thread committed; legacy compatibility publication is pending.',
+          };
+        if (followup.derivedIndexFailed)
+          return {
+            ok: true,
+            subTopicId: newSubTopic.id,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'V2 thread committed; the rebuildable search fragment is pending.',
+          };
         return { ok: true, subTopicId: newSubTopic.id };
       } catch (error) {
         if (v2Committed) {
@@ -916,7 +963,30 @@ export const useForumCommands = ({
                   },
           }
         );
-        return { ok: true };
+        const fragment =
+          forumSearchIndexService.buildV2IndexFragmentPublishResource(
+            {
+              entityType: 'topic',
+              entityId: target.id,
+              publisherName: currentUser.username,
+              walletAddress: authenticatedAddress ?? '',
+              title: input.title.trim(),
+              description: input.description.trim(),
+            },
+            currentUser.username
+          );
+        try {
+          await publishMultipleQortiumResources([fragment.resource]);
+          forumSearchIndexService.invalidateV2IndexCache();
+          return { ok: true };
+        } catch {
+          return {
+            ok: true,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'Topic edit committed; the rebuildable search fragment is pending.',
+          };
+        }
       } catch (error) {
         return {
           ok: false,
@@ -1048,29 +1118,13 @@ export const useForumCommands = ({
             };
           throw error;
         }
-        let indexPending = false;
-        try {
-          await publishMultipleQortiumResources([
-            topicDirectoryResource.resource,
-          ]);
-        } catch {
-          indexPending = true;
-        }
-
         setTopics((current) =>
           current.map((topic) =>
             topic.id === target.id ? updatedTopic : topic
           )
         );
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return indexPending
-          ? {
-              ok: true,
-              partial: { pending: 'derived-index', retryable: true },
-              error:
-                'Topic authority committed; the derived directory index is pending.',
-            }
-          : { ok: true };
+        return { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -1140,7 +1194,31 @@ export const useForumCommands = ({
                   },
           }
         );
-        return { ok: true };
+        const fragment =
+          forumSearchIndexService.buildV2IndexFragmentPublishResource(
+            {
+              entityType: 'thread',
+              entityId: target.id,
+              parentTopicId: target.topicId,
+              publisherName: currentUser.username,
+              walletAddress: authenticatedAddress ?? '',
+              title: input.title.trim(),
+              description: input.description.trim(),
+            },
+            currentUser.username
+          );
+        try {
+          await publishMultipleQortiumResources([fragment.resource]);
+          forumSearchIndexService.invalidateV2IndexCache();
+          return { ok: true };
+        } catch {
+          return {
+            ok: true,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'Thread edit committed; the rebuildable search fragment is pending.',
+          };
+        }
       } catch (error) {
         return {
           ok: false,
@@ -1365,29 +1443,13 @@ export const useForumCommands = ({
             };
           throw error;
         }
-        let indexPending = false;
-        try {
-          await publishMultipleQortiumResources([
-            topicDirectoryResource.resource,
-          ]);
-        } catch {
-          indexPending = true;
-        }
-
         setSubTopics((current) =>
           current.map((subTopic) =>
             subTopic.id === target.id ? updatedSubTopic : subTopic
           )
         );
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
-        return indexPending
-          ? {
-              ok: true,
-              partial: { pending: 'derived-index', retryable: true },
-              error:
-                'Thread authority committed; the derived directory index is pending.',
-            }
-          : { ok: true };
+        return { ok: true };
       } catch (error) {
         return {
           ok: false,
@@ -1462,10 +1524,6 @@ export const useForumCommands = ({
           targetType: 'thread',
           targetId: target.id,
           reason,
-          publishDerived: () =>
-            publishMultipleQortiumResources([
-              topicDirectoryResource.resource,
-            ]).then(() => undefined),
         });
 
         setSubTopics((current) =>
@@ -1475,12 +1533,7 @@ export const useForumCommands = ({
         );
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
         return 'partial' in published
-          ? {
-              ok: true,
-              partial: published.partial,
-              error:
-                'Solved state committed; the derived directory index is pending.',
-            }
+          ? { ok: true, partial: published.partial, error: published.detail }
           : { ok: true };
       } catch (error) {
         return {
@@ -1759,6 +1812,15 @@ export const useForumCommands = ({
       if (!targetSubTopic) {
         return { ok: false, error: 'Sub-topic not found.' };
       }
+      if (
+        targetSubTopic.dataAvailability &&
+        targetSubTopic.dataAvailability !== 'verified-current'
+      )
+        return {
+          ok: false,
+          error:
+            '[PARTIAL_DISCOVERY] Thread authority is partial or cached; post creation failed closed.',
+        };
 
       if (targetSubTopic.status === 'locked') {
         return { ok: false, error: 'This sub-topic is locked.' };
@@ -1926,38 +1988,36 @@ export const useForumCommands = ({
         const pollReference = isNativePostPoll(newPost.poll)
           ? toPersistedNativePollReference(newPost.poll)
           : null;
+        const v2Entity: V2EntityCreate = {
+          entityType: 'post',
+          entityId: newPost.id,
+          parentThreadId: newPost.subTopicId,
+          parentPostId: newPost.parentPostId,
+          publisherName: currentUser.username,
+          walletAddress: authenticatedAddress ?? '',
+          content: newPost.content,
+          pollReference,
+        };
         const publishV2Post = () =>
-          forumQdnService.publishV2Entity(
-            {
-              entityType: 'post',
-              entityId: newPost.id,
-              parentThreadId: newPost.subTopicId,
-              parentPostId: newPost.parentPostId,
-              publisherName: currentUser.username,
-              walletAddress: authenticatedAddress ?? '',
-              content: newPost.content,
-              pollReference,
-            },
-            {
-              validatePublisher: (metadata, claimed) =>
-                metadata.publisherName.trim().toLowerCase() ===
-                claimed.trim().toLowerCase()
-                  ? { ok: true }
-                  : {
-                      ok: false,
-                      code: 'IDENTITY_UNVERIFIED',
-                      detail: 'publisher mismatch',
-                    },
-              validateWalletBinding: (_name, wallet) =>
-                wallet.trim() === authenticatedAddress?.trim()
-                  ? { ok: true }
-                  : {
-                      ok: false,
-                      code: 'IDENTITY_UNVERIFIED',
-                      detail: 'wallet binding unavailable',
-                    },
-            }
-          );
+          forumQdnService.publishV2Entity(v2Entity, {
+            validatePublisher: (metadata, claimed) =>
+              metadata.publisherName.trim().toLowerCase() ===
+              claimed.trim().toLowerCase()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'publisher mismatch',
+                  },
+            validateWalletBinding: (_name, wallet) =>
+              wallet.trim() === authenticatedAddress?.trim()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'wallet binding unavailable',
+                  },
+          });
         if (pollReference && nativePollRecovery) {
           const publication = await publishNativePollReference(
             pollReference,
@@ -2000,11 +2060,15 @@ export const useForumCommands = ({
           topics,
           nextSubTopics
         );
-        await publishMultipleQortiumResources([
+        const fragmentResource =
+          forumSearchIndexService.buildV2IndexFragmentPublishResource(
+            v2Entity,
+            currentUser.username
+          );
+        const followup = await publishCompatibilityAndDerivedFragment(
           postResource.resource,
-          threadIndexResource.resource,
-          topicDirectoryResource.resource,
-        ]);
+          fragmentResource.resource
+        );
 
         recordRecentPostMutation(newPost);
         threadPostCache.write(input.subTopicId, threadPostsForSubTopic);
@@ -2028,6 +2092,21 @@ export const useForumCommands = ({
           [input.subTopicId]: threadIndexResource.snapshot,
         }));
         setTopicDirectoryIndex(topicDirectoryResource.snapshot);
+        if (followup.compatibilityFailed)
+          return {
+            ok: true,
+            partial: { pending: 'compatibility', retryable: true },
+            error: followup.derivedIndexFailed
+              ? 'V2 post committed; legacy compatibility and derived-index publications are pending.'
+              : 'V2 post committed; legacy compatibility publication is pending.',
+          };
+        if (followup.derivedIndexFailed)
+          return {
+            ok: true,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'V2 post committed; the rebuildable search fragment is pending.',
+          };
         return { ok: true };
       } catch (error) {
         if (v2Committed) {
@@ -2149,10 +2228,26 @@ export const useForumCommands = ({
           updatedPost.subTopicId,
           nextPosts
         );
-        await publishMultipleQortiumResources([
+        const fragmentResource =
+          forumSearchIndexService.buildV2IndexFragmentPublishResource(
+            {
+              entityType: 'post',
+              entityId: updatedPost.id,
+              parentThreadId: updatedPost.subTopicId,
+              parentPostId: updatedPost.parentPostId,
+              publisherName: currentUser.username,
+              walletAddress: authenticatedAddress ?? '',
+              content: updatedPost.content,
+              pollReference: isNativePostPoll(updatedPost.poll)
+                ? toPersistedNativePollReference(updatedPost.poll)
+                : null,
+            },
+            currentUser.username
+          );
+        const followup = await publishCompatibilityAndDerivedFragment(
           postResource.resource,
-          threadIndexResource.resource,
-        ]);
+          fragmentResource.resource
+        );
 
         recordRecentPostMutation(updatedPost);
         writeThreadIndexCache(
@@ -2173,6 +2268,21 @@ export const useForumCommands = ({
           ...current,
           [updatedPost.subTopicId]: threadIndexResource.snapshot,
         }));
+        if (followup.compatibilityFailed)
+          return {
+            ok: true,
+            partial: { pending: 'compatibility', retryable: true },
+            error: followup.derivedIndexFailed
+              ? 'V2 post edit committed; legacy compatibility and derived-index publications are pending.'
+              : 'V2 post edit committed; legacy compatibility publication is pending.',
+          };
+        if (followup.derivedIndexFailed)
+          return {
+            ok: true,
+            partial: { pending: 'derived-index', retryable: true },
+            error:
+              'V2 post edit committed; the rebuildable search fragment is pending.',
+          };
         return { ok: true };
       } catch (error) {
         return {
@@ -2230,10 +2340,6 @@ export const useForumCommands = ({
           action: isPinned ? 'unpin' : 'pin',
           targetType: 'post',
           targetId: target.id,
-          publishDerived: () =>
-            publishMultipleQortiumResources([
-              threadIndexResource.resource,
-            ]).then(() => undefined),
         });
 
         recordRecentPostMutation(updatedPost);
@@ -2256,12 +2362,7 @@ export const useForumCommands = ({
           [updatedPost.subTopicId]: threadIndexResource.snapshot,
         }));
         return 'partial' in published
-          ? {
-              ok: true,
-              partial: published.partial,
-              error:
-                'Post pin state committed; the derived thread index is pending.',
-            }
+          ? { ok: true, partial: published.partial, error: published.detail }
           : { ok: true };
       } catch (error) {
         return {
@@ -2588,10 +2689,6 @@ export const useForumCommands = ({
           targetType: 'post',
           targetId: target.id,
           reason: input.reason?.trim(),
-          publishDerived: () =>
-            publishMultipleQortiumResources([
-              threadIndexResource.resource,
-            ]).then(() => undefined),
         });
         setPosts((current) => {
           const next = current.filter((post) => post.id !== input.postId);
@@ -2606,12 +2703,7 @@ export const useForumCommands = ({
           [target.subTopicId]: threadIndexResource.snapshot,
         }));
         return 'partial' in published
-          ? {
-              ok: true,
-              partial: published.partial,
-              error:
-                'Post removal committed; the derived thread index is pending.',
-            }
+          ? { ok: true, partial: published.partial, error: published.detail }
           : { ok: true };
       } catch (error) {
         return {

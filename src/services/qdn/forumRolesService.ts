@@ -1,6 +1,10 @@
 import type { ForumRoleRegistry, UserRole } from '../../types/index.js';
 import { fetchWithQdnReadyFallback } from './qdnReadiness.js';
 import { requestQortium } from '../qortium/qortiumClient.js';
+import {
+  discoverQdnResources,
+  type DiscoveredQdnResource,
+} from './qdnPagination.js';
 import { getAccountNames, getUserAccount } from '../qortium/walletService.js';
 import { resolveNameWalletAddress } from '../qortium/walletService.js';
 import { perfDebugTimeStart } from '../perf/perfDebug.js';
@@ -32,19 +36,10 @@ const ROLE_OPERATION_PREFIX = `${FORUM_NAMESPACE}-v2-role-`;
 const VERIFY_RETRIES = 5;
 const VERIFY_DELAY_MS = 1500;
 const ROLE_REGISTRY_CACHE_TTL_MS = 60 * 1000;
-const ROLE_OPERATION_PAGE_SIZE = 100;
-const ROLE_OPERATION_DISCOVERY_BUDGET = 5000;
+const ROLE_OPERATION_DISCOVERY_BUDGET = 10_000;
 const MAX_SAFE_QDN_IDENTIFIER_LENGTH = 64;
 
-type SearchQdnResourceResult = {
-  name: string;
-  identifier: string;
-  service?: string;
-  created?: number;
-  updated?: number | null;
-  latestSignature?: string;
-  status?: unknown;
-};
+type SearchQdnResourceResult = DiscoveredQdnResource;
 
 type CoreArbitraryTransaction = {
   type?: unknown;
@@ -228,57 +223,41 @@ const toForumRoleRegistry = (payload: RoleRegistryPayload) => {
 };
 
 const searchCanonicalRoleResources = async () => {
-  const resources: SearchQdnResourceResult[] = [];
-  for (
-    let offset = 0;
-    offset < ROLE_OPERATION_DISCOVERY_BUDGET;
-    offset += ROLE_OPERATION_PAGE_SIZE
-  ) {
-    const page = await requestQortium<SearchQdnResourceResult[]>({
-      action: 'SEARCH_QDN_RESOURCES',
+  const discovery = await discoverQdnResources(
+    {
       service: FORUM_SERVICE,
       identifier: PRIMARY_ROLE_IDENTIFIER,
-      prefix: false,
+      prefix: true,
       mode: 'ALL',
       reverse: true,
-      includeMetadata: true,
-      includeStatus: true,
-      limit: ROLE_OPERATION_PAGE_SIZE,
-      offset,
-    });
-    const normalized = Array.isArray(page) ? page : [];
-    resources.push(...normalized);
-    if (normalized.length < ROLE_OPERATION_PAGE_SIZE)
-      return { resources, complete: true };
-  }
-  return { resources, complete: false };
+    },
+    { maxResources: ROLE_OPERATION_DISCOVERY_BUDGET }
+  );
+  return {
+    resources: discovery.items.filter(
+      (resource) => resource.identifier === PRIMARY_ROLE_IDENTIFIER
+    ),
+    complete: discovery.completeness === 'complete',
+    discovery,
+  };
 };
 
 const searchRoleOperationResources = async () => {
-  const resources: SearchQdnResourceResult[] = [];
-  for (
-    let offset = 0;
-    offset < ROLE_OPERATION_DISCOVERY_BUDGET;
-    offset += ROLE_OPERATION_PAGE_SIZE
-  ) {
-    const page = await requestQortium<SearchQdnResourceResult[]>({
-      action: 'SEARCH_QDN_RESOURCES',
+  const discovery = await discoverQdnResources(
+    {
       service: FORUM_SERVICE,
       identifier: ROLE_OPERATION_PREFIX,
       prefix: true,
       mode: 'ALL',
       reverse: false,
-      includeMetadata: true,
-      includeStatus: true,
-      limit: ROLE_OPERATION_PAGE_SIZE,
-      offset,
-    });
-    const normalized = Array.isArray(page) ? page : [];
-    resources.push(...normalized);
-    if (normalized.length < ROLE_OPERATION_PAGE_SIZE)
-      return { resources, complete: true };
-  }
-  return { resources, complete: false };
+    },
+    { maxResources: ROLE_OPERATION_DISCOVERY_BUDGET }
+  );
+  return {
+    resources: discovery.items,
+    complete: discovery.completeness === 'complete',
+    discovery,
+  };
 };
 
 const toTrustedMetadata = (

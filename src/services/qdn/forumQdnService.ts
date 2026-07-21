@@ -71,6 +71,13 @@ import {
   forumTipsService,
   type TipRecovery,
 } from './forumTipsService.js';
+import {
+  combineQdnDiscoveryResults,
+  compareDiscoveredQdnResources,
+  discoverQdnResources,
+  type DiscoveredQdnResource,
+  type QdnDiscoveryResult,
+} from './qdnPagination.js';
 
 const FORUM_SERVICE = import.meta.env?.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
 const FORUM_IMAGE_SERVICE =
@@ -90,17 +97,11 @@ const VERIFY_DELAY_MS = 1500;
 const IMAGE_PUBLISH_TIMEOUT_MS = 5 * 60 * 1000;
 const MAX_SAFE_QDN_IDENTIFIER_LENGTH = 64;
 const FORUM_STRUCTURE_CACHE_TTL_MS = 30 * 1000;
+const V2_AUTHORITY_CACHE_TTL_MS = 30 * 1000;
+const LEGACY_POST_DISCOVERY_CACHE_TTL_MS = 30 * 1000;
 const imageUrlCache = new Map<string, string>();
 
-interface SearchQdnResourceResult {
-  name: string;
-  identifier: string;
-  service?: string;
-  created?: number;
-  updated?: number | null;
-  latestSignature?: string;
-  status?: unknown;
-}
+type SearchQdnResourceResult = DiscoveredQdnResource;
 
 export type LegacyResourceProvenance = {
   resource: QdbV2ResourceMetadata;
@@ -165,6 +166,19 @@ type PostPayload = {
 type ForumStructureSnapshot = {
   topics: Topic[];
   subTopics: SubTopic[];
+  discovery: {
+    completeness: 'complete' | 'partial' | 'unavailable';
+    pagesFetched: number;
+    resourcesSeen: number;
+    unavailableResources: number;
+    diagnostics: Array<{ code: string; detail: string }>;
+  };
+  legacy?: {
+    authorityState: 'UNRESOLVED';
+    topicRecords: TopicPayload[];
+    subTopicRecords: SubTopicPayload[];
+    failedResourceCount: number;
+  };
 };
 
 let forumStructureCache: {
@@ -176,6 +190,17 @@ let forumStructureCache: {
   updatedAt: 0,
   inflight: null,
 };
+
+let v2AuthorityCache: { value: V2RuntimeState; cachedAt: number } | null = null;
+
+let legacyPostPayloadCache: {
+  value: {
+    payloads: Array<PostPayload | null>;
+    discovery: QdnDiscoveryResult<SearchQdnResourceResult>;
+    failedCount: number;
+  };
+  cachedAt: number;
+} | null = null;
 
 const encodeBase64Json = (value: unknown): string => {
   const json = JSON.stringify(value);
@@ -335,22 +360,14 @@ const verifyPublication = async (
 
 const searchByPrefix = async (
   prefix: string
-): Promise<SearchQdnResourceResult[]> => {
-  const search = await requestQortium<SearchQdnResourceResult[]>({
-    action: 'SEARCH_QDN_RESOURCES',
+): Promise<QdnDiscoveryResult<SearchQdnResourceResult>> =>
+  discoverQdnResources({
     service: FORUM_SERVICE,
     identifier: prefix,
     prefix: true,
     mode: 'ALL',
     reverse: true,
-    limit: 1000,
-    offset: 0,
-    includeMetadata: true,
-    includeStatus: true,
   });
-
-  return Array.isArray(search) ? search : [];
-};
 
 const fetchResource = async (
   name: string,
@@ -393,8 +410,16 @@ const mapLatestPayloads = <TPayload extends { updatedAt: number }, TKey>(
   return nextMap;
 };
 
+const assertCompleteAuthorityDiscovery = (state: V2RuntimeState) => {
+  if (state.discovery.completeness !== 'complete')
+    throw new Error(
+      '[PARTIAL_DISCOVERY] V2 authority discovery is incomplete; authority-sensitive mutation failed closed'
+    );
+};
+
 const fetchTopicPayloads = async () => {
-  const topicResults = await searchByPrefix(TOPIC_PREFIX);
+  const discovery = await searchByPrefix(TOPIC_PREFIX);
+  const topicResults = discovery.items;
   let failedCount = 0;
   const payloads = await mapWithConcurrency(topicResults, async (item) => {
     try {
@@ -409,11 +434,13 @@ const fetchTopicPayloads = async () => {
     payloads,
     resourceCount: topicResults.length,
     failedCount,
+    discovery,
   };
 };
 
 const fetchSubTopicPayloads = async () => {
-  const subTopicResults = await searchByPrefix(SUBTOPIC_PREFIX);
+  const discovery = await searchByPrefix(SUBTOPIC_PREFIX);
+  const subTopicResults = discovery.items;
   let failedCount = 0;
   const payloads = await mapWithConcurrency(subTopicResults, async (item) => {
     try {
@@ -428,19 +455,43 @@ const fetchSubTopicPayloads = async () => {
     payloads,
     resourceCount: subTopicResults.length,
     failedCount,
+    discovery,
   };
 };
 
-const fetchPostPayloadsByPrefix = async (prefix: string) => {
-  const postResults = await searchByPrefix(prefix);
-  return mapWithConcurrency(postResults, async (item) => {
+const fetchPostPayloads = async (
+  resources: SearchQdnResourceResult[]
+): Promise<{ payloads: Array<PostPayload | null>; failedCount: number }> => {
+  let failedCount = 0;
+  const payloads = await mapWithConcurrency(resources, async (item) => {
     try {
       const raw = await fetchResource(item.name, item.identifier);
-      return parsePostPayload(raw, item);
+      const payload = parsePostPayload(raw, item);
+      if (!payload) failedCount += 1;
+      return payload;
     } catch {
+      failedCount += 1;
       return null;
     }
   });
+  return { payloads, failedCount };
+};
+
+const fetchLegacyPostPayloadsCached = async () => {
+  if (
+    legacyPostPayloadCache &&
+    Date.now() - legacyPostPayloadCache.cachedAt <=
+      LEGACY_POST_DISCOVERY_CACHE_TTL_MS
+  )
+    return legacyPostPayloadCache.value;
+  const discovery = await searchByPrefix(toLegacyPostSearchPrefix());
+  const fetched = await fetchPostPayloads(discovery.items);
+  const value = {
+    discovery,
+    ...fetched,
+  };
+  legacyPostPayloadCache = { value, cachedAt: Date.now() };
+  return value;
 };
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
@@ -867,13 +918,17 @@ export const forumQdnService = {
     roleState?: TrustedRoleAuthorizationState;
     authority?: V2RuntimeState;
   }): Promise<ReducedModerationState> {
-    const resources = await searchByPrefix(MODERATION_PREFIX);
+    const discovery = await searchByPrefix(MODERATION_PREFIX);
+    const resources = discovery.items;
+    if (discovery.completeness !== 'complete')
+      throw new Error(
+        '[PARTIAL_DISCOVERY] moderation discovery is incomplete; state cannot be reduced as complete'
+      );
     const walletByName = new Map<string, string | null>();
     if (!options?.identity) {
-      await Promise.all(
-        [
-          ...new Set(resources.map((item) => item.name.trim()).filter(Boolean)),
-        ].map(async (name) => {
+      await mapWithConcurrency(
+        [...new Set(resources.map((item) => item.name.trim()).filter(Boolean))],
+        async (name) => {
           try {
             walletByName.set(
               name.trim().toLowerCase(),
@@ -882,7 +937,7 @@ export const forumQdnService = {
           } catch {
             walletByName.set(name.trim().toLowerCase(), null);
           }
-        })
+        }
       );
     }
     const identity: IdentityValidator = options?.identity ?? {
@@ -965,7 +1020,10 @@ export const forumQdnService = {
               detail: 'moderation wallet binding mismatch',
             },
     };
-    const authority = await this.loadV2AuthorityState();
+    const authority = await this.loadV2AuthorityState(undefined, {
+      force: true,
+    });
+    assertCompleteAuthorityDiscovery(authority);
     const operation: ModerationOperation = {
       operation: 'moderation',
       action: input.action,
@@ -1089,10 +1147,10 @@ export const forumQdnService = {
   },
 
   async loadPostReactions(targetId: string) {
-    const results = await searchByPrefix(
+    const discovery = await searchByPrefix(
       await buildReactionTargetPrefix(FORUM_NAMESPACE, targetId)
     );
-    return loadReactionState(targetId, results, {
+    const state = await loadReactionState(targetId, discovery.items, {
       fetchPayload: (resource) =>
         fetchResource(resource.name ?? '', resource.identifier ?? ''),
       resolveWalletAddress: resolveNameWalletAddress,
@@ -1104,48 +1162,49 @@ export const forumQdnService = {
           body.walletAddress
         ),
     });
+    if (discovery.completeness !== 'complete')
+      throw new Error(
+        '[PARTIAL_DISCOVERY] reaction discovery is incomplete; legacy display fallback remains readable'
+      );
+    return state;
   },
 
   async applyPostReactionState(posts: Post[]) {
-    return Promise.all(
-      posts.map(async (post) => {
-        try {
-          const reactions = await this.loadPostReactions(post.id);
-          const display = resolveReactionDisplay(
-            post.likes,
-            post.likedByAddresses,
-            reactions
-          );
-          return {
-            ...post,
-            likes: display.count,
-            likedByAddresses: display.actors,
-          };
-        } catch {
-          // Reaction discovery is non-authoritative. Preserve readable legacy
-          // display data when the independent reaction domain is unavailable.
-          return post;
-        }
-      })
-    );
+    return mapWithConcurrency(posts, async (post) => {
+      try {
+        const reactions = await this.loadPostReactions(post.id);
+        const display = resolveReactionDisplay(
+          post.likes,
+          post.likedByAddresses,
+          reactions
+        );
+        return {
+          ...post,
+          likes: display.count,
+          likedByAddresses: display.actors,
+        };
+      } catch {
+        // Reaction discovery is non-authoritative. Preserve readable legacy
+        // display data when the independent reaction domain is unavailable.
+        return post;
+      }
+    });
   },
 
   async applyNativePollState(
     posts: Post[],
     currentWalletAddress?: string | null
   ) {
-    return Promise.all(
-      posts.map(async (post) =>
-        isNativePostPoll(post.poll)
-          ? {
-              ...post,
-              poll: await loadNativePostPoll(
-                toPersistedNativePollReference(post.poll),
-                currentWalletAddress
-              ),
-            }
-          : post
-      )
+    return mapWithConcurrency(posts, async (post) =>
+      isNativePostPoll(post.poll)
+        ? {
+            ...post,
+            poll: await loadNativePostPoll(
+              toPersistedNativePollReference(post.poll),
+              currentWalletAddress
+            ),
+          }
+        : post
     );
   },
 
@@ -1181,7 +1240,10 @@ export const forumQdnService = {
   },
 
   async resolvePostTipRecipient(postId: string) {
-    const authority = await this.loadV2AuthorityState();
+    const authority = await this.loadV2AuthorityState(undefined, {
+      force: true,
+    });
+    assertCompleteAuthorityDiscovery(authority);
     return forumTipsService.resolveRecipient(authority, postId);
   },
 
@@ -1197,7 +1259,10 @@ export const forumQdnService = {
       state: Awaited<ReturnType<typeof forumTipsService.load>>
     ) => Promise<void>
   ) {
-    const authority = await this.loadV2AuthorityState();
+    const authority = await this.loadV2AuthorityState(undefined, {
+      force: true,
+    });
+    assertCompleteAuthorityDiscovery(authority);
     const result = input.recovery
       ? forumTipsService.retry(input.recovery, authority)
       : forumTipsService.submit({ ...input, authority });
@@ -1223,7 +1288,8 @@ export const forumQdnService = {
     ownerName: string,
     identity: IdentityValidator
   ) {
-    const current = await this.loadV2AuthorityState(identity);
+    const current = await this.loadV2AuthorityState(identity, { force: true });
+    assertCompleteAuthorityDiscovery(current);
     const target = current.authoritative.entities[edit.targetId];
     if (!target)
       throw new Error(
@@ -1260,6 +1326,7 @@ export const forumQdnService = {
       tags: ['forum', 'qdb-v2', 'owner-edit'],
       data64: encodeBase64Json(envelope),
     });
+    v2AuthorityCache = null;
     return envelope;
   },
 
@@ -1288,27 +1355,46 @@ export const forumQdnService = {
       tags: ['forum', 'qdb-v2', body.entityType],
       data64: encodeBase64Json(envelope),
     });
+    v2AuthorityCache = null;
     return envelope;
   },
 
   async loadV2AuthorityState(
-    identity?: IdentityValidator
+    identity?: IdentityValidator,
+    options?: { force?: boolean }
   ): Promise<V2RuntimeState> {
-    const results = (
-      await Promise.all(
-        ['topic-', 'thread-', 'post-', 'edit-'].map((family) =>
-          searchByPrefix(`${FORUM_IDENTIFIER_PREFIX}v2-${family}`)
-        )
+    const previousCachedAuthority = !identity ? v2AuthorityCache?.value : null;
+    if (
+      !identity &&
+      !options?.force &&
+      v2AuthorityCache &&
+      Date.now() - v2AuthorityCache.cachedAt <= V2_AUTHORITY_CACHE_TTL_MS
+    )
+      return {
+        ...v2AuthorityCache.value,
+        discovery: {
+          ...v2AuthorityCache.value.discovery,
+          source: 'cache',
+        },
+      };
+    const discoveries = await Promise.all(
+      ['topic-', 'thread-', 'post-', 'edit-'].map((family) =>
+        searchByPrefix(`${FORUM_IDENTIFIER_PREFIX}v2-${family}`)
       )
-    ).flat();
+    );
+    const discovery = combineQdnDiscoveryResults(discoveries, {
+      keyOf: (resource) =>
+        `${resource.service ?? ''}\u0000${resource.name.trim().toLowerCase()}\u0000${resource.identifier}`,
+      compareItems: compareDiscoveredQdnResources,
+    });
+    const results = discovery.items;
     const records: V2RuntimeRecord[] = [];
     const diagnostics: V2RuntimeState['diagnostics'] = [];
     const walletByName = new Map<string, string | null>();
     if (!identity) {
-      await Promise.all(
-        [
-          ...new Set(results.map((item) => item.name.trim()).filter(Boolean)),
-        ].map(async (name) => {
+      await mapWithConcurrency(
+        [...new Set(results.map((item) => item.name.trim()).filter(Boolean))],
+        async (name) => {
           try {
             walletByName.set(
               name.trim().toLowerCase(),
@@ -1317,40 +1403,52 @@ export const forumQdnService = {
           } catch {
             walletByName.set(name.trim().toLowerCase(), null);
           }
-        })
+        }
       );
     }
-    for (const item of results) {
+    const loadedResources = await mapWithConcurrency<
+      SearchQdnResourceResult,
+      {
+        record?: V2RuntimeRecord;
+        diagnostics: V2RuntimeState['diagnostics'];
+      }
+    >(results, async (item) => {
       if (
         typeof item.service !== 'string' ||
         typeof item.created !== 'number' ||
         (item.updated !== undefined &&
           item.updated !== null &&
           typeof item.updated !== 'number')
-      ) {
-        diagnostics.push({
-          code: 'MISSING_TRUSTED_METADATA',
-          identifier: item.identifier,
-        });
-        continue;
-      }
+      )
+        return {
+          diagnostics: [
+            {
+              code: 'MISSING_TRUSTED_METADATA',
+              identifier: item.identifier,
+            },
+          ],
+        };
       let payload: unknown;
       try {
         payload = await fetchResource(item.name, item.identifier);
       } catch {
-        diagnostics.push({
-          code: 'UNAVAILABLE_RESOURCE',
-          identifier: item.identifier,
-        });
-        continue;
+        return {
+          diagnostics: [
+            { code: 'UNAVAILABLE_RESOURCE', identifier: item.identifier },
+            {
+              code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
+              identifier: item.identifier,
+              detail: 'discovered V2 authority payload could not be fetched',
+            },
+          ],
+        };
       }
-      if (!isV2EntityEnvelope(payload)) {
-        diagnostics.push({
-          code: 'MALFORMED_ENVELOPE',
-          identifier: item.identifier,
-        });
-        continue;
-      }
+      if (!isV2EntityEnvelope(payload))
+        return {
+          diagnostics: [
+            { code: 'MALFORMED_ENVELOPE', identifier: item.identifier },
+          ],
+        };
       const metadata: QdbV2ResourceMetadata = {
         service: item.service,
         publisherName: item.name,
@@ -1359,7 +1457,14 @@ export const forumQdnService = {
         updated: item.updated ?? null,
         latestSignature: item.latestSignature,
       };
-      records.push(toV2RuntimeRecord(metadata, payload));
+      return {
+        record: toV2RuntimeRecord(metadata, payload),
+        diagnostics: [],
+      };
+    });
+    for (const loaded of loadedResources) {
+      if (loaded.record) records.push(loaded.record);
+      diagnostics.push(...loaded.diagnostics);
     }
     const resolvedIdentity: IdentityValidator = identity ?? {
       validatePublisher: (metadata, claimedPublisher) =>
@@ -1382,10 +1487,68 @@ export const forumQdnService = {
             },
     };
     const reduced = reduceV2RuntimeRecords(records, resolvedIdentity);
-    return {
+    const authorityDataUnavailable = diagnostics.some(
+      (item) =>
+        item.code === 'UNAVAILABLE_RESOURCE' ||
+        item.code === 'MISSING_TRUSTED_METADATA' ||
+        item.code === 'AUTHORITATIVE_RESOURCE_UNAVAILABLE'
+    );
+    let state: V2RuntimeState = {
       authoritative: reduced.authoritative,
-      diagnostics: [...diagnostics, ...reduced.diagnostics],
+      diagnostics: [
+        ...diagnostics,
+        ...reduced.diagnostics,
+        ...discovery.diagnostics.map((item) => ({
+          code: item.code,
+          identifier: `${FORUM_IDENTIFIER_PREFIX}v2`,
+          detail: item.detail,
+        })),
+      ],
+      discovery: {
+        completeness:
+          discovery.completeness === 'complete' && authorityDataUnavailable
+            ? 'partial'
+            : discovery.completeness,
+        pagesFetched: discovery.pagesFetched,
+        resourcesSeen: discovery.resourcesSeen,
+        stoppedReason: authorityDataUnavailable
+          ? 'authoritative-resource-unavailable'
+          : discovery.stoppedReason,
+        source: 'network',
+      },
     };
+    if (
+      !identity &&
+      state.discovery.completeness !== 'complete' &&
+      previousCachedAuthority &&
+      Object.keys(previousCachedAuthority.authoritative.entities).length > 0
+    ) {
+      state = {
+        ...state,
+        authoritative: {
+          entities: {
+            ...previousCachedAuthority.authoritative.entities,
+            ...state.authoritative.entities,
+          },
+          quarantined: state.authoritative.quarantined,
+        },
+        diagnostics: [
+          ...state.diagnostics,
+          {
+            code: 'CACHED_LAST_KNOWN_GOOD',
+            identifier: `${FORUM_IDENTIFIER_PREFIX}v2`,
+            detail:
+              'V2 authority refresh was incomplete; validated cached entities were retained read-only.',
+          },
+        ],
+        discovery: {
+          ...state.discovery,
+          source: 'cache',
+        },
+      };
+    }
+    if (!identity) v2AuthorityCache = { value: state, cachedAt: Date.now() };
+    return state;
   },
 
   async loadForumStructure() {
@@ -1400,6 +1563,14 @@ export const forumQdnService = {
       topicResult.resourceCount + subTopicResult.resourceCount;
     const failedResourceCount =
       topicResult.failedCount + subTopicResult.failedCount;
+    const discovery = combineQdnDiscoveryResults(
+      [topicResult.discovery, subTopicResult.discovery],
+      {
+        keyOf: (resource) =>
+          `${resource.service ?? ''}\u0000${resource.name.trim().toLowerCase()}\u0000${resource.identifier}`,
+        compareItems: compareDiscoveredQdnResources,
+      }
+    );
 
     if (
       discoveredResourceCount > 0 &&
@@ -1419,22 +1590,162 @@ export const forumQdnService = {
       (payload) => payload.subTopic.id
     );
 
-    const topics = [...topicMap.values()]
+    let topics: Topic[] = [...topicMap.values()]
       .filter((payload) => payload.status !== 'deleted')
-      .map((payload) => payload.topic)
+      .map((payload) => ({
+        ...payload.topic,
+        dataAvailability:
+          discovery.completeness === 'complete'
+            ? ('verified-current' as const)
+            : ('partial' as const),
+        dataProvenance: 'legacy-v1' as const,
+      }))
       .sort((a, b) => a.sortOrder - b.sortOrder);
 
-    const subTopics = [...subTopicMap.values()]
+    let subTopics: SubTopic[] = [...subTopicMap.values()]
       .filter((payload) => payload.status !== 'deleted')
-      .map((payload) => payload.subTopic)
+      .map((payload) => ({
+        ...payload.subTopic,
+        dataAvailability:
+          discovery.completeness === 'complete'
+            ? ('verified-current' as const)
+            : ('partial' as const),
+        dataProvenance: 'legacy-v1' as const,
+      }))
       .filter((subTopic) =>
         topics.some((topic) => topic.id === subTopic.topicId)
       );
-
-    const moderated = await this.applyForumModerationState(topics, subTopics);
+    let authority: V2RuntimeState | null = null;
+    try {
+      authority = await this.loadV2AuthorityState();
+      const v2Entities = Object.values(authority.authoritative.entities);
+      const topicById = new Map(topics.map((topic) => [topic.id, topic]));
+      const threadById = new Map(
+        subTopics.map((subTopic) => [subTopic.id, subTopic])
+      );
+      for (const entity of v2Entities) {
+        if (entity.entityType === 'topic') {
+          const legacyTopic = topicById.get(entity.entityId);
+          topicById.set(entity.entityId, {
+            id: entity.entityId,
+            title: entity.title,
+            description: entity.description,
+            createdByUserId: entity.publisherName,
+            createdAt: legacyTopic?.createdAt ?? new Date(0).toISOString(),
+            sortOrder: legacyTopic?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+            status: legacyTopic?.status ?? 'open',
+            visibility: legacyTopic?.visibility ?? 'visible',
+            subTopicAccess: legacyTopic?.subTopicAccess ?? 'everyone',
+            allowedAddresses: legacyTopic?.allowedAddresses ?? [],
+            dataAvailability:
+              authority.discovery.completeness === 'complete' &&
+              authority.discovery.source === 'network'
+                ? 'verified-current'
+                : authority.discovery.source === 'cache'
+                  ? 'cached-last-known-good'
+                  : 'partial',
+            dataProvenance: 'authoritative-qdn',
+          });
+        }
+        if (entity.entityType === 'thread') {
+          const legacyThread = threadById.get(entity.entityId);
+          threadById.set(entity.entityId, {
+            id: entity.entityId,
+            topicId: entity.parentTopicId,
+            title: entity.title,
+            description: entity.description,
+            authorUserId: entity.publisherName,
+            createdAt: legacyThread?.createdAt ?? new Date(0).toISOString(),
+            lastPostAt: legacyThread?.lastPostAt ?? new Date(0).toISOString(),
+            lastPostAuthorUserId:
+              legacyThread?.lastPostAuthorUserId ?? entity.publisherName,
+            isPinned: legacyThread?.isPinned ?? false,
+            pinnedAt: legacyThread?.pinnedAt ?? null,
+            isSolved: legacyThread?.isSolved ?? false,
+            solvedAt: legacyThread?.solvedAt ?? null,
+            solvedByUserId: legacyThread?.solvedByUserId ?? null,
+            isPoll: legacyThread?.isPoll ?? false,
+            access: legacyThread?.access ?? 'everyone',
+            allowedAddresses: legacyThread?.allowedAddresses ?? [],
+            status: legacyThread?.status ?? 'open',
+            visibility: legacyThread?.visibility ?? 'visible',
+            lastModerationAction: legacyThread?.lastModerationAction ?? null,
+            lastModerationReason: legacyThread?.lastModerationReason ?? null,
+            lastModeratedByUserId: legacyThread?.lastModeratedByUserId ?? null,
+            lastModeratedAt: legacyThread?.lastModeratedAt ?? null,
+            dataAvailability:
+              authority.discovery.completeness === 'complete' &&
+              authority.discovery.source === 'network'
+                ? 'verified-current'
+                : authority.discovery.source === 'cache'
+                  ? 'cached-last-known-good'
+                  : 'partial',
+            dataProvenance: 'authoritative-qdn',
+          });
+        }
+      }
+      topics = [...topicById.values()].sort(
+        (left, right) => left.sortOrder - right.sortOrder
+      );
+      subTopics = [...threadById.values()].filter((subTopic) =>
+        topicById.has(subTopic.topicId)
+      );
+    } catch {
+      // V1 remains readable, but cannot gain V2 authority from this fallback.
+    }
+    let moderated: { topics: Topic[]; subTopics: SubTopic[] } = {
+      topics,
+      subTopics,
+    };
+    try {
+      const moderation = await this.loadV2ModerationState({
+        ...(authority ? { authority } : {}),
+      });
+      moderated = applyModerationToForumStructure(
+        topics,
+        subTopics,
+        moderation
+      );
+    } catch {
+      // Preserve readable entity content while moderation discovery is unavailable.
+    }
+    const effectiveCompleteness: ForumStructureSnapshot['discovery']['completeness'] =
+      discovery.completeness === 'complete' &&
+      failedResourceCount === 0 &&
+      (!authority ||
+        (authority.discovery.completeness === 'complete' &&
+          authority.discovery.source === 'network'))
+        ? 'complete'
+        : discovery.completeness === 'unavailable' &&
+            (!authority ||
+              authority.discovery.completeness === 'unavailable') &&
+            topics.length === 0 &&
+            subTopics.length === 0
+          ? 'unavailable'
+          : 'partial';
     const result = {
       topics: moderated.topics,
       subTopics: moderated.subTopics,
+      discovery: {
+        completeness: effectiveCompleteness,
+        pagesFetched: discovery.pagesFetched,
+        resourcesSeen: discovery.resourcesSeen,
+        unavailableResources: failedResourceCount,
+        diagnostics: [
+          ...discovery.diagnostics.map((item) => ({
+            code: item.code,
+            detail: item.detail,
+          })),
+          ...(failedResourceCount > 0
+            ? [
+                {
+                  code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
+                  detail: `${failedResourceCount} discovered forum resource(s) could not be loaded or validated.`,
+                },
+              ]
+            : []),
+        ],
+      },
       legacy: {
         authorityState: 'UNRESOLVED' as const,
         topicRecords: topicPayloads.filter(
@@ -1512,24 +1823,115 @@ export const forumQdnService = {
     subTopicId: string,
     currentWalletAddress?: string | null
   ) {
-    const threadScopedPayloads = await fetchPostPayloadsByPrefix(
-      toThreadPostPrefix(subTopicId)
+    const legacy = await fetchLegacyPostPayloadsCached();
+    const threadScopedDiscovery =
+      legacy.discovery.completeness === 'complete'
+        ? null
+        : await searchByPrefix(toThreadPostPrefix(subTopicId));
+    const discovery = combineQdnDiscoveryResults(
+      threadScopedDiscovery
+        ? [legacy.discovery, threadScopedDiscovery]
+        : [legacy.discovery],
+      {
+        keyOf: (resource) =>
+          `${resource.service ?? ''}\u0000${resource.name.trim().toLowerCase()}\u0000${resource.identifier}`,
+        compareItems: compareDiscoveredQdnResources,
+      }
     );
-    const postPayloads =
-      threadScopedPayloads.length > 0
-        ? threadScopedPayloads
-        : await fetchPostPayloadsByPrefix(toLegacyPostSearchPrefix());
+    const scoped = threadScopedDiscovery
+      ? await fetchPostPayloads(threadScopedDiscovery.items)
+      : null;
+    const postPayloads = scoped
+      ? [...legacy.payloads, ...scoped.payloads]
+      : legacy.payloads;
+    const failedResourceCount = legacy.failedCount + (scoped?.failedCount ?? 0);
 
     const postMap = mapLatestPayloads(
       postPayloads,
       (payload) => payload.post.id
     );
-    const posts = [...postMap.values()]
+    let posts: Post[] = [...postMap.values()]
       .filter((payload) => payload.status !== 'deleted')
-      .map((payload) => payload.post)
+      .map((payload) => ({
+        ...payload.post,
+        dataAvailability:
+          discovery.completeness === 'complete' && failedResourceCount === 0
+            ? ('verified-current' as const)
+            : ('partial' as const),
+        dataProvenance: 'legacy-v1' as const,
+      }))
       .filter((post) => post.subTopicId === subTopicId);
 
-    return this.applyPostOperationState(posts, currentWalletAddress);
+    let authority: V2RuntimeState | null = null;
+    try {
+      authority = await this.loadV2AuthorityState();
+      const postById = new Map(posts.map((post) => [post.id, post]));
+      for (const entity of Object.values(authority.authoritative.entities)) {
+        if (
+          entity.entityType !== 'post' ||
+          entity.parentThreadId !== subTopicId
+        )
+          continue;
+        const legacyPost = postById.get(entity.entityId);
+        postById.set(entity.entityId, {
+          id: entity.entityId,
+          subTopicId: entity.parentThreadId,
+          authorUserId: entity.publisherName,
+          parentPostId: entity.parentPostId,
+          content: entity.content,
+          attachments: legacyPost?.attachments ?? [],
+          poll: entity.pollReference ?? legacyPost?.poll ?? null,
+          createdAt: legacyPost?.createdAt ?? new Date(0).toISOString(),
+          updatedAt: legacyPost?.updatedAt ?? null,
+          editedAt: legacyPost?.editedAt ?? null,
+          isPinned: legacyPost?.isPinned ?? false,
+          pinnedAt: legacyPost?.pinnedAt ?? null,
+          pinnedByUserId: legacyPost?.pinnedByUserId ?? null,
+          likes: legacyPost?.likes ?? 0,
+          tips: legacyPost?.tips ?? 0,
+          likedByAddresses: legacyPost?.likedByAddresses ?? [],
+          dataAvailability:
+            authority.discovery.completeness === 'complete' &&
+            authority.discovery.source === 'network'
+              ? 'verified-current'
+              : authority.discovery.source === 'cache'
+                ? 'cached-last-known-good'
+                : 'partial',
+          dataProvenance: 'authoritative-qdn',
+        });
+      }
+      posts = [...postById.values()];
+    } catch {
+      // Preserve safely parsed V1 compatibility content when V2 is unavailable.
+    }
+    if (
+      posts.length === 0 &&
+      (discovery.completeness === 'unavailable' ||
+        (discovery.items.length > 0 &&
+          postPayloads.every((payload) => payload === null)))
+    )
+      throw new Error(
+        '[AUTHORITATIVE_RESOURCE_UNAVAILABLE] discovered post authority is unavailable'
+      );
+
+    const reduced = await this.applyPostOperationState(
+      posts,
+      currentWalletAddress
+    );
+    return reduced.map((post) => ({
+      ...post,
+      dataAvailability:
+        authority?.discovery.source === 'cache'
+          ? ('cached-last-known-good' as const)
+          : discovery.completeness === 'complete' &&
+              failedResourceCount === 0 &&
+              (!authority ||
+                (authority.discovery.completeness === 'complete' &&
+                  authority.discovery.source === 'network'))
+            ? ('verified-current' as const)
+            : ('partial' as const),
+      dataProvenance: post.dataProvenance ?? ('legacy-v1' as const),
+    }));
   },
 
   async publishTopic(topic: Topic, ownerName?: string) {

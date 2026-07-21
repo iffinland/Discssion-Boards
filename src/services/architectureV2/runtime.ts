@@ -43,7 +43,19 @@ export const toV2RuntimeRecord = (
     : { metadata, envelope };
 
 export type V2RuntimeDiagnostics = {
-  code: RejectionCode | 'UNAVAILABLE_RESOURCE' | 'MISSING_TRUSTED_METADATA';
+  code:
+    | RejectionCode
+    | 'UNAVAILABLE_RESOURCE'
+    | 'MISSING_TRUSTED_METADATA'
+    | 'PAGINATION_INCOMPLETE'
+    | 'PAGINATION_BUDGET_REACHED'
+    | 'PAGINATION_LOOP_DETECTED'
+    | 'PAGINATION_REQUEST_FAILED'
+    | 'DUPLICATE_RESOURCE'
+    | 'PARTIAL_DISCOVERY'
+    | 'NAMESPACE_BUDGET_PRESSURE'
+    | 'AUTHORITATIVE_RESOURCE_UNAVAILABLE'
+    | 'CACHED_LAST_KNOWN_GOOD';
   identifier: string;
   detail?: string;
 };
@@ -51,6 +63,13 @@ export type V2RuntimeDiagnostics = {
 export type V2RuntimeState = {
   authoritative: V2State;
   diagnostics: V2RuntimeDiagnostics[];
+  discovery: {
+    completeness: 'complete' | 'partial' | 'unavailable';
+    pagesFetched: number;
+    resourcesSeen: number;
+    stoppedReason: string;
+    source: 'network' | 'cache' | 'provided-record-set';
+  };
 };
 
 export const buildV2OwnerEditEnvelope = (
@@ -231,5 +250,12 @@ export const reduceV2RuntimeRecords = (
         detail: record.detail,
       })),
     ],
+    discovery: {
+      completeness: 'complete',
+      pagesFetched: 0,
+      resourcesSeen: records.length,
+      stoppedReason: 'provided-record-set',
+      source: 'provided-record-set',
+    },
   };
 };

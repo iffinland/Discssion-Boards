@@ -53,6 +53,13 @@ const authority: V2RuntimeState = {
     quarantined: [],
   },
   diagnostics: [],
+  discovery: {
+    completeness: 'complete',
+    pagesFetched: 1,
+    resourcesSeen: 1,
+    stoppedReason: 'fixture',
+    source: 'provided-record-set',
+  },
 };
 
 const paymentEvidence = (
