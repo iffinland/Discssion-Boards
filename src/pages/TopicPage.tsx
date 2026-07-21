@@ -7,6 +7,7 @@ import {
   type FormEvent,
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import AccessDisclosureNotice from '../components/forum/AccessDisclosureNotice';
 import SubTopicList from '../components/forum/SubTopicList';
@@ -106,6 +107,7 @@ const canCreateSubTopicForTopic = (
 };
 
 const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
@@ -627,8 +629,8 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     });
     setManagementFeedback(
       result.ok
-        ? 'Pinned sub-topics order updated.'
-        : (result.error ?? 'Unable to reorder pinned sub-topics.')
+        ? t('thread.orderUpdated')
+        : (result.error ?? t('thread.reorderFailed'))
     );
     handlePinnedDragEnd();
   };
@@ -640,16 +642,16 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
 
     const copied = await copyToClipboard(buildTopicShareLink(topic.id));
     if (!copied) {
-      setManagementFeedback('Unable to copy main topic link to clipboard.');
+      setManagementFeedback(t('topic.linkCopyFailed'));
       return;
     }
 
     setIsTopicShareCopied(true);
-    setManagementFeedback('Main topic link copied to clipboard.');
+    setManagementFeedback(t('topic.linkCopied'));
     window.setTimeout(() => {
       setIsTopicShareCopied(false);
       setManagementFeedback((current) =>
-        current === 'Main topic link copied to clipboard.' ? null : current
+        current === t('topic.linkCopied') ? null : current
       );
     }, 2400);
   };
@@ -662,7 +664,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     const title = subTopicTitle.trim();
     const description = subTopicDescription.trim();
     if (!title || !description) {
-      setCreateFeedback('Sub-topic title and description are required.');
+      setCreateFeedback(t('thread.required'));
       return;
     }
 
@@ -676,7 +678,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     });
 
     if (!createResult.ok || !createResult.subTopicId) {
-      setCreateFeedback(createResult.error ?? 'Unable to create sub-topic.');
+      setCreateFeedback(createResult.error ?? t('thread.createFailed'));
       return;
     }
 
@@ -705,8 +707,8 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
 
     setManagementFeedback(
       result.ok
-        ? 'Sub-topic status updated.'
-        : (result.error ?? 'Unable to update sub-topic.')
+        ? t('thread.statusUpdated')
+        : (result.error ?? t('thread.updateFailed'))
     );
   };
 
@@ -726,8 +728,8 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
 
     setManagementFeedback(
       result.ok
-        ? 'Sub-topic visibility updated.'
-        : (result.error ?? 'Unable to update sub-topic.')
+        ? t('thread.visibilityUpdated')
+        : (result.error ?? t('thread.updateFailed'))
     );
   };
 
@@ -752,8 +754,8 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
 
     setManagementFeedback(
       result.ok
-        ? 'Broken sub-topic hidden from public lists.'
-        : (result.error ?? 'Unable to hide broken sub-topic.')
+        ? t('thread.hiddenBroken')
+        : (result.error ?? t('thread.hideBrokenFailed'))
     );
   };
 
@@ -774,9 +776,9 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     setManagementFeedback(
       result.ok
         ? subTopic.isPinned
-          ? 'Sub-topic unpinned.'
-          : 'Sub-topic pinned to the top.'
-        : (result.error ?? 'Unable to update sub-topic pin.')
+          ? t('thread.unpinned')
+          : t('thread.pinnedTop')
+        : (result.error ?? t('thread.pinUpdateFailed'))
     );
   };
 
@@ -830,8 +832,8 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
 
     setManagementFeedback(
       result.ok
-        ? 'Sub-topic settings updated.'
-        : (result.error ?? 'Unable to update sub-topic.')
+        ? t('thread.settingsUpdated')
+        : (result.error ?? t('thread.updateFailed'))
     );
   };
 
@@ -839,10 +841,10 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     return (
       <div className="space-y-4">
         <h2 className="text-ui-strong text-lg font-semibold">
-          Main topic not found
+          {t('topic.notFound')}
         </h2>
         <Link to="/" className="forum-link text-sm font-medium">
-          Back to home
+          {t('topic.backHome')}
         </Link>
       </div>
     );
@@ -852,11 +854,11 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     return (
       <div className="space-y-4">
         <h2 className="text-ui-strong text-lg font-semibold">
-          Main topic not available
+          {t('topic.unavailable')}
         </h2>
         <AccessDisclosureNotice kind="hidden" />
         <Link to="/" className="forum-link text-sm font-medium">
-          Back to home
+          {t('topic.backHome')}
         </Link>
       </div>
     );
@@ -865,11 +867,11 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
   return (
     <div className="space-y-6">
       <nav
-        aria-label="Breadcrumb"
+        aria-label={t('navigation.breadcrumb')}
         className="flex flex-wrap items-center gap-2 text-sm"
       >
         <Link to="/" className="forum-link text-sm font-semibold">
-          Home
+          {t('navigation.home')}
         </Link>
         <span className="text-ui-muted">/</span>
         <span className="text-ui-strong font-semibold">{topic.title}</span>
@@ -883,7 +885,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
             </h2>
             <p className="text-ui-muted mt-1 text-sm">{topic.description}</p>
             <p className="text-ui-muted mt-2 text-xs">
-              {visibleSubTopics.length} sub-topics
+              {t('topic.subTopicCount', { count: visibleSubTopics.length })}
             </p>
           </div>
 
@@ -893,14 +895,14 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
               onClick={() => setIsCreateOpen((current) => !current)}
               className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-white"
             >
-              Create New Topic
+              {t('thread.createNew')}
             </button>
             <button
               type="button"
               onClick={() => void handleShareTopic()}
               className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition active:scale-95"
             >
-              {isTopicShareCopied ? 'Copied' : 'Share Main Topic'}
+              {isTopicShareCopied ? t('common.copied') : t('topic.share')}
             </button>
           </div>
         </div>
@@ -909,20 +911,20 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
       {isCreateOpen ? (
         <section className="forum-card p-4 space-y-3">
           <h3 className="text-ui-strong text-sm font-semibold">
-            Create New Topic in {topic.title}
+            {t('thread.createIn', { topic: topic.title })}
           </h3>
           {canCreateHere ? (
             <>
               <input
                 value={subTopicTitle}
                 onChange={(event) => setSubTopicTitle(event.target.value)}
-                placeholder="Sub-topic title"
+                placeholder={t('thread.title')}
                 className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               />
               <textarea
                 value={subTopicDescription}
                 onChange={(event) => setSubTopicDescription(event.target.value)}
-                placeholder="Sub-topic description"
+                placeholder={t('thread.description')}
                 maxLength={TOPIC_DESCRIPTION_MAX_LENGTH}
                 className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               />
@@ -936,25 +938,21 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
                   checked={subTopicIsPoll}
                   onChange={(event) => setSubTopicIsPoll(event.target.checked)}
                 />
-                Mark this topic as Poll / Voting
+                {t('thread.markPoll')}
               </label>
               <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-                After the sub-topic is created, you will be taken to the new
-                thread to publish the first post.
+                {t('thread.afterCreate')}
               </div>
               <button
                 type="button"
                 onClick={handleCreateSubTopic}
                 className="bg-brand-primary-solid rounded-md px-4 py-2 text-sm font-semibold text-white"
               >
-                Create Sub-Topic
+                {t('thread.create')}
               </button>
             </>
           ) : (
-            <p className="text-ui-muted text-sm">
-              You do not have permission to create sub-topics under this main
-              topic.
-            </p>
+            <p className="text-ui-muted text-sm">{t('thread.createDenied')}</p>
           )}
           {createFeedback ? (
             <p className="text-ui-muted text-xs">{createFeedback}</p>
@@ -977,24 +975,19 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
       <section className="space-y-3">
         <div>
           <h3 className="text-brand-primary text-base font-semibold">
-            Sub-Topics
+            {t('thread.heading')}
           </h3>
-          <p className="text-ui-muted mt-1 text-xs">
-            Search within this main topic only. Use the header search for the
-            whole forum.
-          </p>
+          <p className="text-ui-muted mt-1 text-xs">{t('thread.searchHelp')}</p>
           <input
             type="search"
             value={topicSearchQuery}
             onChange={(event) => setTopicSearchQuery(event.target.value)}
-            placeholder="Search sub-topics and loaded/indexed posts"
+            placeholder={t('search.topicPlaceholder')}
             className="bg-surface-card text-ui-strong placeholder:text-ui-muted mt-3 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
           />
         </div>
         {canReorderPinnedSubTopics && pinnedSubTopicIds.length > 1 ? (
-          <p className="text-ui-muted text-xs">
-            Drag pinned sub-topics to reorder how they appear at the top.
-          </p>
+          <p className="text-ui-muted text-xs">{t('thread.reorderHelp')}</p>
         ) : null}
         {visibleSubTopics.length > 0 ? (
           <SubTopicList
@@ -1024,10 +1017,10 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
         ) : (
           <div className="forum-card p-5">
             <p className="text-ui-strong text-sm font-semibold">
-              No sub-topics found
+              {t('thread.none')}
             </p>
             <p className="text-ui-muted mt-1 text-sm">
-              Create the first sub-topic for this main topic.
+              {t('thread.createFirst')}
             </p>
           </div>
         )}
@@ -1039,7 +1032,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
           onSubmit={handleSaveSubTopicManager}
         >
           <h3 className="text-ui-strong text-sm font-semibold">
-            Manage Sub-Topic
+            {t('thread.manage')}
           </h3>
           <select
             value={managedSubTopicTopicId}
@@ -1048,14 +1041,14 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
           >
             {topics.map((item) => (
               <option key={item.id} value={item.id}>
-                Move to Main Topic: {item.title}
+                {t('thread.moveTo', { topic: item.title })}
               </option>
             ))}
           </select>
           <input
             value={managedSubTopicTitle}
             onChange={(event) => setManagedSubTopicTitle(event.target.value)}
-            placeholder="Sub-topic title"
+            placeholder={t('thread.title')}
             className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
           />
           <textarea
@@ -1063,7 +1056,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
             onChange={(event) =>
               setManagedSubTopicDescription(event.target.value)
             }
-            placeholder="Sub-topic description"
+            placeholder={t('thread.description')}
             maxLength={TOPIC_DESCRIPTION_MAX_LENGTH}
             className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
           />
@@ -1077,8 +1070,8 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
             }
             className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
           >
-            <option value="open">Open</option>
-            <option value="locked">Locked</option>
+            <option value="open">{t('common.open')}</option>
+            <option value="locked">{t('common.locked')}</option>
           </select>
           <select
             value={managedSubTopicVisibility}
@@ -1089,8 +1082,8 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
             }
             className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
           >
-            <option value="visible">Visible</option>
-            <option value="hidden">Hidden</option>
+            <option value="visible">{t('common.visible')}</option>
+            <option value="hidden">{t('common.hidden')}</option>
           </select>
           <select
             value={managedSubTopicAccess}
@@ -1099,14 +1092,12 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
             }
             className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
           >
-            <option value="everyone">Public in this app</option>
-            <option value="moderators">Restricted in this app: staff</option>
-            <option value="admins">
-              Restricted in this app: admins (staff review applies)
+            <option value="everyone">{t('moderation.public')}</option>
+            <option value="moderators">
+              {t('moderation.restrictedStaff')}
             </option>
-            <option value="custom">
-              Restricted in this app: listed wallets (staff review applies)
-            </option>
+            <option value="admins">{t('moderation.restrictedAdmins')}</option>
+            <option value="custom">{t('moderation.restrictedCustom')}</option>
           </select>
           <label className="flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-slate-800">
             <input
@@ -1116,10 +1107,12 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
                 setManagedSubTopicIsPoll(event.target.checked)
               }
             />
-            Poll / Voting topic
+            {t('thread.pollTopic')}
           </label>
           <p className="text-ui-muted text-xs">
-            Access: {resolveAccessLabel(managedSubTopicAccess)}
+            {t('thread.access', {
+              access: resolveAccessLabel(managedSubTopicAccess),
+            })}
           </p>
           <AccessDisclosureNotice
             kind="restricted"
@@ -1134,7 +1127,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
               onChange={(event) =>
                 setManagedSubTopicAllowedAddresses(event.target.value)
               }
-              placeholder="Comma-separated wallet addresses"
+              placeholder={t('moderation.walletAddresses')}
               className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           ) : null}
@@ -1143,14 +1136,14 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
               type="submit"
               className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-white"
             >
-              Save Sub-Topic Settings
+              {t('thread.saveSettings')}
             </button>
             <button
               type="button"
               onClick={() => setManagedSubTopicId(null)}
               className="bg-surface-card text-ui-muted rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold"
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
         </form>

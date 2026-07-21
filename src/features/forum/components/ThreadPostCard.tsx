@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import UserRoleBadge from '../../../components/common/UserRoleBadge';
 import RichTextContent from '../../../components/forum/RichTextContent';
@@ -31,18 +32,6 @@ type ThreadPostCardProps = {
   onDelete: (postId: string) => void;
   onTogglePin: (post: Post) => void;
 };
-
-const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-
-const formatEditedDateTime = (value: string | null | undefined) =>
-  value ? formatDateTime(value) : null;
 
 const getInitials = (name: string) =>
   name
@@ -77,8 +66,20 @@ const ThreadPostCard = ({
   onDelete,
   onTogglePin,
 }: ThreadPostCardProps) => {
+  const { t, i18n } = useTranslation();
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString(i18n.language, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   const displayName =
-    author?.displayName ?? author?.id ?? post.authorUserId ?? 'Unknown User';
+    author?.displayName ??
+    author?.id ??
+    post.authorUserId ??
+    t('common.unknownUser');
   const avatarColor = author?.avatarColor ?? 'bg-cyan-500';
   const [isAvatarVisible, setIsAvatarVisible] = useState(true);
   const [selectedPollOptionIds, setSelectedPollOptionIds] = useState<string[]>(
@@ -243,7 +244,7 @@ const ThreadPostCard = ({
               <UserRoleBadge role={authorRole} />
               {post.isPinned ? (
                 <span className="rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-amber-700">
-                  Pinned
+                  {t('thread.pinned')}
                 </span>
               ) : null}
             </div>
@@ -252,7 +253,7 @@ const ThreadPostCard = ({
             </p>
             {post.editedAt ? (
               <p className="mt-0.5 text-xs font-semibold text-amber-700">
-                EDITED {formatEditedDateTime(post.editedAt)}
+                {t('post.edited', { date: formatDateTime(post.editedAt) })}
               </p>
             ) : null}
           </div>
@@ -272,10 +273,12 @@ const ThreadPostCard = ({
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-ui-strong text-xs font-semibold">
-              Replying to {repliedAuthorName ?? 'Member'}
+              {t('post.replyingTo', {
+                name: repliedAuthorName ?? t('common.member'),
+              })}
             </p>
             <span className="text-xs font-semibold text-cyan-700">
-              Jump to post
+              {t('post.jump')}
             </span>
           </div>
           <RichTextContent
@@ -294,23 +297,23 @@ const ThreadPostCard = ({
         <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50/60 p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <span className="inline-flex rounded-md border border-cyan-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-cyan-800">
-              {nativePoll ? 'Native Poll / Voting' : 'Legacy Poll (read-only)'}
+              {nativePoll ? t('poll.native') : t('poll.legacyReadOnly')}
             </span>
             <span className="text-ui-muted text-xs">
-              {pollMode === 'multiple'
-                ? 'Multiple answers allowed'
-                : 'Single answer in Discussion Boards'}
+              {pollMode === 'multiple' ? t('poll.multiple') : t('poll.single')}
             </span>
           </div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
             {pollClosesAt ? (
               <span className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700">
-                Closes {formatDateTime(pollClosesAt)}
+                {t('poll.closes', { date: formatDateTime(pollClosesAt) })}
               </span>
             ) : null}
             {isPollClosed ? (
               <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
-                Closed {pollClosedAt ? formatDateTime(pollClosedAt) : ''}
+                {t('poll.closed', {
+                  date: pollClosedAt ? formatDateTime(pollClosedAt) : '',
+                })}
               </span>
             ) : null}
             {nativePoll && canClosePoll && !isPollClosed ? (
@@ -319,7 +322,7 @@ const ThreadPostCard = ({
                 onClick={() => onClosePoll(post.id)}
                 className="rounded-md border border-rose-200 bg-white px-2 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 active:translate-y-px"
               >
-                Close Poll
+                {t('poll.close')}
               </button>
             ) : null}
           </div>
@@ -331,18 +334,16 @@ const ThreadPostCard = ({
           ) : null}
           {nativePoll && nativeRuntime?.availability !== 'available' ? (
             <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-              Native poll results are currently unavailable. Voting is disabled
-              until Core can verify this poll.
+              {t('poll.unavailable')}
             </p>
           ) : null}
           {legacyPoll ? (
             <p className="mt-2 rounded-md border border-slate-200 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700">
-              Historical embedded votes are shown for compatibility only. This
-              poll cannot accept new votes.
+              {t('poll.legacyNotice')}
             </p>
           ) : null}
           <p className="mt-2 rounded-md border border-cyan-100 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700">
-            Poll results are shown after you vote or once the poll is closed.
+            {t('poll.resultNotice')}
           </p>
           <div className="mt-3 space-y-2">
             {pollOptionStats.map((option) => {
@@ -368,8 +369,7 @@ const ThreadPostCard = ({
                     <span className="font-semibold">{option.label}</span>
                     {canShowPollResults ? (
                       <span className="text-xs text-slate-600">
-                        {option.voteCount} vote
-                        {option.voteCount === 1 ? '' : 's'} •{' '}
+                        {t('poll.voteCount', { count: option.voteCount })} •{' '}
                         {option.percentage}%
                       </span>
                     ) : null}
@@ -389,17 +389,25 @@ const ThreadPostCard = ({
           {isPollClosed ? (
             <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
               <p className="text-ui-strong text-sm font-semibold">
-                Poll statistics
+                {t('poll.statistics')}
               </p>
               <div className="mt-2 grid gap-1 text-xs text-slate-700 sm:grid-cols-3">
-                <span>Voters: {totalPollVoters}</span>
-                <span>Raw selections: {totalPollSelections}</span>
-                <span>Options: {pollOptionStats.length}</span>
+                <span>{t('poll.voters', { count: totalPollVoters })}</span>
                 <span>
-                  Result:{' '}
-                  {winningOptions.length > 0
-                    ? winningOptions.map((option) => option.label).join(', ')
-                    : 'No votes'}
+                  {t('poll.selections', { count: totalPollSelections })}
+                </span>
+                <span>
+                  {t('poll.options', { count: pollOptionStats.length })}
+                </span>
+                <span>
+                  {t('poll.result', {
+                    result:
+                      winningOptions.length > 0
+                        ? winningOptions
+                            .map((option) => option.label)
+                            .join(', ')
+                        : t('poll.noVotes'),
+                  })}
                 </span>
               </div>
             </div>
@@ -407,10 +415,13 @@ const ThreadPostCard = ({
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-ui-muted text-xs">
               {canShowPollResults
-                ? `${totalPollVoters} voter${totalPollVoters === 1 ? '' : 's'} • ${totalPollSelections} raw selection${totalPollSelections === 1 ? '' : 's'}`
-                : 'Results hidden until you vote or the poll closes'}
-              {existingPollVote ? ' • You have voted' : ''}
-              {isPollClosed ? ' • Poll closed' : ''}
+                ? t('poll.summary', {
+                    voters: totalPollVoters,
+                    selections: totalPollSelections,
+                  })
+                : t('poll.resultsHidden')}
+              {existingPollVote ? ` • ${t('poll.youVoted')}` : ''}
+              {isPollClosed ? ` • ${t('poll.closedStatus')}` : ''}
             </p>
             {nativePoll &&
             nativeRuntime?.availability === 'available' &&
@@ -422,7 +433,7 @@ const ThreadPostCard = ({
                 disabled={selectedPollOptionIds.length === 0}
                 className="rounded-md border border-cyan-300 bg-cyan-100 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-cyan-200 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Submit Vote
+                {t('poll.submit')}
               </button>
             ) : null}
           </div>
@@ -437,21 +448,23 @@ const ThreadPostCard = ({
           disabled={hasLiked}
           onClick={() => onLike(post.id)}
         >
-          {hasLiked ? `Liked (${post.likes})` : `Like (${post.likes})`}
+          {hasLiked
+            ? t('post.liked', { count: post.likes })
+            : t('post.like', { count: post.likes })}
         </button>
         <button
           type="button"
           className={actionButtonClass}
           onClick={() => onReply(post)}
         >
-          Reply to Post
+          {t('post.reply')}
         </button>
         <button
           type="button"
           className={`${actionButtonClass} transition active:scale-95`}
           onClick={() => onShare(post)}
         >
-          Share
+          {t('common.share')}
         </button>
         <button
           type="button"
@@ -459,17 +472,20 @@ const ThreadPostCard = ({
           onClick={() => onSendTip(post)}
         >
           {post.tipSummary?.verifiedCount
-            ? `Send Tip (${post.tipSummary.verifiedCount} verified · ${post.tipSummary.verifiedTotalQort} QORT)`
-            : 'Send Tip'}
+            ? t('tip.sendVerified', {
+                count: post.tipSummary.verifiedCount,
+                amount: post.tipSummary.verifiedTotalQort,
+              })
+            : t('tip.send')}
         </button>
         {post.tipSummary?.legacyCount ? (
           <span className="text-ui-muted text-[11px]">
-            Legacy counter: {post.tipSummary.legacyCount} (unverified)
+            {t('tip.legacyCounter', { count: post.tipSummary.legacyCount })}
           </span>
         ) : null}
         {post.tipSummary?.status === 'unavailable' ? (
           <span className="text-[11px] text-amber-700">
-            Verified tip data unavailable
+            {t('tip.verifiedUnavailable')}
           </span>
         ) : null}
         {isOwner ? (
@@ -479,14 +495,14 @@ const ThreadPostCard = ({
               className={actionButtonClass}
               onClick={() => onEdit(post)}
             >
-              Edit
+              {t('common.edit')}
             </button>
             <button
               type="button"
               className={dangerButtonClass}
               onClick={() => onDelete(post.id)}
             >
-              Delete
+              {t('common.delete')}
             </button>
           </>
         ) : null}
@@ -496,7 +512,7 @@ const ThreadPostCard = ({
             className={actionButtonClass}
             onClick={() => onTogglePin(post)}
           >
-            {post.isPinned ? 'Unpin Post' : 'Pin Post'}
+            {post.isPinned ? t('post.unpin') : t('post.pin')}
           </button>
         ) : null}
         {!isOwner && canModerate ? (
@@ -505,7 +521,7 @@ const ThreadPostCard = ({
             className={dangerButtonClass}
             onClick={() => onDelete(post.id)}
           >
-            Moderation Delete
+            {t('post.moderationDelete')}
           </button>
         ) : null}
       </div>

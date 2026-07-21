@@ -1,5 +1,6 @@
 import AppModal from '../common/AppModal';
 import type { RichTextFormatType } from '../../services/forum/richText';
+import { useTranslation } from 'react-i18next';
 
 type RichTextToolsModalProps = {
   isOpen: boolean;
@@ -12,24 +13,24 @@ const actionButtonClass =
   'w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50';
 
 const baseColors = [
-  { label: 'Black', value: '#111827' },
-  { label: 'Blue', value: '#2563EB' },
-  { label: 'Green', value: '#16A34A' },
-  { label: 'Red', value: '#DC2626' },
+  { key: 'black', value: '#111827' },
+  { key: 'blue', value: '#2563EB' },
+  { key: 'green', value: '#16A34A' },
+  { key: 'red', value: '#DC2626' },
 ];
 
-const formatActions: Array<{ label: string; value: RichTextFormatType }> = [
-  { label: 'Heading 2', value: 'heading2' },
-  { label: 'Heading 3', value: 'heading3' },
-  { label: 'Inline Code', value: 'inlineCode' },
-  { label: 'Bold', value: 'bold' },
-  { label: 'Italic', value: 'italic' },
-  { label: 'Underline', value: 'underline' },
-  { label: 'Strikethrough', value: 'strike' },
-  { label: 'Quote', value: 'quote' },
-  { label: 'Code Block', value: 'code' },
-  { label: 'Bullet List', value: 'unorderedList' },
-  { label: 'Numbered List', value: 'orderedList' },
+const formatActions: Array<{ key: string; value: RichTextFormatType }> = [
+  { key: 'heading2', value: 'heading2' },
+  { key: 'heading3', value: 'heading3' },
+  { key: 'inlineCode', value: 'inlineCode' },
+  { key: 'bold', value: 'bold' },
+  { key: 'italic', value: 'italic' },
+  { key: 'underline', value: 'underline' },
+  { key: 'strike', value: 'strike' },
+  { key: 'quote', value: 'quote' },
+  { key: 'code', value: 'code' },
+  { key: 'unorderedList', value: 'unorderedList' },
+  { key: 'orderedList', value: 'orderedList' },
 ];
 
 const RichTextToolsModal = ({
@@ -38,12 +39,13 @@ const RichTextToolsModal = ({
   onApplyFormat,
   onApplyColor,
 }: RichTextToolsModalProps) => {
+  const { t } = useTranslation();
   return (
     <AppModal
       isOpen={isOpen}
       onClose={onClose}
-      ariaLabel="Rich text tools"
-      title="Text Formatting"
+      ariaLabel={t('editor.toolsLabel')}
+      title={t('editor.tools')}
       maxWidthClassName="max-w-sm"
     >
       <div className="space-y-2">
@@ -57,14 +59,14 @@ const RichTextToolsModal = ({
               onClose();
             }}
           >
-            {action.label}
+            {t(`editor.format.${action.key}`)}
           </button>
         ))}
       </div>
 
       <div className="mt-4">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Base Colors
+          {t('editor.baseColors')}
         </p>
         <div className="grid grid-cols-2 gap-2">
           {baseColors.map((color) => (
@@ -82,7 +84,7 @@ const RichTextToolsModal = ({
                 style={{ backgroundColor: color.value }}
                 aria-hidden="true"
               />
-              {color.label}
+              {t(`editor.colors.${color.key}`)}
             </button>
           ))}
         </div>

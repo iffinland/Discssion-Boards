@@ -1,8 +1,8 @@
 # Discussion Boards Architecture V2
 
 Status: **Implemented through Phase 6, delegated-role persistence issue #7,
-restricted-access terminology issue #9, and bridge/publication hardening issue
-#11**
+restricted-access terminology issue #9, bridge/publication hardening issue
+#11, and Home display/localization alignment issue #12**
 
 This document defines the Architecture V2 state, authority, validation, and
 migration model for Discussion Boards. It is the prerequisite deliverable for
@@ -40,15 +40,15 @@ targets.
 
 | Repository        | Path                               | Verified commit                                                      |
 | ----------------- | ---------------------------------- | -------------------------------------------------------------------- |
-| Discussion Boards | this repository                    | `eaba239cb7120abf9bf57166ea8b9de0868c0876` (issue #11 worktree base) |
+| Discussion Boards | this repository                    | `7bcc0ded7c0bc1aac6a6f378c0c15eed50b000fa` (issue #12 worktree base) |
 | Qortium Core      | `../../github-clones/qortium-core` | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                           |
 | Qortium Home      | `../../github-clones/qortium-home` | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                           |
 
 The Discussion Boards production source reviewed by architecture issue #1
 remains commit `f20f93c833ef74dc83a22a59be2d1c6682e96bde`.
-The later Discussion Boards commit above is the clean issue #11 worktree base
-and includes the completed Architecture V2 phases through issue #10 plus the
-restricted-access correction in issue #9.
+The later Discussion Boards commit above is the clean issue #12 worktree base
+and includes the completed Architecture V2 phases through issue #10, the
+restricted-access correction in issue #9, and bridge hardening issue #11.
 
 GitHub specification inspected:
 
@@ -62,6 +62,7 @@ GitHub specification inspected:
 - issue #8, verified transaction-reference tips;
 - issue #10, scalable QDN pagination and rebuildable indexes;
 - issue #11, Qortium bridge detection and large-file publication;
+- issue #12, Qortium Home display settings and localization alignment;
 - the dependent phased issue workflow through issue #14.
 
 ### 2.2 Three classes of platform statement

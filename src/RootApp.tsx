@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import App from './App';
 import { AppWrapper } from './AppWrapper';
 import RouteRefreshNotice from './components/common/RouteRefreshNotice';
+import { DisplaySettingsProvider } from './context/DisplaySettingsContext';
 import { ForumProvider } from './context/ForumContext';
 
 const RootApp = () => {
@@ -72,11 +73,13 @@ const RootApp = () => {
   }
 
   return (
-    <AppWrapper>
-      <ForumProvider>
-        <App />
-      </ForumProvider>
-    </AppWrapper>
+    <DisplaySettingsProvider>
+      <AppWrapper>
+        <ForumProvider>
+          <App />
+        </ForumProvider>
+      </AppWrapper>
+    </DisplaySettingsProvider>
   );
 };
 

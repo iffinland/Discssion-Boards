@@ -2,6 +2,7 @@ import type { PostAttachment } from '../../../types';
 import RichTextContent from '../../../components/forum/RichTextContent';
 import RichTextEditor from '../../../components/forum/RichTextEditor';
 import type { ForumPollDraft } from '../types';
+import { useTranslation } from 'react-i18next';
 
 type ThreadComposerProps = {
   replyText: string;
@@ -54,10 +55,10 @@ const ThreadComposer = ({
   replyAttachments,
   replyTargetAuthorName = null,
   replyTargetContent = null,
-  title = 'Add New Post',
+  title,
   showTitle = true,
-  placeholder = 'Share your thoughts with the community...',
-  submitLabel = 'Publish Post',
+  placeholder,
+  submitLabel,
   pollDraft = null,
   canAddPoll = false,
   onReplyTextChange,
@@ -71,6 +72,10 @@ const ThreadComposer = ({
   disabled = false,
   helperText = null,
 }: ThreadComposerProps) => {
+  const { t } = useTranslation();
+  const effectiveTitle = title ?? t('post.add');
+  const effectivePlaceholder = placeholder ?? t('post.placeholder');
+  const effectiveSubmitLabel = submitLabel ?? t('post.publish');
   const updatePollDraft = (next: ForumPollDraft | null) => {
     onPollDraftChange?.(next);
   };
@@ -127,11 +132,11 @@ const ThreadComposer = ({
       <section>
         {showTitle ? (
           <h3 className="text-brand-primary mb-2 text-base font-semibold">
-            {title}
+            {effectiveTitle}
           </h3>
         ) : null}
         <div className="forum-card-accent p-4 text-sm text-slate-600">
-          {helperText ?? 'Replies are currently disabled for this thread.'}
+          {helperText ?? t('thread.repliesDisabled')}
         </div>
       </section>
     );
@@ -141,14 +146,14 @@ const ThreadComposer = ({
     <section>
       {showTitle ? (
         <h3 className="text-brand-primary mb-2 text-base font-semibold">
-          {title}
+          {effectiveTitle}
         </h3>
       ) : null}
       {replyTargetAuthorName && replyTargetContent ? (
         <div className="forum-card-accent mb-3 border-l-4 border-cyan-300 p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="text-ui-strong text-xs font-semibold">
-              Replying to {replyTargetAuthorName}
+              {t('post.replyingTo', { name: replyTargetAuthorName })}
             </p>
             {onCancelReplyTarget ? (
               <button
@@ -156,7 +161,7 @@ const ThreadComposer = ({
                 onClick={onCancelReplyTarget}
                 className="text-ui-muted rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
               >
-                Cancel Reply
+                {t('common.cancel')}
               </button>
             ) : null}
           </div>
@@ -171,11 +176,9 @@ const ThreadComposer = ({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-ui-strong text-sm font-semibold">
-                Poll / Voting
+                {t('thread.poll')}
               </p>
-              <p className="text-ui-muted text-xs">
-                Add a structured poll with 2-6 answer options.
-              </p>
+              <p className="text-ui-muted text-xs">{t('poll.addHelp')}</p>
             </div>
             {pollDraft ? (
               <button
@@ -183,7 +186,7 @@ const ThreadComposer = ({
                 onClick={() => updatePollDraft(null)}
                 className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 active:translate-y-px"
               >
-                Remove Poll
+                {t('poll.remove')}
               </button>
             ) : (
               <button
@@ -191,7 +194,7 @@ const ThreadComposer = ({
                 onClick={ensurePollDraft}
                 className="rounded-md border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-cyan-100 active:translate-y-px"
               >
-                Add Poll
+                {t('poll.add')}
               </button>
             )}
           </div>
@@ -206,7 +209,7 @@ const ThreadComposer = ({
                     question: event.target.value,
                   })
                 }
-                placeholder="Poll question"
+                placeholder={t('poll.question')}
                 className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               />
               <textarea
@@ -217,11 +220,11 @@ const ThreadComposer = ({
                     description: event.target.value,
                   })
                 }
-                placeholder="Optional poll description"
+                placeholder={t('poll.description')}
                 className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               />
               <label className="grid gap-1 text-xs font-semibold text-slate-700">
-                Poll closing date
+                {t('poll.closingDate')}
                 <input
                   type="datetime-local"
                   value={toDateTimeLocalValue(pollDraft.closesAt)}
@@ -242,7 +245,7 @@ const ThreadComposer = ({
                       onChange={(event) =>
                         updatePollOption(index, event.target.value)
                       }
-                      placeholder={`Option ${index + 1}`}
+                      placeholder={t('poll.option', { number: index + 1 })}
                       className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                     />
                     <button
@@ -251,7 +254,7 @@ const ThreadComposer = ({
                       disabled={pollDraft.options.length <= 2}
                       className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Remove
+                      {t('common.remove')}
                     </button>
                   </div>
                 ))}
@@ -263,7 +266,7 @@ const ThreadComposer = ({
                   disabled={pollDraft.options.length >= 6}
                   className="rounded-md border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-cyan-100 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Add Option
+                  {t('poll.addOption')}
                 </button>
                 <label className="text-ui-muted flex items-center gap-2 text-xs">
                   <input
@@ -276,7 +279,7 @@ const ThreadComposer = ({
                       })
                     }
                   />
-                  Allow multiple answers
+                  {t('poll.allowMultiple')}
                 </label>
               </div>
             </div>
@@ -292,8 +295,8 @@ const ThreadComposer = ({
         onUploadImage={onUploadImage}
         onUploadAttachment={onUploadAttachment}
         onUploadVideo={onUploadVideo}
-        placeholder={placeholder}
-        submitLabel={submitLabel}
+        placeholder={effectivePlaceholder}
+        submitLabel={effectiveSubmitLabel}
       />
     </section>
   );

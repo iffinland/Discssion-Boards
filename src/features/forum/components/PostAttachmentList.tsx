@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import AppModal from '../../../components/common/AppModal';
 import {
@@ -13,6 +14,7 @@ type PostAttachmentListProps = {
 };
 
 const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
+  const { t } = useTranslation();
   const [urlsById, setUrlsById] = useState<Record<string, string>>({});
   const [isResolvingUrls, setIsResolvingUrls] = useState(false);
   const [previewAttachment, setPreviewAttachment] =
@@ -108,7 +110,7 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
       }
 
       setIsPreviewLoading(false);
-      setPreviewError('Unable to load attachment preview.');
+      setPreviewError(t('attachment.previewFailed'));
       return;
     }
 
@@ -121,7 +123,7 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
 
         const response = await fetch(previewUrl);
         if (!response.ok) {
-          throw new Error('Unable to load attachment preview.');
+          throw new Error(t('attachment.previewFailed'));
         }
 
         const text = await response.text();
@@ -136,9 +138,7 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
         }
 
         setPreviewError(
-          error instanceof Error
-            ? error.message
-            : 'Unable to load attachment preview.'
+          error instanceof Error ? error.message : t('attachment.previewFailed')
         );
       } finally {
         if (active) {
@@ -152,7 +152,7 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
     return () => {
       active = false;
     };
-  }, [isResolvingUrls, previewAttachment, urlsById]);
+  }, [isResolvingUrls, previewAttachment, t, urlsById]);
 
   if (attachments.length === 0) {
     return null;
@@ -160,7 +160,9 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
 
   return (
     <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <p className="text-ui-strong text-xs font-semibold">Attachments</p>
+      <p className="text-ui-strong text-xs font-semibold">
+        {t('attachment.heading')}
+      </p>
       <div className="mt-2 space-y-2">
         {attachments.map((attachment) => {
           const attachmentUrl = urlsById[attachment.id];
@@ -187,7 +189,7 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
                       onClick={() => openPreviewModal(attachment)}
                       className="text-brand-primary rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold"
                     >
-                      View
+                      {t('common.view')}
                     </button>
                   ) : null}
                   <button
@@ -200,12 +202,14 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
                     }
                     className="text-ui-strong rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold"
                   >
-                    Download
+                    {t('common.download')}
                   </button>
                 </div>
               ) : (
                 <span className="text-ui-muted text-xs font-semibold">
-                  {isResolvingUrls ? 'Loading...' : 'Unavailable'}
+                  {isResolvingUrls
+                    ? t('common.loading')
+                    : t('common.unavailable')}
                 </span>
               )}
             </div>
@@ -216,16 +220,20 @@ const PostAttachmentList = ({ attachments }: PostAttachmentListProps) => {
       <AppModal
         isOpen={Boolean(previewAttachment)}
         onClose={closePreviewModal}
-        ariaLabel="Attachment preview"
+        ariaLabel={t('attachment.preview')}
         title={
           previewAttachment
-            ? `Preview: ${previewAttachment.filename}`
-            : 'Attachment preview'
+            ? t('attachment.previewTitle', {
+                filename: previewAttachment.filename,
+              })
+            : t('attachment.preview')
         }
         maxWidthClassName="max-w-4xl"
       >
         {isPreviewLoading ? (
-          <p className="text-ui-muted text-sm">Loading preview...</p>
+          <p className="text-ui-muted text-sm">
+            {t('attachment.loadingPreview')}
+          </p>
         ) : previewError ? (
           <p className="text-brand-accent-strong text-sm font-semibold">
             {previewError}

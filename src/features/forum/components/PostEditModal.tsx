@@ -1,6 +1,7 @@
 import AppModal from '../../../components/common/AppModal';
 import RichTextEditor from '../../../components/forum/RichTextEditor';
 import type { PostAttachment } from '../../../types';
+import { useTranslation } from 'react-i18next';
 
 type PostEditModalProps = {
   isOpen: boolean;
@@ -27,6 +28,7 @@ const PostEditModal = ({
   onUploadVideo,
   onClose,
 }: PostEditModalProps) => {
+  const { t } = useTranslation();
   const handleSubmit = async () => {
     const didUpdate = await onSubmit();
     if (didUpdate) {
@@ -38,8 +40,8 @@ const PostEditModal = ({
     <AppModal
       isOpen={isOpen}
       onClose={onClose}
-      ariaLabel="Edit Post"
-      title="Edit Post"
+      ariaLabel={t('post.edit')}
+      title={t('post.edit')}
       maxWidthClassName="max-w-4xl"
     >
       <div className="max-h-[78vh] overflow-y-auto pr-1">
@@ -52,9 +54,9 @@ const PostEditModal = ({
           onUploadImage={onUploadImage}
           onUploadAttachment={onUploadAttachment}
           onUploadVideo={onUploadVideo}
-          placeholder="Update your post..."
-          editorLabel="Edit post editor"
-          submitLabel="Save Changes"
+          placeholder={t('post.updatePlaceholder')}
+          editorLabel={t('post.editEditor')}
+          submitLabel={t('post.saveChanges')}
           canManageAttachments
         />
       </div>

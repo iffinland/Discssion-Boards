@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type AppModalProps = {
   isOpen: boolean;
@@ -17,6 +18,7 @@ const AppModal = ({
   maxWidthClassName = 'max-w-sm',
   children,
 }: AppModalProps) => {
+  const { t } = useTranslation();
   if (!isOpen) {
     return null;
   }
@@ -42,7 +44,7 @@ const AppModal = ({
             onClick={onClose}
             className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
 

@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import ShareIcon from '../components/common/ShareIcon';
 import AccessDisclosureNotice from '../components/forum/AccessDisclosureNotice';
@@ -53,6 +54,7 @@ type ThreadPageProps = {
 };
 
 const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
@@ -357,11 +359,11 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     subTopic?.status === 'locked' ||
     subTopic?.visibility === 'hidden';
   const composerHelperText = !hasSubTopicAccess
-    ? 'You do not have access to post in this sub-topic.'
+    ? t('access.cannotPost')
     : subTopic?.visibility === 'hidden'
-      ? 'This sub-topic is hidden.'
+      ? t('thread.hiddenNotice')
       : subTopic?.status === 'locked'
-        ? 'This sub-topic is locked.'
+        ? t('access.threadLocked')
         : null;
 
   useEffect(() => {
@@ -536,8 +538,8 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
 
     setModerationFeedback(
       result.ok
-        ? 'Sub-topic status updated.'
-        : (result.error ?? 'Unable to update sub-topic.')
+        ? t('thread.statusUpdated')
+        : (result.error ?? t('thread.updateFailed'))
     );
   };
 
@@ -560,8 +562,8 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
 
     setModerationFeedback(
       result.ok
-        ? 'Sub-topic visibility updated.'
-        : (result.error ?? 'Unable to update sub-topic.')
+        ? t('thread.visibilityUpdated')
+        : (result.error ?? t('thread.updateFailed'))
     );
   };
 
@@ -585,9 +587,9 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     setModerationFeedback(
       result.ok
         ? subTopic.isPinned
-          ? 'Sub-topic unpinned.'
-          : 'Sub-topic pinned to the top.'
-        : (result.error ?? 'Unable to update sub-topic.')
+          ? t('thread.unpinned')
+          : t('thread.pinnedTop')
+        : (result.error ?? t('thread.updateFailed'))
     );
   };
 
@@ -602,9 +604,9 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     setModerationFeedback(
       result.ok
         ? subTopic.isSolved
-          ? 'Solved status cleared.'
-          : 'Thread marked as solved.'
-        : (result.error ?? 'Unable to update solved status.')
+          ? t('thread.solvedCleared')
+          : t('thread.markedSolved')
+        : (result.error ?? t('thread.solvedFailed'))
     );
   };
 
@@ -642,14 +644,14 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
       }
       setHasInitialThreadLoadCompleted(true);
       setThreadLoadError(
-        result.ok ? null : (result.error ?? 'Unable to load thread posts.')
+        result.ok ? null : (result.error ?? t('thread.postsLoadFailed'))
       );
     });
 
     return () => {
       active = false;
     };
-  }, [canModerate, hasSubTopicAccess, id, loadThreadPosts, subTopic]);
+  }, [canModerate, hasSubTopicAccess, id, loadThreadPosts, subTopic, t]);
 
   const shouldShowThreadEmptyState =
     hasInitialThreadLoadCompleted &&
@@ -660,18 +662,18 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
   const isCreatingFirstPost =
     threadPosts.length === 0 && !replyTarget && isComposerOpen;
   const composerTitle = replyTarget
-    ? 'Reply to Post'
+    ? t('post.reply')
     : isCreatingFirstPost
-      ? 'Add First Post'
-      : 'Add New Post';
+      ? t('post.addFirst')
+      : t('post.add');
   const composerPlaceholder = isCreatingFirstPost
-    ? 'Write the first post for this new sub-topic...'
-    : 'Share your thoughts with the community...';
+    ? t('post.firstPlaceholder')
+    : t('post.placeholder');
   const composerSubmitLabel = isCreatingFirstPost
-    ? 'Publish First Post'
+    ? t('post.publishFirst')
     : replyTarget
-      ? 'Publish Reply'
-      : 'Publish Post';
+      ? t('post.publishReply')
+      : t('post.publish');
 
   const openNewPostComposer = () => {
     resetComposer();
@@ -707,44 +709,46 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
 
     const value = editText.trim();
     if (!value && editAttachments.length === 0) {
-      setModerationFeedback('Post content or attachment is required.');
+      setModerationFeedback(t('post.contentRequired'));
       return false;
     }
 
     return handleEditPost(editingPost.id, value, editAttachments);
-  }, [editAttachments, editText, editingPost, handleEditPost]);
+  }, [editAttachments, editText, editingPost, handleEditPost, t]);
 
   const handleTogglePostPin = useCallback(
     async (post: Post) => {
       const result = await togglePostPin(post.id);
       if (!result.ok) {
-        setModerationFeedback(result.error ?? 'Unable to update pinned post.');
+        setModerationFeedback(result.error ?? t('post.pinUpdateFailed'));
         return;
       }
 
-      setModerationFeedback(post.isPinned ? 'Post unpinned.' : 'Post pinned.');
+      setModerationFeedback(
+        post.isPinned ? t('post.unpinned') : t('post.pinned')
+      );
       window.setTimeout(() => {
         setModerationFeedback((current) =>
-          current === 'Post pinned.' || current === 'Post unpinned.'
+          current === t('post.pinned') || current === t('post.unpinned')
             ? null
             : current
         );
       }, 2400);
     },
-    [togglePostPin]
+    [t, togglePostPin]
   );
 
   const handleVoteOnPoll = async (postId: string, optionIds: string[]) => {
     const result = await voteOnPoll({ postId, optionIds });
     if (!result.ok) {
-      setModerationFeedback(result.error ?? 'Unable to submit vote.');
+      setModerationFeedback(result.error ?? t('poll.voteFailed'));
       return;
     }
 
-    setModerationFeedback('Vote submitted.');
+    setModerationFeedback(t('poll.voteSubmitted'));
     window.setTimeout(() => {
       setModerationFeedback((current) =>
-        current === 'Vote submitted.' ? null : current
+        current === t('poll.voteSubmitted') ? null : current
       );
     }, 2400);
   };
@@ -752,14 +756,14 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
   const handleClosePoll = async (postId: string) => {
     const result = await closePoll({ postId });
     if (!result.ok) {
-      setModerationFeedback(result.error ?? 'Unable to close poll.');
+      setModerationFeedback(result.error ?? t('poll.closeFailed'));
       return;
     }
 
-    setModerationFeedback('Native poll closure scheduled.');
+    setModerationFeedback(t('poll.closureScheduled'));
     window.setTimeout(() => {
       setModerationFeedback((current) =>
-        current === 'Native poll closure scheduled.' ? null : current
+        current === t('poll.closureScheduled') ? null : current
       );
     }, 2400);
   };
@@ -972,16 +976,16 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
 
     const copied = await copyToClipboard(buildThreadShareLink(id));
     if (!copied) {
-      setModerationFeedback('Unable to copy thread link to clipboard.');
+      setModerationFeedback(t('thread.linkCopyFailed'));
       return;
     }
 
     setIsThreadShareCopied(true);
-    setModerationFeedback('Thread link copied to clipboard.');
+    setModerationFeedback(t('thread.linkCopied'));
     window.setTimeout(() => {
       setIsThreadShareCopied(false);
       setModerationFeedback((current) =>
-        current === 'Thread link copied to clipboard.' ? null : current
+        current === t('thread.linkCopied') ? null : current
       );
     }, 2400);
   };
@@ -1023,10 +1027,10 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     return (
       <div className="space-y-4">
         <h2 className="text-ui-strong text-lg font-semibold">
-          Thread not found
+          {t('thread.notFound')}
         </h2>
         <Link to="/" className="forum-link text-sm font-medium">
-          Back to topics
+          {t('thread.backTopics')}
         </Link>
       </div>
     );
@@ -1036,15 +1040,15 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     return (
       <div className="space-y-4">
         <h2 className="text-ui-strong text-lg font-semibold">
-          Thread not available
+          {t('thread.unavailable')}
         </h2>
-        <p className="text-ui-muted text-sm">This sub-topic is hidden.</p>
+        <p className="text-ui-muted text-sm">{t('thread.hiddenNotice')}</p>
         <AccessDisclosureNotice kind="hidden" />
         <Link
           to={`/topic/${subTopic.topicId}`}
           className="forum-link text-sm font-medium"
         >
-          Back to topics
+          {t('thread.backTopics')}
         </Link>
       </div>
     );
@@ -1054,18 +1058,14 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     return (
       <div className="space-y-4">
         <h2 className="text-ui-strong text-lg font-semibold">
-          Thread not available
+          {t('thread.unavailable')}
         </h2>
-        <p className="text-ui-muted text-sm">
-          This discussion is restricted in the Discussion Boards interface for
-          the current wallet or role. This UI restriction is not
-          confidentiality; its QDN resources remain public and unencrypted.
-        </p>
+        <p className="text-ui-muted text-sm">{t('thread.restrictedNotice')}</p>
         <Link
           to={`/topic/${subTopic.topicId}`}
           className="forum-link text-sm font-medium"
         >
-          Back to topics
+          {t('thread.backTopics')}
         </Link>
       </div>
     );
@@ -1082,16 +1082,15 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
           role="status"
           className="forum-card border-amber-300 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/20 dark:text-amber-200"
         >
-          Some thread data is partial or cached. It remains read-only evidence;
-          missing posts are not treated as deleted.
+          {t('thread.partialData')}
         </div>
       ) : null}
       <nav
-        aria-label="Breadcrumb"
+        aria-label={t('navigation.breadcrumb')}
         className="flex flex-wrap items-center gap-2 text-sm"
       >
         <Link to="/" className="forum-link text-sm font-semibold">
-          Home
+          {t('navigation.home')}
         </Link>
         {parentTopic ? (
           <>
@@ -1112,12 +1111,12 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
         <h2 className="text-ui-strong text-2xl font-semibold">
           {subTopic.isPinned ? (
             <span className="bg-brand-accent-soft text-brand-accent-strong border-brand-accent mr-3 inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold align-middle">
-              Pinned
+              {t('thread.pinned')}
             </span>
           ) : null}
           {subTopic.isPoll ? (
             <span className="mr-3 inline-flex items-center rounded-md border border-cyan-300 bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800 align-middle">
-              Poll / Voting
+              {t('thread.poll')}
             </span>
           ) : null}
           {subTopic.title}
@@ -1125,36 +1124,40 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
         <p className="text-ui-muted mt-1 text-sm">{subTopic.description}</p>
         <p className="text-ui-muted mt-2 text-xs">
           {hasActiveSearch
-            ? `${filteredThreadPosts.length} matching posts in this thread`
-            : `${threadPosts.length} posts in this thread`}
+            ? t('thread.matchingPosts', { count: filteredThreadPosts.length })
+            : t('thread.postCount', { count: threadPosts.length })}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="bg-brand-primary-soft text-brand-primary-strong border-brand-primary rounded-md border px-2 py-1 text-xs font-semibold">
-            {subTopic.status === 'locked' ? 'Locked' : 'Open'}
+            {subTopic.status === 'locked'
+              ? t('common.locked')
+              : t('common.open')}
           </span>
           {subTopic.isPinned ? (
             <span className="bg-brand-primary-soft text-brand-primary-strong border-brand-primary rounded-md border px-2 py-1 text-xs font-semibold">
-              Pinned
+              {t('thread.pinned')}
             </span>
           ) : null}
           {subTopic.isPoll ? (
             <span className="rounded-md border border-cyan-300 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800">
-              Poll / Voting
+              {t('thread.poll')}
             </span>
           ) : null}
           {subTopic.isSolved ? (
             <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-              Solved
+              {t('thread.solved')}
             </span>
           ) : null}
           {subTopic.access !== 'everyone' ? (
             <span className="bg-brand-accent-soft text-brand-accent-strong border-brand-accent rounded-md border px-2 py-1 text-xs font-semibold">
-              Access: {resolveAccessLabel(subTopic.access)}
+              {t('thread.access', {
+                access: resolveAccessLabel(subTopic.access),
+              })}
             </span>
           ) : null}
           {subTopic.visibility === 'hidden' ? (
             <span className="bg-brand-accent-soft text-brand-accent-strong border-brand-accent rounded-md border px-2 py-1 text-xs font-semibold">
-              Hidden
+              {t('common.hidden')}
             </span>
           ) : null}
           {canManageSubTopicAdvanced ? (
@@ -1164,7 +1167,9 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
                 onClick={handleToggleSubTopicPin}
                 className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
               >
-                {subTopic.isPinned ? 'Unpin Sub-Topic' : 'Pin Sub-Topic'}
+                {subTopic.isPinned
+                  ? t('thread.unpinSubTopic')
+                  : t('thread.pinSubTopic')}
               </button>
               <button
                 type="button"
@@ -1173,8 +1178,8 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
                 className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
               >
                 {subTopic.visibility === 'hidden'
-                  ? 'Show Sub-Topic'
-                  : 'Hide Sub-Topic'}
+                  ? t('thread.showSubTopic')
+                  : t('thread.hideSubTopic')}
               </button>
             </>
           ) : null}
@@ -1185,8 +1190,8 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
               className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
             >
               {subTopic.status === 'locked'
-                ? 'Unlock Sub-Topic'
-                : 'Lock Sub-Topic'}
+                ? t('thread.unlockSubTopic')
+                : t('thread.lockSubTopic')}
             </button>
           ) : null}
           {isAuthenticated && canLockSubTopic ? (
@@ -1195,7 +1200,9 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
               onClick={handleToggleSubTopicSolved}
               className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700"
             >
-              {subTopic.isSolved ? 'Clear Solved' : 'Mark as Solved'}
+              {subTopic.isSolved
+                ? t('thread.clearSolved')
+                : t('thread.markSolved')}
             </button>
           ) : null}
           <button
@@ -1204,7 +1211,9 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
             className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition active:scale-95"
           >
             <ShareIcon />
-            <span>{isThreadShareCopied ? 'Copied' : 'Share Thread'}</span>
+            <span>
+              {isThreadShareCopied ? t('common.copied') : t('thread.share')}
+            </span>
           </button>
           <button
             type="button"
@@ -1216,8 +1225,8 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
             className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
           >
             {postSortMode === 'oldest'
-              ? 'Show Newest First'
-              : 'Show Oldest First'}
+              ? t('thread.newestFirst')
+              : t('thread.oldestFirst')}
           </button>
           <button
             type="button"
@@ -1225,12 +1234,14 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
             disabled={isComposerDisabled}
             className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Add New Post
+            {t('post.add')}
           </button>
         </div>
         {subTopic.lastModerationReason ? (
           <p className="text-ui-muted mt-2 text-xs">
-            Moderation note: {subTopic.lastModerationReason}
+            {t('thread.moderationNote', {
+              reason: subTopic.lastModerationReason,
+            })}
           </p>
         ) : null}
       </section>
@@ -1276,7 +1287,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
         onSend={() => void submitTip()}
       />
       {isThreadPostsLoading ? (
-        <p className="text-ui-muted text-xs">Loading thread data from QDN...</p>
+        <p className="text-ui-muted text-xs">{t('thread.loadingQdn')}</p>
       ) : null}
 
       <section className="forum-card p-4">
@@ -1284,17 +1295,15 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
           htmlFor="thread-local-search"
           className="text-ui-strong text-sm font-semibold"
         >
-          Search This Thread
+          {t('search.threadLabel')}
         </label>
-        <p className="text-ui-muted mt-1 text-xs">
-          Filters posts in this thread only. Matching words are highlighted.
-        </p>
+        <p className="text-ui-muted mt-1 text-xs">{t('search.threadHelp')}</p>
         <input
           id="thread-local-search"
           type="search"
           value={threadSearchQuery}
           onChange={(event) => setThreadSearchQuery(event.target.value)}
-          placeholder="Search posts in this thread"
+          placeholder={t('search.threadPlaceholder')}
           className="bg-surface-card text-ui-strong placeholder:text-ui-muted mt-3 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
         />
       </section>
@@ -1303,10 +1312,10 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
         <section className="space-y-3">
           <div>
             <h3 className="text-ui-strong text-sm font-semibold">
-              Pinned Posts
+              {t('thread.pinnedPosts')}
             </h3>
             <p className="text-ui-muted mt-1 text-xs">
-              Highlighted posts from this thread.
+              {t('thread.pinnedPostsHelp')}
             </p>
           </div>
           {pinnedThreadPosts.map((post) => (
@@ -1415,12 +1424,14 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
         {shouldShowThreadEmptyState ? (
           <div className="forum-card p-5">
             <p className="text-ui-strong text-sm font-semibold">
-              {hasActiveThreadSearch ? 'No matching posts' : 'No posts yet'}
+              {hasActiveThreadSearch
+                ? t('thread.noMatchingPosts')
+                : t('thread.noPosts')}
             </p>
             <p className="text-ui-muted mt-1 text-sm">
               {hasActiveThreadSearch
-                ? 'Adjust the forum search field to search this thread differently.'
-                : 'This thread does not have any published posts yet.'}
+                ? t('thread.adjustSearch')
+                : t('thread.noPostsHelp')}
             </p>
           </div>
         ) : null}

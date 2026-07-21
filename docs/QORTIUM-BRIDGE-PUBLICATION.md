@@ -11,7 +11,7 @@ them.
 
 | Repository        | Verified commit                                                      |
 | ----------------- | -------------------------------------------------------------------- |
-| Discussion Boards | `eaba239cb7120abf9bf57166ea8b9de0868c0876` (issue #11 worktree base) |
+| Discussion Boards | `7bcc0ded7c0bc1aac6a6f378c0c15eed50b000fa` (issue #12 worktree base) |
 | Qortium Home      | `a41e5f9678d7f20d7fb77a223c45fddc0096632e`                           |
 | Qortium Core      | `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`                           |
 

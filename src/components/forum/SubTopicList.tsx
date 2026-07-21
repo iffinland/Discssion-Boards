@@ -1,4 +1,5 @@
 import { memo, useMemo, type DragEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import UserRoleBadge from '../common/UserRoleBadge';
 import HighlightedText from '../common/HighlightedText';
@@ -34,12 +35,6 @@ type SubTopicListProps = {
   highlightQuery?: string;
 };
 
-const formatDate = (date: string) =>
-  new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
 const SUB_TOPIC_DESCRIPTION_MAX_LENGTH = 250;
 const statusBadgeBaseClass =
   'mr-2 inline-flex rounded-md border px-2 py-0.5 text-[11px] font-semibold align-middle';
@@ -75,6 +70,7 @@ const SubTopicList = ({
   onPinnedDragEnd,
   highlightQuery = '',
 }: SubTopicListProps) => {
+  const { t, i18n } = useTranslation();
   const usernameMap = useMemo(
     () => new Map(users.map((user) => [user.id, user.displayName])),
     [users]
@@ -87,26 +83,32 @@ const SubTopicList = ({
   return (
     <div className="space-y-2">
       <div className="bg-brand-primary-soft text-brand-primary-strong hidden grid-cols-[2fr_1fr_1fr] rounded-md border border-cyan-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide sm:grid">
-        <span>Sub-topic</span>
-        <span>Author</span>
-        <span>Last Post</span>
+        <span>{t('navigation.subTopic')}</span>
+        <span>{t('thread.author')}</span>
+        <span>{t('thread.lastPost')}</span>
       </div>
 
       <ul className="space-y-2">
         {subTopics.map((subTopic) => {
           const isQuarantined = quarantinedSubTopicIds[subTopic.id] === true;
           const metadata = [
-            subTopic.isPinned ? 'Pinned' : null,
-            subTopic.isPoll ? 'Poll / Voting' : null,
-            subTopic.isSolved ? 'Solved' : null,
-            subTopic.status === 'locked' ? 'Locked' : 'Open',
-            subTopic.visibility === 'hidden' ? 'Hidden' : null,
-            isQuarantined ? 'Quarantined' : null,
+            subTopic.isPinned ? t('thread.pinned') : null,
+            subTopic.isPoll ? t('thread.poll') : null,
+            subTopic.isSolved ? t('thread.solved') : null,
+            subTopic.status === 'locked'
+              ? t('common.locked')
+              : t('common.open'),
+            subTopic.visibility === 'hidden' ? t('common.hidden') : null,
+            isQuarantined ? t('status.quarantined') : null,
             subTopic.access !== 'everyone'
-              ? `Access: ${resolveAccessLabel(subTopic.access)}`
+              ? t('thread.access', {
+                  access: resolveAccessLabel(subTopic.access),
+                })
               : null,
             subTopic.lastModerationReason
-              ? `Mod reason: ${subTopic.lastModerationReason}`
+              ? t('thread.moderationReason', {
+                  reason: subTopic.lastModerationReason,
+                })
               : null,
           ]
             .filter(Boolean)
@@ -143,35 +145,35 @@ const SubTopicList = ({
                       subTopic.isPinned &&
                       draggedPinnedSubTopicId === subTopic.id ? (
                         <span className="text-ui-muted mr-2 inline-flex align-middle text-[11px] font-semibold">
-                          Dragging...
+                          {t('thread.dragging')}
                         </span>
                       ) : null}
                       {subTopic.isPinned ? (
                         <span
                           className={`${statusBadgeBaseClass} border-amber-300 bg-amber-50 text-amber-700`}
                         >
-                          Pinned
+                          {t('thread.pinned')}
                         </span>
                       ) : null}
                       {subTopic.status === 'locked' ? (
                         <span
                           className={`${statusBadgeBaseClass} border-rose-300 bg-rose-50 text-rose-700`}
                         >
-                          Locked
+                          {t('common.locked')}
                         </span>
                       ) : null}
                       {subTopic.isPoll ? (
                         <span
                           className={`${statusBadgeBaseClass} border-cyan-300 bg-cyan-50 text-cyan-800`}
                         >
-                          Poll / Voting
+                          {t('thread.poll')}
                         </span>
                       ) : null}
                       {isQuarantined ? (
                         <span
                           className={`${statusBadgeBaseClass} border-orange-300 bg-orange-50 text-orange-700`}
                         >
-                          Quarantined
+                          {t('status.quarantined')}
                         </span>
                       ) : null}
                       <HighlightedText
@@ -194,7 +196,7 @@ const SubTopicList = ({
                       <span>
                         {usernameMap.get(subTopic.authorUserId) ??
                           subTopic.authorUserId ??
-                          'Unknown User'}
+                          t('common.unknownUser')}
                       </span>
                       <UserRoleBadge
                         role={
@@ -204,12 +206,18 @@ const SubTopicList = ({
                     </span>
                   </span>
                   <span className="text-ui-muted text-sm">
-                    {formatDate(subTopic.lastPostAt)}
+                    {new Date(subTopic.lastPostAt).toLocaleDateString(
+                      i18n.language,
+                      {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      }
+                    )}
                     <span className="block text-xs">
-                      Posts:{' '}
-                      {postCountsBySubTopicId[subTopic.id] !== undefined
-                        ? postCountsBySubTopicId[subTopic.id]
-                        : '...'}
+                      {t('common.posts', {
+                        count: postCountsBySubTopicId[subTopic.id] ?? '...',
+                      })}
                     </span>
                   </span>
                 </button>
@@ -221,21 +229,23 @@ const SubTopicList = ({
                       onClick={() => onManageSubTopic?.(subTopic)}
                       className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
                     >
-                      Manage
+                      {t('common.manage')}
                     </button>
                     <button
                       type="button"
                       onClick={() => onToggleSubTopicPin?.(subTopic)}
                       className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
                     >
-                      {subTopic.isPinned ? 'Unpin' : 'Pin'}
+                      {subTopic.isPinned ? t('thread.unpin') : t('thread.pin')}
                     </button>
                     <button
                       type="button"
                       onClick={() => onToggleSubTopicStatus?.(subTopic)}
                       className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
                     >
-                      {subTopic.status === 'locked' ? 'Unlock' : 'Lock'}
+                      {subTopic.status === 'locked'
+                        ? t('thread.unlock')
+                        : t('thread.lock')}
                     </button>
                     <button
                       type="button"
@@ -243,7 +253,9 @@ const SubTopicList = ({
                       title={HIDDEN_CONTENT_NOTICE}
                       className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
                     >
-                      {subTopic.visibility === 'hidden' ? 'Show' : 'Hide'}
+                      {subTopic.visibility === 'hidden'
+                        ? t('thread.show')
+                        : t('thread.hide')}
                     </button>
                     {isQuarantined ? (
                       <button
@@ -251,7 +263,7 @@ const SubTopicList = ({
                         onClick={() => onHideBrokenSubTopic?.(subTopic)}
                         className="rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-semibold text-orange-700"
                       >
-                        Hide Broken
+                        {t('thread.hideBroken')}
                       </button>
                     ) : null}
                     {subTopic.allowedAddresses.length > 0 ? (
@@ -269,7 +281,9 @@ const SubTopicList = ({
                           ))}
                         {subTopic.allowedAddresses.length > 3 ? (
                           <span className="text-ui-muted text-xs">
-                            +{subTopic.allowedAddresses.length - 3} more
+                            {t('common.more', {
+                              count: subTopic.allowedAddresses.length - 3,
+                            })}
                           </span>
                         ) : null}
                       </span>

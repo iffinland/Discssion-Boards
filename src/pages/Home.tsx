@@ -8,6 +8,7 @@ import {
   type FormEvent,
 } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import HighlightedText from '../components/common/HighlightedText';
 import AccessDisclosureNotice from '../components/forum/AccessDisclosureNotice';
@@ -70,29 +71,28 @@ const sortSubTopics = (items: SubTopic[]) =>
 
 const topicAccessOptions: Array<{
   value: TopicAccess;
-  label: string;
-  helper: string;
+  labelKey: string;
+  helperKey: string;
 }> = [
   {
     value: 'everyone',
-    label: 'Anyone can create sub-topics',
-    helper: 'Any authenticated member can create sub-topics here.',
+    labelKey: 'moderation.accessAnyone',
+    helperKey: 'moderation.accessAnyoneHelp',
   },
   {
     value: 'moderators',
-    label: 'Moderators+ can create sub-topics',
-    helper: 'Moderators, admins and Super Admins can create sub-topics.',
+    labelKey: 'moderation.accessModerators',
+    helperKey: 'moderation.accessModeratorsHelp',
   },
   {
     value: 'admins',
-    label: 'Admins can create sub-topics',
-    helper: 'Only admins and Super Admins can create sub-topics.',
+    labelKey: 'moderation.accessAdmins',
+    helperKey: 'moderation.accessAdminsHelp',
   },
   {
     value: 'custom',
-    label: 'Listed wallets can create sub-topics',
-    helper:
-      'Listed wallet addresses can create sub-topics; admins retain management access.',
+    labelKey: 'moderation.accessCustom',
+    helperKey: 'moderation.accessCustomHelp',
   },
 ];
 
@@ -109,42 +109,60 @@ type DisplayTopic = Topic & {
 const TOPIC_DESCRIPTION_MAX_LENGTH = 250;
 const ACTIVE_SUBTOPIC_LIMIT = 5;
 const ROLE_NAME_BATCH_SIZE = 6;
-const roleLabelByType: Record<'SuperAdmin' | 'Admin' | 'Moderator', string> = {
-  SuperAdmin: 'Super Admin',
-  Admin: 'Admin',
-  Moderator: 'Moderator',
-};
+const roleLabelKeyByType: Record<'SuperAdmin' | 'Admin' | 'Moderator', string> =
+  {
+    SuperAdmin: 'moderation.superAdmin',
+    Admin: 'moderation.admin',
+    Moderator: 'moderation.moderator',
+  };
 const MINUTE_IN_MS = 60 * 1000;
 const HOUR_IN_MS = 60 * MINUTE_IN_MS;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const V2_SEARCH_MODERATION_CACHE_TTL_MS = 30 * 1000;
 
-const formatActiveTopicTime = (value: string, nowMs: number) => {
+const formatActiveTopicTime = (
+  value: string,
+  nowMs: number,
+  locale: string
+) => {
   const parsedMs = new Date(value).getTime();
   if (!Number.isFinite(parsedMs)) {
-    return 'Unknown time';
+    return '—';
   }
 
   const elapsedMs = Math.max(0, nowMs - parsedMs);
   if (elapsedMs < MINUTE_IN_MS) {
-    return 'just now';
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      0,
+      'second'
+    );
   }
 
   if (elapsedMs < HOUR_IN_MS) {
     const minutes = Math.floor(elapsedMs / MINUTE_IN_MS);
-    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      -minutes,
+      'minute'
+    );
   }
 
   if (elapsedMs < DAY_IN_MS) {
     const hours = Math.floor(elapsedMs / HOUR_IN_MS);
-    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      -hours,
+      'hour'
+    );
   }
 
   const days = Math.floor(elapsedMs / DAY_IN_MS);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
+  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+    -days,
+    'day'
+  );
 };
 
 const Home = ({ searchQuery }: HomeProps) => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {
@@ -234,21 +252,21 @@ const Home = ({ searchQuery }: HomeProps) => {
   const assignableRoleOptions = useMemo(() => {
     if (isSysOp) {
       return [
-        { value: 'SuperAdmin' as const, label: 'Super Admin' },
-        { value: 'Admin' as const, label: 'Admin' },
-        { value: 'Moderator' as const, label: 'Moderator' },
+        { value: 'SuperAdmin' as const, label: t('moderation.superAdmin') },
+        { value: 'Admin' as const, label: t('moderation.admin') },
+        { value: 'Moderator' as const, label: t('moderation.moderator') },
       ];
     }
 
     if (isSuperAdmin) {
       return [
-        { value: 'Admin' as const, label: 'Admin' },
-        { value: 'Moderator' as const, label: 'Moderator' },
+        { value: 'Admin' as const, label: t('moderation.admin') },
+        { value: 'Moderator' as const, label: t('moderation.moderator') },
       ];
     }
 
-    return [{ value: 'Moderator' as const, label: 'Moderator' }];
-  }, [isSuperAdmin, isSysOp]);
+    return [{ value: 'Moderator' as const, label: t('moderation.moderator') }];
+  }, [isSuperAdmin, isSysOp, t]);
   const canModerate = currentUser.role !== 'Member';
   const normalizedSearchQuery = searchQuery.trim();
   const hasActiveSearch = normalizedSearchQuery.length > 0;
@@ -626,13 +644,25 @@ const Home = ({ searchQuery }: HomeProps) => {
           lastPostAuthorName:
             userMap.get(activityAuthorUserId) ??
             activityAuthorUserId ??
-            'Unknown User',
-          activeTimeLabel: formatActiveTopicTime(activityAt, activeTopicsNowMs),
+            t('common.unknownUser'),
+          activeTimeLabel: formatActiveTopicTime(
+            activityAt,
+            activeTopicsNowMs,
+            i18n.language
+          ),
         };
       })
       .sort((a, b) => b.activityMs - a.activityMs)
       .slice(0, ACTIVE_SUBTOPIC_LIMIT);
-  }, [activeTopicsNowMs, posts, threadSearchIndexes, users, visibleSubTopics]);
+  }, [
+    activeTopicsNowMs,
+    i18n.language,
+    posts,
+    t,
+    threadSearchIndexes,
+    users,
+    visibleSubTopics,
+  ]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -840,8 +870,8 @@ const Home = ({ searchQuery }: HomeProps) => {
 
     setManagementFeedback(
       result.ok
-        ? 'Main topic order updated.'
-        : (result.error ?? 'Unable to reorder main topics.')
+        ? t('topic.orderUpdated')
+        : (result.error ?? t('topic.reorderFailed'))
     );
     handleTopicDragEnd();
   };
@@ -853,16 +883,16 @@ const Home = ({ searchQuery }: HomeProps) => {
   const handleShareTopic = async (topic: Topic) => {
     const copied = await copyToClipboard(buildTopicShareLink(topic.id));
     if (!copied) {
-      setManagementFeedback('Unable to copy main topic link to clipboard.');
+      setManagementFeedback(t('topic.linkCopyFailed'));
       return;
     }
 
     setCopiedTopicId(topic.id);
-    setManagementFeedback('Main topic link copied to clipboard.');
+    setManagementFeedback(t('topic.linkCopied'));
     window.setTimeout(() => {
       setCopiedTopicId((current) => (current === topic.id ? null : current));
       setManagementFeedback((current) =>
-        current === 'Main topic link copied to clipboard.' ? null : current
+        current === t('topic.linkCopied') ? null : current
       );
     }, 2400);
   };
@@ -879,7 +909,7 @@ const Home = ({ searchQuery }: HomeProps) => {
     });
 
     if (!result.ok) {
-      setTopicFeedback(result.error ?? 'Unable to create main topic.');
+      setTopicFeedback(result.error ?? t('topic.createFailed'));
       return;
     }
 
@@ -888,7 +918,7 @@ const Home = ({ searchQuery }: HomeProps) => {
     setTopicStatus('open');
     setTopicAccess('everyone');
     setTopicAllowedAddresses('');
-    setTopicFeedback('Main topic created successfully.');
+    setTopicFeedback(t('topic.created'));
   };
 
   const handleOpenTopicManager = (topic: Topic) => {
@@ -921,8 +951,8 @@ const Home = ({ searchQuery }: HomeProps) => {
 
     setManagementFeedback(
       result.ok
-        ? 'Main topic settings updated.'
-        : (result.error ?? 'Unable to update main topic.')
+        ? t('topic.settingsUpdated')
+        : (result.error ?? t('topic.updateFailed'))
     );
   };
 
@@ -935,15 +965,15 @@ const Home = ({ searchQuery }: HomeProps) => {
     });
 
     if (!result.ok) {
-      setRoleFeedback(result.error ?? 'Unable to update forum role.');
+      setRoleFeedback(result.error ?? t('moderation.roleUpdateFailed'));
       return;
     }
 
     setRoleAddress('');
     setRoleFeedback(
       result.partial
-        ? (result.error ?? 'Role operation published; refresh is pending.')
-        : `${roleLabelByType[roleType]} role updated successfully.`
+        ? (result.error ?? t('moderation.rolePending'))
+        : t('moderation.roleUpdated', { role: t(roleLabelKeyByType[roleType]) })
     );
   };
 
@@ -952,9 +982,9 @@ const Home = ({ searchQuery }: HomeProps) => {
     setRoleFeedback(
       result.ok
         ? result.partial
-          ? (result.error ?? 'Role revocation published; refresh is pending.')
-          : 'Role removed successfully.'
-        : (result.error ?? 'Unable to remove forum role.')
+          ? (result.error ?? t('moderation.rolePending'))
+          : t('moderation.roleRemoved')
+        : (result.error ?? t('moderation.roleRemoveFailed'))
     );
   };
 
@@ -998,7 +1028,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                 {loadingStage}
               </p>
               <p className="text-ui-muted text-xs mt-1">
-                Please wait while we load the forum...
+                {t('status.waitForum')}
               </p>
             </div>
           </div>
@@ -1042,7 +1072,7 @@ const Home = ({ searchQuery }: HomeProps) => {
             </div>
             <div>
               <p className="text-ui-strong text-sm font-medium">
-                Checking QDN resources...
+                {t('status.checkingQdn')}
               </p>
               <p className="text-ui-muted text-xs mt-1">{loadingStage}</p>
             </div>
@@ -1078,11 +1108,10 @@ const Home = ({ searchQuery }: HomeProps) => {
               </svg>
             </div>
             <h3 className="text-ui-strong text-lg font-semibold mb-2">
-              Unable to Load Forum Content
+              {t('status.forumLoadFailed')}
             </h3>
             <p className="text-ui-muted text-sm mb-4">
-              {loadError ||
-                'The forum data could not be loaded. This might be due to QDN sync delays or network issues.'}
+              {loadError || t('status.forumLoadFallback')}
             </p>
             <button
               type="button"
@@ -1112,7 +1141,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Retrying...
+                  {t('status.retrying')}
                 </>
               ) : (
                 <>
@@ -1129,14 +1158,11 @@ const Home = ({ searchQuery }: HomeProps) => {
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  Retry Loading
+                  {t('status.retryLoading')}
                 </>
               )}
             </button>
-            <p className="text-ui-muted text-xs mt-4">
-              If this issue persists, this node may still be syncing QDN
-              resources. Retry after a short wait.
-            </p>
+            <p className="text-ui-muted text-xs mt-4">{t('status.syncHelp')}</p>
           </div>
         </div>
       </div>
@@ -1152,8 +1178,8 @@ const Home = ({ searchQuery }: HomeProps) => {
         >
           {loadingStage}
           {loadStatus === 'cached'
-            ? ' Cached/index data is read-only and cannot grant authority.'
-            : ' Missing results are not treated as deleted.'}
+            ? ` ${t('status.cacheReadOnly')}`
+            : ` ${t('status.missingNotDeleted')}`}
         </div>
       ) : null}
       {hasActiveSearch && effectiveSearchAvailability !== 'current' ? (
@@ -1162,13 +1188,13 @@ const Home = ({ searchQuery }: HomeProps) => {
           className="forum-card border-amber-300 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/20 dark:text-amber-200"
         >
           {effectiveSearchAvailability === 'cached'
-            ? 'Search is using a validated recent cache. Cached results cannot grant authority.'
-            : 'Search discovery is partial. Results shown are validated, but more matching resources may exist.'}
+            ? t('search.cached')
+            : t('search.partial')}
         </div>
       ) : null}
       <section className="forum-card-accent p-5">
         <h2 className="text-brand-accent text-base font-semibold">
-          Active Topics
+          {t('topic.active')}
         </h2>
         {activeSubTopics.length > 0 ? (
           <ul className="mt-3 space-y-2">
@@ -1182,22 +1208,22 @@ const Home = ({ searchQuery }: HomeProps) => {
                   <p className="text-ui-strong text-sm font-semibold">
                     {subTopic.isPinned ? (
                       <span className="mr-2 inline-flex rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 align-middle">
-                        Pinned
+                        {t('thread.pinned')}
                       </span>
                     ) : null}
                     {subTopic.status === 'locked' ? (
                       <span className="mr-2 inline-flex rounded-md border border-rose-300 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 align-middle">
-                        Locked
+                        {t('common.locked')}
                       </span>
                     ) : null}
                     {subTopic.isPoll ? (
                       <span className="mr-2 inline-flex rounded-md border border-cyan-300 bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-800 align-middle">
-                        Poll / Voting
+                        {t('thread.poll')}
                       </span>
                     ) : null}
                     {subTopic.isSolved ? (
                       <span className="mr-2 inline-flex rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 align-middle">
-                        Solved
+                        {t('thread.solved')}
                       </span>
                     ) : null}
                     <HighlightedText
@@ -1206,35 +1232,36 @@ const Home = ({ searchQuery }: HomeProps) => {
                     />
                   </p>
                   <p className="text-ui-muted text-xs">
-                    Last post by {subTopic.lastPostAuthorName} •{' '}
-                    {subTopic.activeTimeLabel}
+                    {t('topic.lastPostBy', {
+                      name: subTopic.lastPostAuthorName,
+                      time: subTopic.activeTimeLabel,
+                    })}
                   </p>
                 </button>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-ui-muted mt-3 text-sm">
-            No active sub-topics available yet.
-          </p>
+          <p className="text-ui-muted mt-3 text-sm">{t('topic.noActive')}</p>
         )}
       </section>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-brand-primary text-lg font-semibold">
-            Main Topics
+            {t('topic.mainTopics')}
           </h2>
         </div>
         {hasActiveSearch ? (
           <p className="text-ui-muted text-sm">
-            Search results: {filteredTopics.length} main topics,{' '}
-            {matchedSubTopicCount} sub-topics, {matchedPostCount} posts.
+            {t('topic.searchResults', {
+              topics: filteredTopics.length,
+              threads: matchedSubTopicCount,
+              posts: matchedPostCount,
+            })}
           </p>
         ) : canReorderTopicsByDrag ? (
-          <p className="text-ui-muted text-sm">
-            Drag main topics to change their persistent display order.
-          </p>
+          <p className="text-ui-muted text-sm">{t('topic.reorderHelp')}</p>
         ) : null}
         {managementFeedback ? (
           <p
@@ -1284,12 +1311,14 @@ const Home = ({ searchQuery }: HomeProps) => {
                     />
                   </p>
                   <p className="text-ui-muted mt-2 text-xs">
-                    {topic.subTopicCount} sub-topics
+                    {t('topic.subTopicCount', { count: topic.subTopicCount })}
                   </p>
                   {hasActiveSearch ? (
                     <p className="text-ui-muted mt-1 text-xs">
-                      {topic.matchedSubTopics.length} matching sub-topics •{' '}
-                      {topic.matchedPostCount} matching posts
+                      {t('topic.matchingSubTopicCount', {
+                        threads: topic.matchedSubTopics.length,
+                        posts: topic.matchedPostCount,
+                      })}
                     </p>
                   ) : null}
                 </button>
@@ -1300,14 +1329,16 @@ const Home = ({ searchQuery }: HomeProps) => {
                     onClick={() => void handleShareTopic(topic)}
                     className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold transition active:scale-95"
                   >
-                    {copiedTopicId === topic.id ? 'Copied' : 'Share'}
+                    {copiedTopicId === topic.id
+                      ? t('common.copied')
+                      : t('common.share')}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleOpenTopic(topic.id)}
                     className="bg-brand-primary-solid rounded-md px-2 py-1 text-xs font-semibold text-white"
                   >
-                    Open
+                    {t('common.open')}
                   </button>
                   {isAdmin ? (
                     <button
@@ -1315,7 +1346,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                       onClick={() => handleOpenTopicManager(topic)}
                       className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
                     >
-                      Manage
+                      {t('common.manage')}
                     </button>
                   ) : null}
                 </div>
@@ -1324,7 +1355,7 @@ const Home = ({ searchQuery }: HomeProps) => {
               {hasActiveSearch && topic.matchedSubTopics.length > 0 ? (
                 <div className="mt-4 space-y-2">
                   <p className="text-ui-muted text-xs font-semibold">
-                    Matching Sub-Topics
+                    {t('topic.matchingSubTopics')}
                   </p>
                   <ul className="space-y-2">
                     {topic.matchedSubTopics.map((subTopic) => (
@@ -1349,11 +1380,9 @@ const Home = ({ searchQuery }: HomeProps) => {
                           {(postMatchCountBySubTopicId[subTopic.id] ?? 0) >
                           0 ? (
                             <p className="text-ui-muted mt-1 text-[11px] font-semibold">
-                              {postMatchCountBySubTopicId[subTopic.id]} matching
-                              post
-                              {postMatchCountBySubTopicId[subTopic.id] === 1
-                                ? ''
-                                : 's'}
+                              {t('topic.matchingPostCount', {
+                                count: postMatchCountBySubTopicId[subTopic.id],
+                              })}
                             </p>
                           ) : null}
                         </button>
@@ -1370,12 +1399,12 @@ const Home = ({ searchQuery }: HomeProps) => {
                 onSubmit={handleSaveTopicManager}
               >
                 <h3 className="text-ui-strong text-sm font-semibold">
-                  Manage Main Topic
+                  {t('topic.manage')}
                 </h3>
                 <input
                   value={managedTopicTitle}
                   onChange={(event) => setManagedTopicTitle(event.target.value)}
-                  placeholder="Main topic title"
+                  placeholder={t('topic.title')}
                   className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                 />
                 <textarea
@@ -1383,7 +1412,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                   onChange={(event) =>
                     setManagedTopicDescription(event.target.value)
                   }
-                  placeholder="Main topic description"
+                  placeholder={t('topic.description')}
                   maxLength={TOPIC_DESCRIPTION_MAX_LENGTH}
                   className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                 />
@@ -1400,8 +1429,8 @@ const Home = ({ searchQuery }: HomeProps) => {
                   }
                   className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                 >
-                  <option value="open">Open</option>
-                  <option value="locked">Locked</option>
+                  <option value="open">{t('common.open')}</option>
+                  <option value="locked">{t('common.locked')}</option>
                 </select>
                 <select
                   value={managedTopicVisibility}
@@ -1412,8 +1441,8 @@ const Home = ({ searchQuery }: HomeProps) => {
                   }
                   className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                 >
-                  <option value="visible">Visible</option>
-                  <option value="hidden">Hidden</option>
+                  <option value="visible">{t('common.visible')}</option>
+                  <option value="hidden">{t('common.hidden')}</option>
                 </select>
                 <select
                   value={managedTopicAccess}
@@ -1424,7 +1453,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                 >
                   {topicAccessOptions.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </option>
                   ))}
                 </select>
@@ -1441,7 +1470,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                     onChange={(event) =>
                       setManagedTopicAllowedAddresses(event.target.value)
                     }
-                    placeholder="Comma-separated wallet addresses"
+                    placeholder={t('moderation.walletAddresses')}
                     className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                   />
                 ) : null}
@@ -1450,14 +1479,14 @@ const Home = ({ searchQuery }: HomeProps) => {
                     type="submit"
                     className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-white"
                   >
-                    Save Topic Settings
+                    {t('topic.saveSettings')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setManagedTopicId(null)}
                     className="bg-surface-card text-ui-muted rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold"
                   >
-                    Close
+                    {t('common.close')}
                   </button>
                 </div>
               </form>
@@ -1467,14 +1496,12 @@ const Home = ({ searchQuery }: HomeProps) => {
         {filteredTopics.length === 0 ? (
           <div className="forum-card p-5">
             <p className="text-ui-strong text-sm font-semibold">
-              {hasActiveSearch
-                ? 'No matching results found'
-                : 'No main topics found'}
+              {hasActiveSearch ? t('search.noResults') : t('topic.none')}
             </p>
             <p className="text-ui-muted mt-1 text-sm">
               {hasActiveSearch
-                ? 'Try a different search query.'
-                : 'Create the first main topic to start forum structure.'}
+                ? t('search.tryDifferent')
+                : t('topic.createFirst')}
             </p>
           </div>
         ) : null}
@@ -1483,17 +1510,19 @@ const Home = ({ searchQuery }: HomeProps) => {
       {canManageRoles ? (
         <section className="space-y-3">
           <h2 className="text-brand-primary text-lg font-semibold">
-            Forum Roles
+            {t('moderation.forumRoles')}
           </h2>
 
           <article className="forum-card-primary p-4">
             <div className="space-y-1">
               <p className="text-ui-strong text-sm font-semibold">
-                Primary SysOp
+                {t('moderation.primarySysOp')}
               </p>
               {renderRoleIdentity(roleRegistry.primarySysOpAddress)}
               <p className="text-ui-muted text-xs break-all">
-                Authenticated as: {authenticatedAddress ?? 'No wallet detected'}
+                {t('access.authenticatedAs', {
+                  address: authenticatedAddress ?? t('access.noWallet'),
+                })}
               </p>
             </div>
 
@@ -1501,7 +1530,7 @@ const Home = ({ searchQuery }: HomeProps) => {
               <input
                 value={roleAddress}
                 onChange={(event) => setRoleAddress(event.target.value)}
-                placeholder="Wallet address"
+                placeholder={t('moderation.walletAddress')}
                 className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               />
               <select
@@ -1523,14 +1552,14 @@ const Home = ({ searchQuery }: HomeProps) => {
                 type="submit"
                 className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-slate-900"
               >
-                Save Role
+                {t('moderation.saveRole')}
               </button>
             </form>
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <div>
                 <h3 className="text-ui-strong text-sm font-semibold">
-                  Super Admins
+                  {t('moderation.superAdmins')}
                 </h3>
                 <ul className="mt-2 space-y-2">
                   {roleRegistry.sysOps.map((address) => (
@@ -1545,7 +1574,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                           onClick={() => handleRemoveRole(address)}
                           className="text-brand-accent-strong text-xs font-semibold"
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       ) : null}
                     </li>
@@ -1554,7 +1583,9 @@ const Home = ({ searchQuery }: HomeProps) => {
               </div>
 
               <div>
-                <h3 className="text-ui-strong text-sm font-semibold">Admins</h3>
+                <h3 className="text-ui-strong text-sm font-semibold">
+                  {t('moderation.admins')}
+                </h3>
                 <ul className="mt-2 space-y-2">
                   {roleRegistry.admins.map((address) => (
                     <li
@@ -1568,7 +1599,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                         disabled={currentUser.role === 'Admin'}
                         className="text-brand-accent-strong text-xs font-semibold"
                       >
-                        Remove
+                        {t('common.remove')}
                       </button>
                     </li>
                   ))}
@@ -1577,7 +1608,7 @@ const Home = ({ searchQuery }: HomeProps) => {
 
               <div>
                 <h3 className="text-ui-strong text-sm font-semibold">
-                  Moderators
+                  {t('moderation.moderators')}
                 </h3>
                 <ul className="mt-2 space-y-2">
                   {roleRegistry.moderators.map((address) => (
@@ -1591,7 +1622,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                         onClick={() => handleRemoveRole(address)}
                         className="text-brand-accent-strong text-xs font-semibold"
                       >
-                        Remove
+                        {t('common.remove')}
                       </button>
                     </li>
                   ))}
@@ -1609,7 +1640,7 @@ const Home = ({ searchQuery }: HomeProps) => {
       {canCreateMainTopics ? (
         <section className="space-y-3 pt-2">
           <h2 className="text-brand-primary text-lg font-semibold">
-            Create Content
+            {t('topic.createContent')}
           </h2>
 
           <article className="forum-card-primary overflow-hidden">
@@ -1620,14 +1651,14 @@ const Home = ({ searchQuery }: HomeProps) => {
             >
               <div>
                 <h3 className="text-brand-primary text-sm font-semibold">
-                  Create Main Topic
+                  {t('topic.create')}
                 </h3>
                 <p className="text-ui-muted mt-0.5 text-xs">
-                  Admin only main-topic creation.
+                  {t('topic.adminCreateHelp')}
                 </p>
               </div>
               <span className="text-ui-muted text-xs font-semibold">
-                {openCreatePanel ? 'Close' : 'Open'}
+                {openCreatePanel ? t('common.close') : t('common.open')}
               </span>
             </button>
 
@@ -1637,7 +1668,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                   <input
                     value={topicTitle}
                     onChange={(event) => setTopicTitle(event.target.value)}
-                    placeholder="Topic title"
+                    placeholder={t('topic.titleShort')}
                     className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                   />
                   <textarea
@@ -1645,7 +1676,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                     onChange={(event) =>
                       setTopicDescription(event.target.value)
                     }
-                    placeholder="Topic description"
+                    placeholder={t('topic.descriptionShort')}
                     maxLength={TOPIC_DESCRIPTION_MAX_LENGTH}
                     className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                   />
@@ -1660,8 +1691,8 @@ const Home = ({ searchQuery }: HomeProps) => {
                     }
                     className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                   >
-                    <option value="open">Open main topic</option>
-                    <option value="locked">Locked main topic</option>
+                    <option value="open">{t('topic.openTopic')}</option>
+                    <option value="locked">{t('topic.lockedTopic')}</option>
                   </select>
                   <select
                     value={topicAccess}
@@ -1672,16 +1703,16 @@ const Home = ({ searchQuery }: HomeProps) => {
                   >
                     {topicAccessOptions.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.labelKey)}
                       </option>
                     ))}
                   </select>
                   <p className="text-ui-muted text-xs">
-                    {
+                    {t(
                       topicAccessOptions.find(
                         (option) => option.value === topicAccess
-                      )?.helper
-                    }
+                      )?.helperKey ?? 'moderation.accessAnyoneHelp'
+                    )}
                   </p>
                   <AccessDisclosureNotice
                     kind="topic-creation-policy"
@@ -1693,7 +1724,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                       onChange={(event) =>
                         setTopicAllowedAddresses(event.target.value)
                       }
-                      placeholder="Comma-separated wallet addresses"
+                      placeholder={t('moderation.walletAddresses')}
                       className="bg-surface-card text-ui-strong min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                     />
                   ) : null}
@@ -1701,7 +1732,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                     type="submit"
                     className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-white"
                   >
-                    Create Topic
+                    {t('topic.create')}
                   </button>
                 </form>
 

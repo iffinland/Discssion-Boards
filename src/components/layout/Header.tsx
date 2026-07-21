@@ -5,21 +5,16 @@ import {
   useState,
   type KeyboardEvent,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import UserRoleBadge from '../common/UserRoleBadge';
+import { useDisplaySettings } from '../../context/displaySettingsContextValue';
 import { useForumActions, useForumData } from '../../hooks/useForumData';
 import {
   followName,
   FORUM_FOLLOW_NAME,
   isNameFollowed,
 } from '../../services/qortium/followService';
-
-type ThemeMode = 'light-cyan' | 'dark-cyan';
-
-type HeaderProps = {
-  themeMode: ThemeMode;
-  onToggleTheme: () => void;
-};
 
 const SunIcon = ({ active }: { active: boolean }) => (
   <svg
@@ -88,7 +83,9 @@ const HelpIcon = () => (
   </svg>
 );
 
-const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
+const Header = () => {
+  const { t } = useTranslation();
+  const { theme } = useDisplaySettings();
   const { availableAuthNames, activeAuthName, currentUser } = useForumData();
   const { setCurrentUser } = useForumActions();
   const [isNameMenuOpen, setIsNameMenuOpen] = useState(false);
@@ -131,7 +128,7 @@ const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
         }
 
         setIsFollowed(false);
-        setFollowFeedback('Follow status unavailable.');
+        setFollowFeedback(t('header.followUnavailable'));
       })
       .finally(() => {
         if (active) {
@@ -142,7 +139,7 @@ const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const closeIfOutside = (event: MouseEvent) => {
@@ -267,12 +264,12 @@ const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
       setIsFollowed(true);
       setFollowFeedback(
         result.alreadyFollowed
-          ? 'Already following forum data.'
-          : 'Following forum data.'
+          ? t('header.alreadyFollowing')
+          : t('header.followingForum')
       );
     } catch (error) {
       setFollowFeedback(
-        error instanceof Error ? error.message : 'Unable to follow forum data.'
+        error instanceof Error ? error.message : t('header.unableToFollow')
       );
     } finally {
       setIsFollowing(false);
@@ -281,32 +278,24 @@ const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
 
   return (
     <header className="bg-forum-header border-brand-primary sticky top-0 z-20 border-b backdrop-blur-sm">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <h1 className="text-xl tracking-tight">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <h1 className="min-w-0 text-xl tracking-tight">
           <span className="text-brand-primary font-bold">Qortium</span>{' '}
           <span className="text-ui-strong font-semibold">Discussion</span>{' '}
           <span className="text-brand-accent font-bold">Boards</span>
         </h1>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            aria-label={
-              themeMode === 'light-cyan'
-                ? 'Switch to Dark theme'
-                : 'Switch to Light theme'
-            }
-            title={
-              themeMode === 'light-cyan'
-                ? 'Switch to Dark theme'
-                : 'Switch to Light theme'
-            }
+        <div className="flex flex-wrap items-center gap-3">
+          <span
             className="forum-pill-primary flex items-center gap-2 rounded-md px-3 py-2"
+            aria-label={
+              theme === 'dark' ? t('display.dark') : t('display.light')
+            }
+            title={t('display.inherited')}
           >
-            <SunIcon active={themeMode === 'light-cyan'} />
-            <MoonIcon active={themeMode === 'dark-cyan'} />
-          </button>
+            <SunIcon active={theme === 'light'} />
+            <MoonIcon active={theme === 'dark'} />
+          </span>
 
           <div
             className="forum-card border-brand-primary relative px-2 py-2"
@@ -324,7 +313,7 @@ const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
               }}
               onKeyDown={handleNameButtonKeyDown}
               disabled={!canOpenNameMenu}
-              aria-label="Open identity menu"
+              aria-label={t('header.openIdentityMenu')}
               aria-expanded={isNameMenuOpen}
               aria-haspopup="menu"
             >
@@ -334,7 +323,7 @@ const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
                   alt={
                     (activeAuthName ?? currentUser.displayName)
                       ? `${activeAuthName ?? currentUser.displayName} avatar`
-                      : 'User avatar'
+                      : t('header.userAvatar')
                   }
                   className="h-8 w-8 rounded-full object-cover ring-2 ring-cyan-100"
                   onError={() => setIsAvatarVisible(false)}
@@ -411,25 +400,23 @@ const Header = ({ themeMode, onToggleTheme }: HeaderProps) => {
               className="forum-pill-accent text-brand-accent-strong rounded-md px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isFollowChecking
-                ? 'Checking...'
+                ? t('header.checking')
                 : isFollowing
-                  ? 'Following...'
+                  ? t('header.followingPending')
                   : isFollowed
-                    ? 'Following'
-                    : 'Follow'}
+                    ? t('header.following')
+                    : t('header.follow')}
             </button>
             <span className="group relative inline-flex">
               <button
                 type="button"
                 className="text-ui-muted rounded-full border border-slate-200 bg-white p-1 transition hover:text-cyan-700"
-                aria-label="Why follow this forum?"
+                aria-label={t('header.whyFollow')}
               >
                 <HelpIcon />
               </button>
               <span className="pointer-events-none absolute right-0 top-[calc(100%+8px)] z-40 hidden w-72 rounded-md border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-700 shadow-lg group-hover:block group-focus-within:block">
-                Follow {FORUM_FOLLOW_NAME} to help your Qortium node download and
-                host this forum&apos;s QDN data. This improves availability and
-                helps other peers load the forum.
+                {t('header.followHelp', { name: FORUM_FOLLOW_NAME })}
               </span>
             </span>
             {followFeedback ? (

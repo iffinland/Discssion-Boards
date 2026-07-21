@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BrowserRouter,
   Navigate,
@@ -15,8 +16,6 @@ const Home = lazy(() => import('./pages/Home'));
 const TopicPage = lazy(() => import('./pages/TopicPage'));
 const ThreadPage = lazy(() => import('./pages/ThreadPage'));
 
-type ThemeMode = 'light-cyan' | 'dark-cyan';
-const THEME_STORAGE_KEY = 'forum-theme-mode';
 const qdnWindow = window as Window & { _qdnBase?: string };
 const routerBaseName = qdnWindow._qdnBase || '';
 
@@ -70,43 +69,19 @@ const InitialShareTargetRedirect = () => {
 };
 
 const App = () => {
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') {
-      return 'light-cyan';
-    }
-
-    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return storedTheme === 'dark-cyan' ? 'dark-cyan' : 'light-cyan';
-  });
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('theme-dark-cyan', themeMode === 'dark-cyan');
-    window.localStorage.setItem(THEME_STORAGE_KEY, themeMode);
-  }, [themeMode]);
-
-  const handleToggleTheme = () => {
-    setThemeMode((current) =>
-      current === 'light-cyan' ? 'dark-cyan' : 'light-cyan'
-    );
-  };
 
   return (
     <BrowserRouter basename={routerBaseName}>
       <LegacyHashRedirect />
       <InitialShareTargetRedirect />
-      <Layout
-        themeMode={themeMode}
-        onToggleTheme={handleToggleTheme}
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-      >
+      <Layout searchQuery={searchQuery} onSearchQueryChange={setSearchQuery}>
         <Suspense
           fallback={
             <div className="space-y-4">
               <div className="forum-card p-5">
-                <p className="text-ui-muted text-sm">Loading page...</p>
+                <p className="text-ui-muted text-sm">{t('app.loadingPage')}</p>
               </div>
             </div>
           }

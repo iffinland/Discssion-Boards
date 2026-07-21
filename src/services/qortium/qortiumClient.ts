@@ -1,3 +1,5 @@
+import i18n from '../../i18n/index.js';
+
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
 };
@@ -19,6 +21,7 @@ const READ_ACTIONS = new Set([
   'GET_NAME_DATA',
   'GET_LIST',
   'GET_BALANCE',
+  'GET_HOME_SETTINGS',
   'FETCH_NODE_API',
 ]);
 
@@ -273,18 +276,18 @@ const toBridgeError = (
   if (resolution.status === 'MALFORMED') {
     return new QortiumRequestError(
       'BRIDGE_MALFORMED',
-      'Qortium bridge is present but is not callable. Reload Qortium Home and try again.'
+      i18n.t('bridge.malformed')
     );
   }
   if (resolution.status === 'INACCESSIBLE') {
     return new QortiumRequestError(
       'BRIDGE_INACCESSIBLE',
-      'Qortium bridge could not be accessed from this frame. Open the app directly through Qortium Home.'
+      i18n.t('bridge.inaccessible')
     );
   }
   return new QortiumRequestError(
     'BRIDGE_UNAVAILABLE',
-    'Qortium bridge unavailable. Open this app through Qortium Home to use publishing and wallet actions.'
+    i18n.t('bridge.unavailable')
   );
 };
 

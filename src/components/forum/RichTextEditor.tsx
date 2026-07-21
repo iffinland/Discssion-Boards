@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   applyListFormat,
@@ -17,7 +18,6 @@ import {
   FORUM_ATTACHMENT_LIMITS,
   createAttachmentSignature,
   formatAttachmentSize,
-  getAttachmentHelperText,
 } from '../../services/forum/attachments';
 import type { PostAttachment } from '../../types';
 import {
@@ -57,11 +57,15 @@ const RichTextEditor = ({
   onUploadImage,
   onUploadAttachment,
   onUploadVideo,
-  placeholder = 'Write your reply...',
-  editorLabel = 'Reply editor',
-  submitLabel = 'Publish Post',
+  placeholder,
+  editorLabel,
+  submitLabel,
   canManageAttachments = true,
 }: RichTextEditorProps) => {
+  const { t } = useTranslation();
+  const effectivePlaceholder = placeholder ?? t('post.replyPlaceholder');
+  const effectiveEditorLabel = editorLabel ?? t('post.editorLabel');
+  const effectiveSubmitLabel = submitLabel ?? t('post.publish');
   const editorId = useId();
   const fileInputId = useId();
   const attachmentInputId = useId();
@@ -75,8 +79,8 @@ const RichTextEditor = ({
   const [videoInput, setVideoInput] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
   const [editorInfo, setEditorInfo] = useState<string | null>(null);
-  const isUploadingImage = editorInfo === 'Uploading image to QDN...';
-  const isUploadingVideo = editorInfo === 'Uploading video to QDN...';
+  const isUploadingImage = editorInfo === t('media.uploadingImage');
+  const isUploadingVideo = editorInfo === t('media.uploadingVideo');
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -222,14 +226,12 @@ const RichTextEditor = ({
         file.type as (typeof RICH_TEXT_IMAGE_LIMITS.acceptedTypes)[number]
       )
     ) {
-      setEditorInfo(
-        '[UNSUPPORTED_FILE_TYPE] Use a JPG, PNG, WEBP or GIF image.'
-      );
+      setEditorInfo(t('media.imageType'));
       return;
     }
 
     if (file.size > RICH_TEXT_IMAGE_LIMITS.maxBytes) {
-      setEditorInfo('[FILE_TOO_LARGE] Images are limited to 2 MiB.');
+      setEditorInfo(t('media.imageSize'));
       return;
     }
 
@@ -239,25 +241,27 @@ const RichTextEditor = ({
         loaded.width > RICH_TEXT_IMAGE_LIMITS.maxWidth ||
         loaded.height > RICH_TEXT_IMAGE_LIMITS.maxHeight
       ) {
-        setEditorInfo('Image dimensions exceed 1920x1080 limit.');
+        setEditorInfo(t('media.imageDimensions'));
         return;
       }
 
       if (onUploadImage) {
-        setEditorInfo('Uploading image to QDN...');
+        setEditorInfo(t('media.uploadingImage'));
         const imageTag = await onUploadImage(file);
         insertRawAtCursor(imageTag);
       } else {
         insertImageTag(loaded.dataUrl);
       }
       setEditorInfo(
-        `Image inserted as a clickable thumbnail (${loaded.width}x${loaded.height}, ${(file.size / (1024 * 1024)).toFixed(2)} MB).`
+        t('media.imageInserted', {
+          width: loaded.width,
+          height: loaded.height,
+          size: (file.size / (1024 * 1024)).toFixed(2),
+        })
       );
     } catch (error) {
       setEditorInfo(
-        error instanceof Error
-          ? error.message
-          : 'Unable to insert selected image.'
+        error instanceof Error ? error.message : t('media.insertImageFailed')
       );
     }
   };
@@ -276,18 +280,22 @@ const RichTextEditor = ({
       attachments.length + selectedFiles.length >
       FORUM_ATTACHMENT_LIMITS.maxFiles
     ) {
-      setEditorInfo('Too many attachments. Maximum allowed is 5 files.');
+      setEditorInfo(
+        t('attachment.tooMany', { count: FORUM_ATTACHMENT_LIMITS.maxFiles })
+      );
       return;
     }
 
     try {
-      setEditorInfo('Uploading attachments to QDN...');
+      setEditorInfo(t('attachment.uploading'));
       const nextAttachments = [...attachments];
 
       for (const file of selectedFiles) {
         if (file.size > QDN_INLINE_FILE_MAX_BYTES) {
           setEditorInfo(
-            `Large attachment selected (${(file.size / (1024 * 1024)).toFixed(2)} MiB). Qortium Home will ask you to choose the same file again for memory-safe publication.`
+            t('attachment.large', {
+              size: (file.size / (1024 * 1024)).toFixed(2),
+            })
           );
         }
         const uploaded = await onUploadAttachment(file);
@@ -305,14 +313,10 @@ const RichTextEditor = ({
       }
 
       onAttachmentsChange(nextAttachments);
-      setEditorInfo(
-        `${selectedFiles.length} attachment${selectedFiles.length === 1 ? '' : 's'} added.`
-      );
+      setEditorInfo(t('attachment.added', { count: selectedFiles.length }));
     } catch (error) {
       setEditorInfo(
-        error instanceof Error
-          ? error.message
-          : 'Unable to upload selected attachment.'
+        error instanceof Error ? error.message : t('attachment.uploadFailed')
       );
     }
   };
@@ -326,9 +330,7 @@ const RichTextEditor = ({
   const handleInsertVideo = () => {
     const reference = parseForumVideoInput(videoInput, videoTitle);
     if (!reference) {
-      setEditorInfo(
-        'Paste a valid qdn://VIDEO, /arbitrary/VIDEO, qdn://use-embed/VIDEO, or Q-Tube video link.'
-      );
+      setEditorInfo(t('media.videoReferenceHelp'));
       return;
     }
 
@@ -336,9 +338,7 @@ const RichTextEditor = ({
     setVideoInput('');
     setVideoTitle('');
     setIsVideoModalOpen(false);
-    setEditorInfo(
-      'Video placeholder inserted. The video will load only when opened.'
-    );
+    setEditorInfo(t('media.videoInserted'));
   };
 
   const handleVideoFileSelected = async (
@@ -357,20 +357,22 @@ const RichTextEditor = ({
         file.type as (typeof VIDEO_UPLOAD_LIMITS.acceptedTypes)[number]
       )
     ) {
-      setEditorInfo('[UNSUPPORTED_FILE_TYPE] Use an MP4, WEBM or OGG video.');
+      setEditorInfo(t('media.videoType'));
       return;
     }
 
     if (file.size > VIDEO_UPLOAD_LIMITS.maxBytes) {
-      setEditorInfo('[FILE_TOO_LARGE] Videos are limited to 100 MiB.');
+      setEditorInfo(t('media.videoSize'));
       return;
     }
 
     try {
       setEditorInfo(
         file.size > QDN_INLINE_FILE_MAX_BYTES
-          ? `Large video selected (${(file.size / (1024 * 1024)).toFixed(2)} MiB). Qortium Home will ask you to choose the same file again for memory-safe publication.`
-          : 'Uploading video to QDN...'
+          ? t('media.largeVideo', {
+              size: (file.size / (1024 * 1024)).toFixed(2),
+            })
+          : t('media.uploadingVideo')
       );
       const videoTag = await onUploadVideo(file, videoTitle);
       insertRawAtCursor(videoTag);
@@ -378,13 +380,13 @@ const RichTextEditor = ({
       setVideoTitle('');
       setIsVideoModalOpen(false);
       setEditorInfo(
-        `Video placeholder inserted (${(file.size / (1024 * 1024)).toFixed(2)} MB). The video will load only when opened.`
+        t('media.insertedWithSize', {
+          size: (file.size / (1024 * 1024)).toFixed(2),
+        })
       );
     } catch (error) {
       setEditorInfo(
-        error instanceof Error
-          ? error.message
-          : 'Unable to upload selected video.'
+        error instanceof Error ? error.message : t('media.uploadVideoFailed')
       );
     }
   };
@@ -412,64 +414,64 @@ const RichTextEditor = ({
             onClick={() => handleFormat('inlineCode')}
             className="forum-pill-primary text-brand-primary-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Inline Code
+            {t('editor.format.inlineCode')}
           </button>
           <button
             type="button"
             onClick={() => handleFormat('bold')}
             className="forum-pill-primary text-brand-primary-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Bold
+            {t('editor.format.bold')}
           </button>
           <button
             type="button"
             onClick={() => handleFormat('italic')}
             className="forum-pill-primary text-brand-primary-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Italic
+            {t('editor.format.italic')}
           </button>
           <button
             type="button"
             onClick={() => handleFormat('underline')}
             className="forum-pill-primary text-brand-primary-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Underline
+            {t('editor.format.underline')}
           </button>
           <button
             type="button"
             onClick={() => handleFormat('quote')}
             className="forum-pill-primary text-brand-primary-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Quote
+            {t('editor.format.quote')}
           </button>
           <button
             type="button"
             onClick={() => handleFormat('unorderedList')}
             className="forum-pill-primary text-brand-primary-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Bullet List
+            {t('editor.format.unorderedList')}
           </button>
           <button
             type="button"
             onClick={() => handleFormat('orderedList')}
             className="forum-pill-primary text-brand-primary-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Numbered List
+            {t('editor.format.orderedList')}
           </button>
           <button
             type="button"
             onClick={() => setIsToolsModalOpen(true)}
             className="forum-pill-accent text-brand-accent-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            More Tools
+            {t('editor.moreTools')}
           </button>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {[
-            { label: 'Black', value: '#111827' },
-            { label: 'Blue', value: '#2563EB' },
-            { label: 'Green', value: '#16A34A' },
-            { label: 'Red', value: '#DC2626' },
+            { key: 'black', value: '#111827' },
+            { key: 'blue', value: '#2563EB' },
+            { key: 'green', value: '#16A34A' },
+            { key: 'red', value: '#DC2626' },
           ].map((color) => (
             <button
               key={color.value}
@@ -482,7 +484,7 @@ const RichTextEditor = ({
                 style={{ backgroundColor: color.value }}
                 aria-hidden="true"
               />
-              {color.label}
+              {t(`editor.colors.${color.key}`)}
             </button>
           ))}
           <input
@@ -498,14 +500,14 @@ const RichTextEditor = ({
             onClick={() => imageInputRef.current?.click()}
             className="forum-pill-accent text-brand-accent-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Add Image
+            {t('media.addImage')}
           </button>
           <button
             type="button"
             onClick={() => setIsVideoModalOpen(true)}
             className="forum-pill-accent text-brand-accent-strong rounded-md px-2 py-1 text-xs font-semibold"
           >
-            Add Video
+            {t('media.addVideo')}
           </button>
           {canManageAttachments ? (
             <>
@@ -523,17 +525,23 @@ const RichTextEditor = ({
                 onClick={() => attachmentInputRef.current?.click()}
                 className="forum-pill-accent text-brand-accent-strong rounded-md px-2 py-1 text-xs font-semibold"
               >
-                Add Attachment
+                {t('attachment.add')}
               </button>
             </>
           ) : null}
         </div>
-        <p className="text-ui-muted mt-2 text-xs">
-          Image limits: max 1920x1080, max 2 MB, types JPG/PNG/WEBP/GIF.
-        </p>
+        <p className="text-ui-muted mt-2 text-xs">{t('media.imageLimits')}</p>
         {canManageAttachments ? (
           <p className="text-ui-muted mt-1 text-xs">
-            {getAttachmentHelperText()}
+            {t('attachment.limits', {
+              count: FORUM_ATTACHMENT_LIMITS.maxFiles,
+              textSize: formatAttachmentSize(
+                FORUM_ATTACHMENT_LIMITS.maxTextBytes
+              ),
+              zipSize: formatAttachmentSize(
+                FORUM_ATTACHMENT_LIMITS.maxZipBytes
+              ),
+            })}
           </p>
         ) : null}
       </div>
@@ -553,20 +561,22 @@ const RichTextEditor = ({
       ) : null}
 
       <label className="sr-only" htmlFor={editorId}>
-        {editorLabel}
+        {effectiveEditorLabel}
       </label>
       <textarea
         ref={textareaRef}
         id={editorId}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={effectivePlaceholder}
         className="bg-surface-card text-ui-strong min-h-28 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-cyan-300"
       />
 
       {canManageAttachments && attachments.length > 0 ? (
         <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <p className="text-ui-strong text-xs font-semibold">Attachments</p>
+          <p className="text-ui-strong text-xs font-semibold">
+            {t('attachment.heading')}
+          </p>
           <div className="mt-2 space-y-2">
             {attachments.map((attachment) => (
               <div
@@ -587,7 +597,7 @@ const RichTextEditor = ({
                   onClick={() => removeAttachment(attachment.id)}
                   className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600"
                 >
-                  Remove
+                  {t('common.remove')}
                 </button>
               </div>
             ))}
@@ -596,15 +606,12 @@ const RichTextEditor = ({
       ) : null}
 
       <div className="mt-3 flex items-center justify-between">
-        <p className="text-ui-muted text-xs">
-          Supported tags: [h2], [h3], [icode], [b], [i], [u], [s], [quote],
-          [code], [ul], [ol], [color], [img], [videoqdn]
-        </p>
+        <p className="text-ui-muted text-xs">{t('editor.supportedTags')}</p>
         <button
           type="submit"
           className="bg-brand-primary-solid rounded-md px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-cyan-600"
         >
-          {submitLabel}
+          {effectiveSubmitLabel}
         </button>
       </div>
 
@@ -617,14 +624,14 @@ const RichTextEditor = ({
       <AppModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
-        ariaLabel="Add QDN video"
-        title="Add Video"
+        ariaLabel={t('media.addQdnVideo')}
+        title={t('media.addVideo')}
         maxWidthClassName="max-w-lg"
       >
         <div className="space-y-3">
           <label className="block">
             <span className="text-ui-strong text-xs font-semibold">
-              QVB URI or Q-Tube link
+              {t('media.qdnOrTube')}
             </span>
             <input
               value={videoInput}
@@ -635,19 +642,16 @@ const RichTextEditor = ({
           </label>
           <label className="block">
             <span className="text-ui-strong text-xs font-semibold">
-              Display title
+              {t('media.displayTitle')}
             </span>
             <input
               value={videoTitle}
               onChange={(event) => setVideoTitle(event.target.value)}
-              placeholder="Optional title shown in the post"
+              placeholder={t('media.optionalTitle')}
               className="bg-surface-card text-ui-strong mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
-          <p className="text-ui-muted text-xs">
-            The post will show a lightweight video placeholder. QDN video data
-            loads only after the placeholder is opened.
-          </p>
+          <p className="text-ui-muted text-xs">{t('media.placeholderHelp')}</p>
           {onUploadVideo ? (
             <div className="rounded-md border border-cyan-100 bg-cyan-50/60 p-3">
               <input
@@ -664,10 +668,12 @@ const RichTextEditor = ({
                 disabled={isUploadingVideo}
                 className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isUploadingVideo ? 'Uploading Video...' : 'Choose Video File'}
+                {isUploadingVideo
+                  ? t('media.uploadingVideo')
+                  : t('media.chooseVideo')}
               </button>
               <p className="text-ui-muted mt-2 text-xs">
-                MP4, WEBM or OGG. Maximum size 100 MB.
+                {t('media.videoLimits')}
               </p>
             </div>
           ) : null}
@@ -677,7 +683,7 @@ const RichTextEditor = ({
               onClick={() => setIsVideoModalOpen(false)}
               className="rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -685,7 +691,7 @@ const RichTextEditor = ({
               disabled={isUploadingVideo}
               className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-slate-900"
             >
-              Insert Video
+              {t('media.insertVideo')}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import AppModal from '../../../components/common/AppModal';
+import { useTranslation } from 'react-i18next';
 
 type QortTipModalProps = {
   isOpen: boolean;
@@ -31,19 +32,22 @@ const QortTipModal = ({
   onAmountChange,
   onSend,
 }: QortTipModalProps) => {
+  const { t } = useTranslation();
   return (
     <AppModal
       isOpen={isOpen}
       onClose={onClose}
-      ariaLabel="Send tip"
-      title="Send Tip"
+      ariaLabel={t('tip.send')}
+      title={t('tip.send')}
       maxWidthClassName="max-w-md"
     >
       <div className="space-y-3">
         <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-          <p className="text-ui-muted text-xs">Wallet balance</p>
+          <p className="text-ui-muted text-xs">{t('tip.walletBalance')}</p>
           <p className="text-ui-strong mt-0.5 text-sm font-semibold">
-            {isBalanceLoading ? 'Loading...' : `${formattedBalance} QORT`}
+            {isBalanceLoading
+              ? t('common.loading')
+              : `${formattedBalance} QORT`}
           </p>
         </div>
 
@@ -53,16 +57,16 @@ const QortTipModal = ({
             resolveError ? 'border-rose-300' : 'border-slate-200',
           ].join(' ')}
         >
-          <p className="text-ui-muted text-xs">Recipient</p>
+          <p className="text-ui-muted text-xs">{t('tip.recipient')}</p>
           <p className="text-ui-strong mt-0.5 text-sm font-semibold">
             @{recipientName || 'unknown'}
           </p>
           <p className="text-ui-muted mt-0.5 text-xs break-all">
             {isResolvingRecipient
-              ? 'Resolving wallet address...'
+              ? t('tip.resolving')
               : resolveError
                 ? resolveError
-                : recipientAddress || 'Wallet address unavailable'}
+                : recipientAddress || t('tip.unavailable')}
           </p>
         </div>
 
@@ -71,7 +75,7 @@ const QortTipModal = ({
             className="text-ui-muted text-xs font-semibold"
             htmlFor="tip-amount-input"
           >
-            Amount (QORT)
+            {t('tip.amount')}
           </label>
           <input
             id="tip-amount-input"
@@ -87,8 +91,7 @@ const QortTipModal = ({
 
         {isRecoveryPending ? (
           <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            The QORT payment already succeeded. This retry verifies or
-            republishes only its reference and will not send another payment.
+            {t('tip.recoveryNotice')}
           </p>
         ) : null}
 
@@ -100,11 +103,11 @@ const QortTipModal = ({
         >
           {isSending
             ? isRecoveryPending
-              ? 'Retrying tip reference...'
-              : 'Sending...'
+              ? t('tip.retrying')
+              : t('tip.sending')
             : isRecoveryPending
-              ? 'RETRY TIP REFERENCE (NO PAYMENT)'
-              : 'SEND QORT'}
+              ? t('tip.retryReference')
+              : t('tip.sendQort')}
         </button>
       </div>
     </AppModal>

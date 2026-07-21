@@ -1,4 +1,5 @@
 import type { UserRole } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 type UserRoleBadgeProps = {
   role: UserRole;
@@ -12,15 +13,16 @@ const roleClasses: Record<UserRole, string> = {
   Moderator: 'border-amber-300 bg-amber-50 text-amber-700',
   Member: 'border-slate-300 bg-slate-50 text-slate-600',
 };
-const roleLabels: Record<UserRole, string> = {
-  SysOp: 'SysOp',
-  SuperAdmin: 'Super Admin',
-  Admin: 'Admin',
-  Moderator: 'Moderator',
-  Member: 'Member',
+const roleLabelKeys: Record<UserRole, string> = {
+  SysOp: 'moderation.sysOp',
+  SuperAdmin: 'moderation.superAdmin',
+  Admin: 'moderation.admin',
+  Moderator: 'moderation.moderator',
+  Member: 'common.member',
 };
 
 const UserRoleBadge = ({ role, className = '' }: UserRoleBadgeProps) => {
+  const { t } = useTranslation();
   return (
     <span
       className={[
@@ -31,7 +33,7 @@ const UserRoleBadge = ({ role, className = '' }: UserRoleBadgeProps) => {
         .filter(Boolean)
         .join(' ')}
     >
-      {roleLabels[role]}
+      {t(roleLabelKeys[role])}
     </span>
   );
 };

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   resolveForumVideoUrl,
@@ -18,6 +19,7 @@ const VideoPreviewModal = ({
   reference,
   onClose,
 }: VideoPreviewModalProps) => {
+  const { t } = useTranslation();
   const [videoUrl, setVideoUrl] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +47,7 @@ const VideoPreviewModal = ({
           setError(
             loadError instanceof Error
               ? loadError.message
-              : 'Unable to load QDN video.'
+              : t('media.videoLoadFailed')
           );
         }
       } finally {
@@ -60,20 +62,22 @@ const VideoPreviewModal = ({
     return () => {
       active = false;
     };
-  }, [isOpen, reference]);
+  }, [isOpen, reference, t]);
 
   return (
     <AppModal
       isOpen={isOpen}
       onClose={onClose}
-      ariaLabel="Video preview"
-      title={reference ? toVideoDisplayTitle(reference) : 'Video Preview'}
+      ariaLabel={t('media.videoPreviewLabel')}
+      title={
+        reference ? toVideoDisplayTitle(reference) : t('media.videoPreview')
+      }
       maxWidthClassName="max-w-3xl"
     >
       <div className="space-y-3">
         {isLoading ? (
           <div className="flex aspect-video items-center justify-center rounded-lg bg-slate-950 text-sm font-semibold text-slate-100">
-            Loading video from QDN...
+            {t('media.loadingVideo')}
           </div>
         ) : videoUrl ? (
           <video
@@ -84,7 +88,7 @@ const VideoPreviewModal = ({
           />
         ) : (
           <div className="flex aspect-video items-center justify-center rounded-lg bg-slate-950 text-sm font-semibold text-slate-100">
-            Video is not loaded.
+            {t('media.videoNotLoaded')}
           </div>
         )}
         {error ? (
