@@ -2065,65 +2065,35 @@ export const useForumCommands = ({
   );
 
   const likePost = useCallback(
-    (postId: string) => {
-      if (!isAuthenticated) {
-        return;
-      }
-
-      const actorId = authenticatedAddress?.trim()
-        ? `addr:${authenticatedAddress.trim().toLowerCase()}`
-        : currentUser.id?.trim()
-          ? `user:${currentUser.id.trim().toLowerCase()}`
-          : '';
-      if (!actorId) {
-        return;
-      }
-
-      setPosts((current) => {
-        const next = current.map((post) => {
-          if (post.id !== postId) {
-            return post;
-          }
-
-          if (post.likedByAddresses.includes(actorId)) {
-            return post;
-          }
-
-          return {
+    async (postId: string) => {
+      if (!isAuthenticated || !authenticatedAddress?.trim()) return;
+      const target = posts.find((post) => post.id === postId);
+      if (!target) return;
+      const actorId = `addr:${authenticatedAddress.trim().toLowerCase()}`;
+      const nextState = target.likedByAddresses.includes(actorId) ? 'inactive' : 'active';
+      try {
+        await forumQdnService.publishPostReaction(postId, nextState, currentUser.username, authenticatedAddress.trim());
+        const reactions = await forumQdnService.loadPostReactions(postId);
+        const activeActors = Object.values(reactions.actors).filter((reaction) => reaction.state === 'active');
+        setPosts((current) => {
+          const next = current.map((post) => post.id === postId ? {
             ...post,
-            updatedAt: new Date().toISOString(),
-            likes: post.likes + 1,
-            likedByAddresses: [...post.likedByAddresses, actorId],
-          };
+            likes: reactions.count,
+            likedByAddresses: activeActors.map((reaction) => `addr:${reaction.walletAddress.trim().toLowerCase()}`),
+          } : post);
+          threadPostCache.write(target.subTopicId, next.filter((post) => post.subTopicId === target.subTopicId));
+          return next;
         });
-
-        const target = next.find((post) => post.id === postId);
-        const original = current.find((post) => post.id === postId);
-        if (
-          target &&
-          original &&
-          (target.likes !== original.likes ||
-            target.likedByAddresses.length !== original.likedByAddresses.length)
-        ) {
-          threadPostCache.write(
-            target.subTopicId,
-            next.filter((post) => post.subTopicId === target.subTopicId)
-          );
-          recordRecentPostMutation(target);
-          void forumQdnService.publishPost(target, currentUser.username);
-          void syncThreadSearchIndex(target.subTopicId, next);
-        }
-
-        return next;
-      });
+      } catch {
+        // No optimistic state is committed; reload retains the last valid state.
+      }
     },
     [
       authenticatedAddress,
-      currentUser.id,
       currentUser.username,
       isAuthenticated,
+      posts,
       setPosts,
-      syncThreadSearchIndex,
     ]
   );
 

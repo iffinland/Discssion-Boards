@@ -11,7 +11,7 @@ export const normalizeName = (name: string) => name.trim().toLowerCase();
 
 export const validateMetadata = (metadata: QdbV2ResourceMetadata): ValidationResult => {
   if (!metadata.service || !metadata.publisherName || !metadata.identifier) return { ok: false, code: 'INVALID_METADATA', detail: 'missing trusted resource metadata' };
-  if (!Number.isSafeInteger(metadata.created) || !Number.isSafeInteger(metadata.updated) || metadata.created > metadata.updated) return { ok: false, code: 'INVALID_METADATA', detail: 'invalid Core ordering metadata' };
+  if (!Number.isSafeInteger(metadata.created) || (metadata.updated !== null && (!Number.isSafeInteger(metadata.updated) || metadata.created > metadata.updated))) return { ok: false, code: 'INVALID_METADATA', detail: 'invalid Core ordering metadata' };
   return { ok: true };
 };
 
@@ -31,4 +31,3 @@ export const validateEntityCreate = (metadata: QdbV2ResourceMetadata, envelope: 
 };
 
 export const legacyAuthorityAllowsOwnerMutation = (state: LegacyAuthorityState) => state === 'APPROVED';
-

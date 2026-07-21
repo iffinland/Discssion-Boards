@@ -193,6 +193,14 @@ const postsFromThreadIndex = (snapshot: ThreadSearchSnapshot): Post[] => {
   }));
 };
 
+const applyLoadedReactionFields = (posts: Post[], loaded: Post[]) => {
+  const reactionsByPost = new Map(loaded.map((post) => [post.id, { likes: post.likes, likedByAddresses: post.likedByAddresses }]));
+  return posts.map((post) => {
+    const reaction = reactionsByPost.get(post.id);
+    return reaction ? { ...post, ...reaction } : post;
+  });
+};
+
 export const ForumProvider = ({ children }: { children: ReactNode }) => {
   const {
     users,
@@ -300,12 +308,18 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       const cached = threadPostCache.read(normalizedId);
       const recentMutations = readRecentPostMutations(normalizedId);
       if (cached?.posts.length) {
+        let cachedPosts = cached.posts;
+        try {
+          cachedPosts = await forumQdnService.applyPostReactionState(cached.posts);
+        } catch {
+          // Preserve readable legacy cache when reaction discovery is unavailable.
+        }
         setPosts((current) => {
-          const merged = reconcilePostCollections(
+          const merged = applyLoadedReactionFields(reconcilePostCollections(
             current,
-            cached.posts,
+            cachedPosts,
             recentMutations
-          );
+          ), cachedPosts);
           threadPostCache.write(
             normalizedId,
             merged.filter((post) => post.subTopicId === normalizedId)
@@ -340,14 +354,16 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
 
         if (!loadedPosts) {
           loadedPosts = await forumQdnService.loadPostsBySubTopic(normalizedId);
+        } else {
+          loadedPosts = await forumQdnService.applyPostReactionState(loadedPosts);
         }
 
         setPosts((current) => {
-          const merged = reconcilePostCollections(
+          const merged = applyLoadedReactionFields(reconcilePostCollections(
             current,
             loadedPosts,
             recentMutations
-          );
+          ), loadedPosts);
           threadPostCache.write(
             normalizedId,
             merged.filter((post) => post.subTopicId === normalizedId)

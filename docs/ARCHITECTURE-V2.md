@@ -307,17 +307,35 @@ A reaction is independent actor state for a target Post:
 
 ```ts
 interface ReactionStateBody {
-  targetPostId: string;
-  reaction: "like" | null;
-  actorAddress: string;
+  targetId: string;
+  reaction: "like";
+  state: "active" | "inactive";
+  publisherName: string;
+  walletAddress: string;
 }
 ```
 
-The intended model is one current resource per `(target, actor, reaction
-family)`. Re-publishing it changes only that actor's state; `null` removes the
-reaction. Totals are derived from valid actor states. Exact actor-key hashing,
-resource replacement semantics, and legacy-count coexistence are finalized in
-Phase 2 after re-verification.
+The model is one mutable current resource per `(target, actor, reaction
+family)`. Re-publishing it changes only that actor's state; `inactive` removes
+the reaction from the derived count. The identifier uses the application V2
+reaction prefix plus 80-bit SHA-256 prefixes of the target and normalized
+publisher/wallet actor key, remaining below Core's verified 64-character
+limit. The loader recomputes this identifier and requires both the envelope
+record ID and trusted resource identifier to match it. Totals are derived from valid actor states ordered by trusted Core
+`updated`, latest signature, and identifier metadata. Legacy counters remain
+read-only display fallback only when no V2 actor state exists, preventing
+double-counting. Equal trusted ordering keys with conflicting active/inactive
+states quarantine that actor state rather than allowing discovery order to
+choose a winner. Reaction discovery failure does not make the Post unreadable:
+the compatibility view retains its legacy historical display values while the
+independent reaction authority remains unavailable.
+
+The currently verified public APIs expose current QDN name ownership but not a
+reliable historical name-to-wallet binding at publication time. Reaction state
+therefore requires a successful current publisher/name/wallet binding. A name
+transfer or unavailable binding makes the affected actor state unverifiable
+and excludes it from the authenticated count; current ownership is never used
+as proof of historical legacy reactions.
 
 ### 8.3 Moderation operation
 
@@ -706,7 +724,8 @@ At Core commit `c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf`:
 - resource `created` is the minimum transaction timestamp Core has reduced for
   that resource key;
 - resource `updated` is the latest resource transaction timestamp when it
-  differs from creation;
+  differs from creation and is nullable on an initial publication; reducers
+  use `created` as the effective trusted time when `updated` is absent;
 - `latestSignature` identifies the latest resource transaction, not the first;
 - every named arbitrary-data transaction is valid only when its signer owns
   the registered name at that transaction's validation point;
@@ -1255,12 +1274,11 @@ Each operation phase tests:
 
 ### Deferred to their workflow phases
 
-1. Reaction actor-state identifier and legacy like-count transition.
-2. Native poll UI result model and create-signature-to-poll-ID resolution.
-3. Moderation temporal role semantics and role operation/registry choice.
-4. Core confirmation threshold and exact validation fields for tips.
-5. Pagination safety budgets and index partition sizes.
-6. Encryption design, if true confidentiality is ever required.
-7. Large-file source-token behavior on every supported Home platform.
+1. Native poll UI result model and create-signature-to-poll-ID resolution.
+2. Moderation temporal role semantics and role operation/registry choice.
+3. Core confirmation threshold and exact validation fields for tips.
+4. Pagination safety budgets and index partition sizes.
+5. Encryption design, if true confidentiality is ever required.
+6. Large-file source-token behavior on every supported Home platform.
 
 Deferred decisions may not violate the invariants in section 3.

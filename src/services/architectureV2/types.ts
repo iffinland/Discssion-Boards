@@ -6,7 +6,7 @@ export type QdbV2ResourceMetadata = {
   publisherName: string;
   identifier: string;
   created: number;
-  updated: number;
+  updated: number | null;
   latestSignature?: string;
 };
 

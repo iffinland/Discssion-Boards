@@ -9,7 +9,7 @@ import {
   requestQortium,
   type QortiumResourceToPublish,
 } from '../qortium/qortiumClient';
-import { getUserAccount } from '../qortium/walletService';
+import { getUserAccount, resolveNameWalletAddress } from '../qortium/walletService';
 import { perfDebugTimeStart } from '../perf/perfDebug';
 import type { LegacyAuthorityState, QdbV2ResourceMetadata } from '../architectureV2/types';
 import { buildV2Envelope, buildV2OwnerEditEnvelope, isV2EntityEnvelope, reduceV2RuntimeRecords, toV2RuntimeRecord, type V2RuntimeRecord, type V2RuntimeState } from '../architectureV2/runtime.js';
@@ -17,6 +17,7 @@ import type { OwnerEdit } from '../architectureV2/types.js';
 import { applyOwnerEdit } from '../architectureV2/reducer.js';
 import type { V2EntityCreate } from '../architectureV2/types.js';
 import { validateEntityCreate } from '../architectureV2/validation.js';
+import { buildReactionEnvelope, buildReactionIdentifier, buildReactionTargetPrefix, loadReactionState, publishReactionEnvelope, resolveReactionDisplay, type ReactionState } from '../architectureV2/reactions.js';
 import type { IdentityValidator } from '../architectureV2/validation.js';
 
 const FORUM_SERVICE = import.meta.env.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
@@ -43,7 +44,7 @@ interface SearchQdnResourceResult {
   identifier: string;
   service?: string;
   created?: number;
-  updated?: number;
+  updated?: number | null;
   latestSignature?: string;
   status?: unknown;
 }
@@ -635,7 +636,9 @@ const toLegacyProvenance = (
   if (
     typeof resource.service !== 'string' ||
     typeof resource.created !== 'number' ||
-    typeof resource.updated !== 'number'
+    (resource.updated !== undefined &&
+      resource.updated !== null &&
+      typeof resource.updated !== 'number')
   ) {
     return undefined;
   }
@@ -645,7 +648,7 @@ const toLegacyProvenance = (
       publisherName: resource.name,
       identifier: resource.identifier,
       created: resource.created,
-      updated: resource.updated,
+      updated: resource.updated ?? null,
       latestSignature: resource.latestSignature,
     },
     availability: 'available',
@@ -788,6 +791,45 @@ const toPublishResource = (
 };
 
 export const forumQdnService = {
+  async publishPostReaction(targetId: string, state: ReactionState, publisherName: string, walletAddress: string) {
+    const resolvedWallet = await resolveNameWalletAddress(publisherName);
+    if (!resolvedWallet || resolvedWallet !== walletAddress) throw new Error('[IDENTITY_UNVERIFIED] reaction publisher wallet binding failed');
+    const identifier = await buildReactionIdentifier(FORUM_NAMESPACE, targetId, publisherName, walletAddress);
+    const envelope = buildReactionEnvelope({ operation: 'reaction', targetType: 'post', targetId, reaction: 'like', state, publisherName, walletAddress }, identifier);
+    assertIdentifierLength(identifier);
+    return publishReactionEnvelope(envelope, async (reactionEnvelope) => {
+      await requestQortium<unknown>({ action: 'PUBLISH_QDN_RESOURCE', service: FORUM_SERVICE, name: publisherName, identifier, tags: ['forum', 'qdb-v2', 'reaction', 'like'], data64: encodeBase64Json(reactionEnvelope) });
+    });
+  },
+
+  async loadPostReactions(targetId: string) {
+    const results = await searchByPrefix(await buildReactionTargetPrefix(FORUM_NAMESPACE, targetId));
+    return loadReactionState(targetId, results, {
+      fetchPayload: (resource) => fetchResource(resource.name ?? '', resource.identifier ?? ''),
+      resolveWalletAddress: resolveNameWalletAddress,
+      expectedIdentifier: (body) => buildReactionIdentifier(
+        FORUM_NAMESPACE,
+        body.targetId,
+        body.publisherName,
+        body.walletAddress
+      ),
+    });
+  },
+
+  async applyPostReactionState(posts: Post[]) {
+    return Promise.all(posts.map(async (post) => {
+      try {
+        const reactions = await this.loadPostReactions(post.id);
+        const display = resolveReactionDisplay(post.likes, post.likedByAddresses, reactions);
+        return { ...post, likes: display.count, likedByAddresses: display.actors };
+      } catch {
+        // Reaction discovery is non-authoritative. Preserve readable legacy
+        // display data when the independent reaction domain is unavailable.
+        return post;
+      }
+    }));
+  },
+
   async publishV2OwnerEdit(edit: OwnerEdit, ownerName: string, identity: IdentityValidator) {
     const current = await this.loadV2AuthorityState(identity);
     const target = current.authoritative.entities[edit.targetId];
@@ -836,14 +878,22 @@ export const forumQdnService = {
   },
 
   async loadV2AuthorityState(identity: IdentityValidator): Promise<V2RuntimeState> {
-    const results = await searchByPrefix(`${FORUM_IDENTIFIER_PREFIX}v2-`);
+    const results = (
+      await Promise.all(
+        ['topic-', 'thread-', 'post-', 'edit-'].map((family) =>
+          searchByPrefix(`${FORUM_IDENTIFIER_PREFIX}v2-${family}`)
+        )
+      )
+    ).flat();
     const records: V2RuntimeRecord[] = [];
     const diagnostics: V2RuntimeState['diagnostics'] = [];
     for (const item of results) {
       if (
         typeof item.service !== 'string' ||
         typeof item.created !== 'number' ||
-        typeof item.updated !== 'number'
+        (item.updated !== undefined &&
+          item.updated !== null &&
+          typeof item.updated !== 'number')
       ) {
         diagnostics.push({ code: 'MISSING_TRUSTED_METADATA', identifier: item.identifier });
         continue;
@@ -864,7 +914,7 @@ export const forumQdnService = {
         publisherName: item.name,
         identifier: item.identifier,
         created: item.created,
-        updated: item.updated,
+        updated: item.updated ?? null,
         latestSignature: item.latestSignature,
       };
       records.push(toV2RuntimeRecord(metadata, payload));
@@ -1013,7 +1063,7 @@ export const forumQdnService = {
       .map((payload) => payload.post)
       .filter((post) => post.subTopicId === subTopicId);
 
-    return posts;
+    return this.applyPostReactionState(posts);
   },
 
   async publishTopic(topic: Topic, ownerName?: string) {

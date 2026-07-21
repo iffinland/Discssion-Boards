@@ -16,7 +16,8 @@
     "restore:workspace": "bash scripts/restore-workspace.sh",
     "test:richtext": "tsc scripts/richText.sanitizer.test.ts --outDir .tmp-tests --module ES2020 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --skipLibCheck && node .tmp-tests/scripts/richText.sanitizer.test.js",
     "test:architecture-v2": "tsc scripts/architectureV2.foundation.test.ts --outDir .tmp-tests --module ES2020 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --skipLibCheck && node .tmp-tests/scripts/architectureV2.foundation.test.js",
-    "test:architecture-v2-runtime": "tsc scripts/architectureV2.runtime.test.ts --outDir .tmp-tests --module ES2020 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --skipLibCheck && node .tmp-tests/scripts/architectureV2.runtime.test.js"
+    "test:architecture-v2-runtime": "tsc scripts/architectureV2.runtime.test.ts --outDir .tmp-tests --module ES2020 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --skipLibCheck && node .tmp-tests/scripts/architectureV2.runtime.test.js",
+    "test:architecture-v2-reactions": "tsc scripts/architectureV2.reactions.test.ts --outDir .tmp-tests --module ES2022 --target ES2020 --moduleResolution bundler --lib ES2020,DOM --skipLibCheck && node .tmp-tests/scripts/architectureV2.reactions.test.js"
   },
   "dependencies": {
     "i18next": "^25.1.2",
