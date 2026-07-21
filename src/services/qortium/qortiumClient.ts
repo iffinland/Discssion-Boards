@@ -44,7 +44,6 @@ export type QortiumResourceToPublish = {
   tags?: string[];
   data64: string;
   filename?: string;
-  disableEncrypt?: boolean;
 };
 
 const parseRequestError = (response: unknown): string | null => {

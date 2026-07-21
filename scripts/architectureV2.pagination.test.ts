@@ -360,6 +360,38 @@ assert(
   'stale hint is diagnosed'
 );
 
+const restrictedLocatorEnvelope = buildV2IndexFragmentEnvelope(
+  'qdbm',
+  post,
+  'locator-only'
+);
+const restrictedLocator = reduceV2IndexFragments(
+  'qdbm',
+  [
+    {
+      envelope: restrictedLocatorEnvelope,
+      metadata: metadataFor(
+        restrictedLocatorEnvelope.recordId,
+        post.publisherName,
+        5,
+        'sig-restricted'
+      ),
+    },
+  ],
+  authority
+);
+assert(
+  restrictedLocator.entries[0]?.freshness === 'current' &&
+    Object.keys(restrictedLocatorEnvelope.body.hint).length === 0,
+  'restricted locator-only fragment stays current without a content hint'
+);
+assert(
+  !restrictedLocator.diagnostics.some(
+    (item) => item.code === 'STALE_INDEX_ENTRY'
+  ),
+  'intentional restricted hint omission is not diagnosed as stale'
+);
+
 const malformed = structuredClone(topicRecord.envelope) as unknown as Record<
   string,
   unknown

@@ -17,8 +17,11 @@ import {
   buildV2IndexFragmentPrefix,
   isV2IndexFragmentEnvelope,
   reduceV2IndexFragments,
+  searchValidatedV2Index,
   type ReducedV2Index,
+  type V2IndexFragmentDisclosure,
   type V2IndexFragmentRecord,
+  type V2IndexSearchAccessScope,
   type V2IndexTargetAvailability,
 } from '../architectureV2/indexes.js';
 import type { V2RuntimeState } from '../architectureV2/runtime.js';
@@ -794,9 +797,14 @@ export const forumSearchIndexService = {
 
   buildV2IndexFragmentPublishResource(
     entity: V2EntityCreate,
-    ownerName: string
+    ownerName: string,
+    disclosure: V2IndexFragmentDisclosure = 'content-hint'
   ) {
-    const envelope = buildV2IndexFragmentEnvelope(FORUM_NAMESPACE, entity);
+    const envelope = buildV2IndexFragmentEnvelope(
+      FORUM_NAMESPACE,
+      entity,
+      disclosure
+    );
     assertIdentifierLength(envelope.recordId);
     return {
       identifier: envelope.recordId,
@@ -814,11 +822,16 @@ export const forumSearchIndexService = {
     };
   },
 
-  async publishV2IndexFragment(entity: V2EntityCreate, ownerName?: string) {
+  async publishV2IndexFragment(
+    entity: V2EntityCreate,
+    ownerName?: string,
+    disclosure: V2IndexFragmentDisclosure = 'content-hint'
+  ) {
     const resolvedOwner = await resolveOwnerName(ownerName);
     const built = this.buildV2IndexFragmentPublishResource(
       entity,
-      resolvedOwner
+      resolvedOwner,
+      disclosure
     );
     await requestQortium<unknown>({
       action: 'PUBLISH_QDN_RESOURCE',
@@ -946,24 +959,13 @@ export const forumSearchIndexService = {
   async searchV2Index(
     query: string,
     authority: V2RuntimeState,
-    availability: Record<string, V2IndexTargetAvailability> = {}
+    availability: Record<string, V2IndexTargetAvailability>,
+    accessScope: V2IndexSearchAccessScope
   ): Promise<V2IndexLoadResult> {
     const loaded = await this.loadV2IndexFragments(authority, availability);
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return loaded;
     return {
       ...loaded,
-      entries: loaded.entries
-        .filter(({ entity }) => {
-          const text =
-            entity.entityType === 'post'
-              ? entity.content
-              : `${entity.title} ${entity.description}`;
-          return text.toLowerCase().includes(normalized);
-        })
-        .sort((left, right) =>
-          left.entity.entityId.localeCompare(right.entity.entityId)
-        ),
+      entries: searchValidatedV2Index(loaded.entries, query, accessScope),
     };
   },
 

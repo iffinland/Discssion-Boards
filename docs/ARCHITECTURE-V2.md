@@ -1,6 +1,7 @@
 # Discussion Boards Architecture V2
 
-Status: **Implemented through Phase 6 and delegated-role persistence issue #7**
+Status: **Implemented through Phase 6, delegated-role persistence issue #7,
+and restricted-access terminology issue #9**
 
 This document defines the Architecture V2 state, authority, validation, and
 migration model for Discussion Boards. It is the prerequisite deliverable for
@@ -984,8 +985,9 @@ Rules:
 - index publishers do not acquire entity authority;
 - indexes can be deleted and rebuilt from authority records;
 - index revision timestamps rank index snapshots only, never entity state;
-- indexes omit restricted-content excerpts unless the privacy design explicitly
-  permits public disclosure;
+- indexes omit restricted-content excerpts unless the restricted-access
+  disclosure policy explicitly permits a hint; omission minimizes duplicated
+  metadata but is not a confidentiality boundary;
 - partial or poisoned indexes fall back to authoritative discovery within
   safety budgets;
 - index partitions are deterministic and paginated in the scaling phase.
@@ -1020,6 +1022,12 @@ interface V2IndexFragmentEnvelope {
 Fragments contain only an authority locator, parent locator, and bounded search
 hint. They never contain reaction state, native-poll results, moderation, role
 state, tip totals, access authority, or a complete entity snapshot.
+For a Thread whose compatibility access classification is not `everyone`, and
+for Posts below that Thread, the publisher emits a locator-only fragment with
+an empty `hint`. The locator still exposes the entity type, entity ID, parent
+ID, authoritative publisher/resource identifier, and trusted Core resource
+metadata. It does not duplicate the Thread title or Post excerpt. Empty hints
+are a valid current disclosure mode, not stale-index evidence.
 
 The enabled namespaces are:
 
@@ -1063,11 +1071,13 @@ snapshot builders and do not serialize or prepare whole-index QDN resources.
 ### 19.2 Phase 6 search
 
 Search discovers the three fragment families through the shared paginator,
-strictly validates them against reduced V2 authority, and matches the accepted
-authoritative content rather than fragment hints. Results are ordered by entity
-ID after validation. Stale hints can locate authority but cannot create a match
-or replace content. Current moderation state excludes removed targets and
-hidden targets for non-moderators; unavailable moderation fails search closed.
+strictly validates them against reduced V2 authority, applies the current
+official-UI Thread access scope, and only then matches accepted authoritative
+content rather than fragment hints. A Thread outside that scope and every Post
+under it are excluded before content matching. Results are ordered by entity ID
+after validation. Stale hints can locate authority but cannot create a match or
+replace content. Current moderation state excludes removed targets and hidden
+targets for non-moderators; unavailable moderation fails search closed.
 Partial fragment or authority discovery produces partial search status and a UI
 warning. Legacy thread indexes remain readable as
 explicit index/cache evidence and as a last-known-good thread fallback; they do
@@ -1234,6 +1244,12 @@ Phase 6 defines:
 - `AUTHORITATIVE_RESOURCE_UNAVAILABLE`;
 - `PARTIAL_DISCOVERY`;
 - `NAMESPACE_BUDGET_PRESSURE`.
+
+Issue #9 additionally defines
+`RESTRICTED_ACCESS_CLASSIFICATION_UNAVAILABLE` when a V2 Topic/Thread has no
+readable compatibility record from which the still-unmigrated access policy
+can be recovered. The application uses an empty custom allowlist and partial
+state rather than defaulting that policy to public.
 
 Expected complete empty results do not emit warnings.
 
@@ -1878,22 +1894,162 @@ operation publication fails, no legacy moderation snapshot is published. A
 multi-target ordering command can similarly report that a prefix of independent
 operations committed and requires reload before retry.
 
-## 24. Restricted access and privacy
+## 24. Public storage, restricted UI access, and privacy
 
-Unencrypted QDN `DOCUMENT`, media, and index resources are public. Wallet
-allowlists and role checks provide **restricted UI access**, not
-confidentiality.
+### 24.1 Normative terminology
 
-Required terminology:
+Discussion Boards uses three distinct categories:
 
-- “restricted discussion” or “restricted UI access” for public QDN data hidden
-  by the official UI;
-- “encrypted/private” only when an approved encryption, key distribution,
-  revocation, and index-leakage design provides confidentiality.
+| Term                     | Meaning                                                                                                                                                 | Current support |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **Public**               | Content is published openly and unencrypted to a public QDN service and the official UI intentionally displays it without a Thread gate.                | yes             |
+| **Restricted UI access** | Content is still public and unencrypted on QDN, while the official UI limits listing, navigation, Post loading, and mutation by wallet or trusted role. | yes             |
+| **Encrypted/private**    | Content is encrypted before publication and authorized recipients obtain decryption keys through a reviewed lifecycle.                                  | no              |
 
-Indexes must not imply privacy and should minimize unnecessary restricted
-content hints. A modified client or direct Core request can still retrieve
-public QDN content.
+“Private”, “confidential”, and “members-only” must not describe the current
+Thread access modes. The preferred labels are “Restricted in this app” and
+“Restricted UI access”. The application may use “hidden” only for the Phase 4
+moderation visibility dimension and must explain that it means hidden from
+standard app views, not hidden from QDN.
+
+The invariant is:
+
+```text
+official-client access check != QDN confidentiality
+```
+
+Another client, a modified client, or a direct Core/QDN request can discover
+and fetch current Discussion Boards resources.
+
+### 24.2 Currently verified platform and application boundary
+
+Issue #9 re-verified Core commit
+`c000a0cd4a1ebaaab5aa753f3cd199f3302ff5bf` and Home commit
+`a41e5f9678d7f20d7fb77a223c45fddc0096632e` on 2026-07-21. These
+are traceability points, not frozen targets.
+
+Discussion Boards publishes forum entities, operations, indexes, and its
+configured attachments through public services; the default and checked-in
+configuration for forum JSON is `DOCUMENT`. Its publication payloads contain no
+encrypted-data envelope, recipient list, key material, or decryption protocol.
+
+Core currently defines `_PRIVATE` services, including `DOCUMENT_PRIVATE`, and
+requires their single-file data to use Core's recognized encrypted envelope.
+That Core capability is not a ready Discussion Boards confidentiality design.
+At the checked Home commit, Home recognizes private-service names only to
+return a not-supported message; the Q-App browse and publish resource
+normalizer accepts public services. Current Discussion Boards therefore cannot
+rename a resource or switch an environment variable and claim encrypted access.
+Core/Home support and exact envelope/key APIs must be re-verified as part of a
+separate encryption architecture if that product requirement arises.
+
+### 24.3 Current access checks
+
+- `Topic.subTopicAccess` controls who may **create** Threads below a Topic. It
+  does not restrict reading the Topic or make its content private.
+- `Thread.access === 'everyone'` is public in the official UI.
+- `moderators`, `admins`, and `custom` are restricted-UI modes. The custom mode
+  compares the authenticated wallet against the published allowlist.
+- trusted Moderator-or-higher roles retain an explicit staff-review override
+  for every Thread access mode. “Admins” identifies the participant rule; it
+  does not remove that moderation review path.
+- trusted roles come from the verified role-operation state described in
+  section 23. Current wallet/name binding supports current UI authorization;
+  it is not used as proof of historical confidentiality or legacy ownership.
+- `visibility === 'hidden'` is independent moderation state. It removes a
+  target from standard non-staff views but cannot prevent QDN retrieval. A
+  hidden Topic also removes its descendant Threads from non-staff lists,
+  activity panels, search scope, and direct Topic navigation.
+
+The direct Thread route evaluates visibility and access before starting the
+Thread Post loader for a non-staff user. Commands independently repeat the
+appropriate access check before posting, voting, or other gated actions. An
+unlisted wallet or insufficient role remains blocked by the official UI;
+authorized wallets and trusted staff remain allowed.
+
+V2 entity authority does not yet contain Topic/Thread access configuration.
+That field migration remains a separately reviewed owner-policy change. During
+coexistence the access classification comes from the readable V1 compatibility
+entity. A V2 Topic/Thread with no such classification is partial and fails
+closed using an empty custom allowlist; it never defaults to `everyone`.
+
+### 24.4 Required user disclosure
+
+Discussion creation displays a public-QDN storage notice. When a restricted
+mode is managed or viewed, the application displays this security meaning:
+
+> This discussion is access-restricted in the Discussion Boards interface. Its
+> content is still stored publicly and unencrypted on QDN and should not be
+> treated as confidential.
+
+Topic creation-policy controls use a separate notice because they restrict who
+can create child Threads, not who can read Topic content. Moderation-hidden
+controls similarly identify the setting as an app-view decision.
+
+### 24.5 Public metadata and minimization
+
+Restricted UI access cannot retroactively remove or conceal published data.
+The current exposure is:
+
+| Resource/evidence                              | Publicly discoverable or retrievable data                                                                                                           | Current minimization                                                                                                                                                        |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V2 Topic/Thread/Post authority and owner edits | full owner content, entity/parent IDs, publisher and claimed wallet fields, service/identifier, Core created/updated/signature data                 | none; this is the authoritative public content                                                                                                                              |
+| restricted V2 index fragment                   | entity type/ID, parent ID, authority publisher/identifier, resource publisher and Core metadata                                                     | title and excerpt hints are omitted                                                                                                                                         |
+| public V2 index fragment                       | the locator fields above plus bounded title or excerpt hints                                                                                        | bounded hints only; never complete snapshots                                                                                                                                |
+| V1 compatibility entity and legacy indexes     | potentially full titles, descriptions, Post bodies, authors, timestamps, parent relations, access modes, wallet allowlists, poll/reaction/tip state | restricted Thread resource title/description metadata is generic for new publications; payloads remain full for existing-reader compatibility with no confidentiality claim |
+| attachments and media                          | service, publisher, identifier, filenames/media metadata and the public unencrypted resource                                                        | no encryption in this issue                                                                                                                                                 |
+
+Existing QDN publications cannot be recalled by a UI update. New restricted
+Thread/Post fragment publications use locator-only hints, while the legacy
+compatibility entity remains public because current V1 readers require it.
+New restricted Thread compatibility publications use generic QDN resource
+title and description metadata instead of copying the Thread content fields.
+Local structure-search haystacks no longer copy wallet allowlists. All access
+configuration and locator metadata must still be treated as public.
+
+### 24.6 Search, indexes, partial data, and caches
+
+The official global V2 search builds its allowed Thread-ID scope from the
+current wallet and trusted role state. It filters Thread entities outside that
+scope and Posts whose parent Thread is outside it **before** authoritative
+content matching. Topic and local Thread search use the same already-filtered
+view state. Derived fragments, legacy indexes, cached Posts, and partial data
+cannot grant access or authority.
+
+Missing access classification fails closed. Partial or cached structure data
+may remain readable only when its existing access classification permits it;
+an index locator cannot turn an unknown Thread into a public search result.
+These rules limit accidental disclosure by the official UI, not retrieval by a
+different QDN client.
+
+### 24.7 Legacy compatibility
+
+Existing `everyone`, `moderators`, `admins`, `custom`, and
+`allowedAddresses` fields retain their prior official-UI behavior. Legacy
+restricted discussions remain readable by users who pass those checks and by
+trusted staff reviewers. The compatibility reader does not upgrade these
+fields into cryptographic authority.
+
+No current typed Discussion Boards schema uses a boolean field named
+`private`. If such an older payload is encountered, the field name alone must
+not imply encryption, invent an allowlist, or establish authority. It may be
+preserved as raw compatibility evidence pending a fixture-backed mapping.
+
+### 24.8 True encrypted/private discussions
+
+The current product and issue evidence establishes a need for organizational
+UI gating, not a confirmed requirement for cryptographic confidentiality. No
+encryption issue or ad-hoc protocol is introduced here.
+
+If confidential discussions become a product requirement, they require a
+separate Architecture V2 issue and threat model before implementation. That
+proposal must cover content encryption before publication, recipient and key
+distribution, publisher-name/wallet binding, key rotation, removal and new
+participants, forward/backward access expectations, encrypted
+attachments/media, metadata leakage, private index/discovery behavior,
+backup/recovery, lost keys, multi-device use, and Core/Home capability
+re-verification. Until that work is approved and implemented, the application
+must not expose an “Encrypted/private” discussion option.
 
 ## 25. Phased migration boundaries
 
@@ -1912,7 +2068,9 @@ The GitHub dependency graph remains authoritative. Current planned order:
 7. **Phase 6 (#10):** paginated QDN discovery, explicit partial/unavailable
    state, validated rebuildable fragments, and read-only last-known-good
    compatibility (implemented).
-8. Correct restricted-access/privacy terminology.
+8. **Restricted-access terminology (#9):** accurate public/restricted/encrypted
+   categories, warnings, official-UI filtering, and restricted index-hint
+   minimization (implemented).
 9. **Delegated-role persistence (#7):** append-only authenticated role
    operations over the trusted legacy bootstrap (completed before Phase 5).
 10. Harden bridge detection and large-file source-token publication.
@@ -1968,6 +2126,16 @@ Fixture families:
 25. safe compatibility rendering when authority metadata is missing, partial,
     unavailable, or conflicting;
 26. new V2-native entities proving they do not depend on legacy canonicalization.
+27. public, wallet-restricted, and role-restricted Thread access, including
+    authorized and unauthorized wallets and the explicit trusted-staff review
+    override;
+28. restricted creation/management/view warnings that state QDN remains public
+    and unencrypted;
+29. restricted Thread/Post locator-only fragments and search scopes proving
+    titles, excerpts, and inaccessible authoritative content do not enter
+    official-UI results;
+30. missing V1 access classification proving a V2 Topic/Thread becomes partial
+    and fails closed instead of defaulting public.
 
 Fixtures that represent live QDN records must preserve the resource metadata
 needed to reproduce ordering and identity decisions.
@@ -2036,6 +2204,22 @@ Each operation phase tests:
 - prior Architecture V2 suites, rich-text checks, lint/format checks, and the
   production build pass.
 
+### 27.5 Restricted-access terminology acceptance (#9)
+
+- public, restricted UI access, and encrypted/private are distinct concepts;
+- public unencrypted QDN content is never presented as confidential;
+- creation and restricted management/view surfaces disclose public QDN
+  storage;
+- public, wallet, role, staff-review, direct-route, and mutation checks remain
+  deterministic;
+- legacy restricted fields remain readable without gaining authority;
+- unavailable access classification fails closed;
+- official search cannot match inaccessible Thread/Post content;
+- restricted V2 fragments omit title/excerpt hints while retaining only the
+  locator metadata documented in section 24.5;
+- no encrypted/private option or ad-hoc encryption scheme is introduced;
+- access, prior Architecture V2, rich-text, and production-build checks pass.
+
 ## 28. Open decisions
 
 ### Blocking automatic legacy authority migration
@@ -2051,7 +2235,8 @@ Each operation phase tests:
 1. Native poll UI result model and create-signature-to-poll-ID resolution.
 2. A future, explicitly reviewed SysOp-transfer mechanism. The fixed trust root
    is intentionally immutable in the current role-operation model.
-3. Encryption design, if true confidentiality is ever required.
+3. Encryption design, tracked as a separate architecture issue only if true
+   confidentiality becomes a confirmed product requirement.
 4. Large-file source-token behavior on every supported Home platform.
 
 Deferred decisions may not violate the invariants in section 3.

@@ -84,7 +84,6 @@ export const buildForumStructureSearchIndex = (
           topic.status,
           topic.visibility,
           topic.subTopicAccess,
-          ...topic.allowedAddresses,
         ].join(' ')
       ),
     })),
@@ -101,7 +100,6 @@ export const buildForumStructureSearchIndex = (
             subTopic.title,
             subTopic.description,
             subTopic.access,
-            ...subTopic.allowedAddresses,
             subTopic.status,
             subTopic.visibility,
             subTopic.isSolved ? 'solved' : 'unsolved',

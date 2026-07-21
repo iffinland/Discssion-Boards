@@ -9,6 +9,7 @@ import {
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import ShareIcon from '../components/common/ShareIcon';
+import AccessDisclosureNotice from '../components/forum/AccessDisclosureNotice';
 import PostComposerModal from '../features/forum/components/PostComposerModal';
 import PostEditModal from '../features/forum/components/PostEditModal';
 import QortTipModal from '../features/forum/components/QortTipModal';
@@ -26,6 +27,7 @@ import {
 } from '../services/forum/forumSearch';
 import {
   canAccessSubTopic,
+  HIDDEN_CONTENT_NOTICE,
   resolveAccessLabel,
 } from '../services/forum/forumAccess';
 import { resolveRoleForAddress } from '../services/qdn/forumRolesService';
@@ -624,6 +626,15 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
       return;
     }
 
+    if (
+      !canModerate &&
+      (!hasSubTopicAccess || subTopic.visibility === 'hidden')
+    ) {
+      setHasInitialThreadLoadCompleted(true);
+      setThreadLoadError(null);
+      return;
+    }
+
     let active = true;
     void loadThreadPosts(id).then((result) => {
       if (!active) {
@@ -638,7 +649,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     return () => {
       active = false;
     };
-  }, [id, loadThreadPosts, subTopic]);
+  }, [canModerate, hasSubTopicAccess, id, loadThreadPosts, subTopic]);
 
   const shouldShowThreadEmptyState =
     hasInitialThreadLoadCompleted &&
@@ -1028,6 +1039,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
           Thread not available
         </h2>
         <p className="text-ui-muted text-sm">This sub-topic is hidden.</p>
+        <AccessDisclosureNotice kind="hidden" />
         <Link
           to={`/topic/${subTopic.topicId}`}
           className="forum-link text-sm font-medium"
@@ -1045,7 +1057,9 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
           Thread not available
         </h2>
         <p className="text-ui-muted text-sm">
-          You do not have access to this sub-topic.
+          This discussion is restricted in the Discussion Boards interface for
+          the current wallet or role. This UI restriction is not
+          confidentiality; its QDN resources remain public and unencrypted.
         </p>
         <Link
           to={`/topic/${subTopic.topicId}`}
@@ -1059,6 +1073,10 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
 
   return (
     <div className="space-y-6">
+      <AccessDisclosureNotice kind="restricted" access={subTopic.access} />
+      {subTopic.visibility === 'hidden' ? (
+        <AccessDisclosureNotice kind="hidden" />
+      ) : null}
       {incompleteThreadData ? (
         <div
           role="status"
@@ -1151,6 +1169,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
               <button
                 type="button"
                 onClick={handleToggleSubTopicVisibility}
+                title={HIDDEN_CONTENT_NOTICE}
                 className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
               >
                 {subTopic.visibility === 'hidden'

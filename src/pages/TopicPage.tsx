@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import AccessDisclosureNotice from '../components/forum/AccessDisclosureNotice';
 import SubTopicList from '../components/forum/SubTopicList';
 import { useForumActions, useForumData } from '../hooks/useForumData';
 import {
@@ -186,7 +187,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     : false;
 
   const visibleSubTopics = useMemo(() => {
-    if (!topic) {
+    if (!topic || (!canModerate && topic.visibility === 'hidden')) {
       return [];
     }
 
@@ -847,6 +848,20 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
     );
   }
 
+  if (topic.visibility === 'hidden' && !canModerate) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-ui-strong text-lg font-semibold">
+          Main topic not available
+        </h2>
+        <AccessDisclosureNotice kind="hidden" />
+        <Link to="/" className="forum-link text-sm font-medium">
+          Back to home
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <nav
@@ -914,6 +929,7 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
               <p className="text-ui-muted text-xs">
                 {subTopicDescription.length}/{TOPIC_DESCRIPTION_MAX_LENGTH}
               </p>
+              <AccessDisclosureNotice kind="public-storage" />
               <label className="flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-slate-800">
                 <input
                   type="checkbox"
@@ -1083,10 +1099,14 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
             }
             className="bg-surface-card text-ui-strong w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
           >
-            <option value="everyone">Everyone</option>
-            <option value="moderators">Moderators+</option>
-            <option value="admins">Admins only</option>
-            <option value="custom">Specific wallets</option>
+            <option value="everyone">Public in this app</option>
+            <option value="moderators">Restricted in this app: staff</option>
+            <option value="admins">
+              Restricted in this app: admins (staff review applies)
+            </option>
+            <option value="custom">
+              Restricted in this app: listed wallets (staff review applies)
+            </option>
           </select>
           <label className="flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-slate-800">
             <input
@@ -1101,6 +1121,13 @@ const TopicPage = ({ onSearchQueryChange }: TopicPageProps) => {
           <p className="text-ui-muted text-xs">
             Access: {resolveAccessLabel(managedSubTopicAccess)}
           </p>
+          <AccessDisclosureNotice
+            kind="restricted"
+            access={managedSubTopicAccess}
+          />
+          {managedSubTopicVisibility === 'hidden' ? (
+            <AccessDisclosureNotice kind="hidden" />
+          ) : null}
           {managedSubTopicAccess === 'custom' ? (
             <textarea
               value={managedSubTopicAllowedAddresses}

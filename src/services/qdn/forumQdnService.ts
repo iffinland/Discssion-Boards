@@ -19,6 +19,10 @@ import {
   resolveNameWalletAddress,
 } from '../qortium/walletService.js';
 import { perfDebugTimeStart } from '../perf/perfDebug.js';
+import {
+  isRestrictedUiAccess,
+  resolveCompatibilityAccessClassification,
+} from '../forum/forumAccess.js';
 import type {
   LegacyAuthorityState,
   QdbV2ResourceMetadata,
@@ -891,6 +895,17 @@ const publishPayload = async (
   });
 };
 
+const resolveSubTopicPublishMetadata = (subTopic: SubTopic) =>
+  isRestrictedUiAccess(subTopic.access)
+    ? {
+        title: `Forum discussion ${subTopic.id}`,
+        description: 'Qortium discussion board thread',
+      }
+    : {
+        title: subTopic.title,
+        description: subTopic.description,
+      };
+
 const toPublishResource = (
   ownerName: string,
   identifier: string,
@@ -1616,6 +1631,7 @@ export const forumQdnService = {
         topics.some((topic) => topic.id === subTopic.topicId)
       );
     let authority: V2RuntimeState | null = null;
+    let missingV2AccessClassificationCount = 0;
     try {
       authority = await this.loadV2AuthorityState();
       const v2Entities = Object.values(authority.authoritative.entities);
@@ -1626,6 +1642,16 @@ export const forumQdnService = {
       for (const entity of v2Entities) {
         if (entity.entityType === 'topic') {
           const legacyTopic = topicById.get(entity.entityId);
+          const accessClassification = resolveCompatibilityAccessClassification(
+            legacyTopic
+              ? {
+                  access: legacyTopic.subTopicAccess,
+                  allowedAddresses: legacyTopic.allowedAddresses,
+                }
+              : null
+          );
+          if (!accessClassification.classificationAvailable)
+            missingV2AccessClassificationCount += 1;
           topicById.set(entity.entityId, {
             id: entity.entityId,
             title: entity.title,
@@ -1635,11 +1661,14 @@ export const forumQdnService = {
             sortOrder: legacyTopic?.sortOrder ?? Number.MAX_SAFE_INTEGER,
             status: legacyTopic?.status ?? 'open',
             visibility: legacyTopic?.visibility ?? 'visible',
-            subTopicAccess: legacyTopic?.subTopicAccess ?? 'everyone',
-            allowedAddresses: legacyTopic?.allowedAddresses ?? [],
-            dataAvailability:
-              authority.discovery.completeness === 'complete' &&
-              authority.discovery.source === 'network'
+            // Access policy has not yet migrated into V2 authority. Missing
+            // compatibility evidence must fail closed for child creation.
+            subTopicAccess: accessClassification.access,
+            allowedAddresses: accessClassification.allowedAddresses,
+            dataAvailability: !accessClassification.classificationAvailable
+              ? 'partial'
+              : authority.discovery.completeness === 'complete' &&
+                  authority.discovery.source === 'network'
                 ? 'verified-current'
                 : authority.discovery.source === 'cache'
                   ? 'cached-last-known-good'
@@ -1649,6 +1678,10 @@ export const forumQdnService = {
         }
         if (entity.entityType === 'thread') {
           const legacyThread = threadById.get(entity.entityId);
+          const accessClassification =
+            resolveCompatibilityAccessClassification(legacyThread);
+          if (!accessClassification.classificationAvailable)
+            missingV2AccessClassificationCount += 1;
           threadById.set(entity.entityId, {
             id: entity.entityId,
             topicId: entity.parentTopicId,
@@ -1665,17 +1698,21 @@ export const forumQdnService = {
             solvedAt: legacyThread?.solvedAt ?? null,
             solvedByUserId: legacyThread?.solvedByUserId ?? null,
             isPoll: legacyThread?.isPoll ?? false,
-            access: legacyThread?.access ?? 'everyone',
-            allowedAddresses: legacyThread?.allowedAddresses ?? [],
+            // A V2 Thread without its compatibility access classification is
+            // readable content, but is restricted in the official UI until
+            // the classification can be recovered. Never default it public.
+            access: accessClassification.access,
+            allowedAddresses: accessClassification.allowedAddresses,
             status: legacyThread?.status ?? 'open',
             visibility: legacyThread?.visibility ?? 'visible',
             lastModerationAction: legacyThread?.lastModerationAction ?? null,
             lastModerationReason: legacyThread?.lastModerationReason ?? null,
             lastModeratedByUserId: legacyThread?.lastModeratedByUserId ?? null,
             lastModeratedAt: legacyThread?.lastModeratedAt ?? null,
-            dataAvailability:
-              authority.discovery.completeness === 'complete' &&
-              authority.discovery.source === 'network'
+            dataAvailability: !accessClassification.classificationAvailable
+              ? 'partial'
+              : authority.discovery.completeness === 'complete' &&
+                  authority.discovery.source === 'network'
                 ? 'verified-current'
                 : authority.discovery.source === 'cache'
                   ? 'cached-last-known-good'
@@ -1712,6 +1749,7 @@ export const forumQdnService = {
     const effectiveCompleteness: ForumStructureSnapshot['discovery']['completeness'] =
       discovery.completeness === 'complete' &&
       failedResourceCount === 0 &&
+      missingV2AccessClassificationCount === 0 &&
       (!authority ||
         (authority.discovery.completeness === 'complete' &&
           authority.discovery.source === 'network'))
@@ -1741,6 +1779,14 @@ export const forumQdnService = {
                 {
                   code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
                   detail: `${failedResourceCount} discovered forum resource(s) could not be loaded or validated.`,
+                },
+              ]
+            : []),
+          ...(missingV2AccessClassificationCount > 0
+            ? [
+                {
+                  code: 'RESTRICTED_ACCESS_CLASSIFICATION_UNAVAILABLE',
+                  detail: `${missingV2AccessClassificationCount} V2 Topic/Thread resource(s) lack readable compatibility access classification and were restricted fail-closed.`,
                 },
               ]
             : []),
@@ -1985,6 +2031,7 @@ export const forumQdnService = {
       subTopic,
       resolvedOwner
     );
+    const metadata = resolveSubTopicPublishMetadata(subTopic);
 
     await publishPayload(
       resolvedOwner,
@@ -1996,8 +2043,8 @@ export const forumQdnService = {
         updatedAt: Date.now(),
         subTopic,
       },
-      subTopic.title,
-      subTopic.description,
+      metadata.title,
+      metadata.description,
       ['forum', 'subtopic', 'qforum']
     );
 
@@ -2006,6 +2053,7 @@ export const forumQdnService = {
 
   buildSubTopicPublishResource(subTopic: SubTopic, ownerName: string) {
     const identifier = toSubTopicIdentifier(subTopic.id);
+    const metadata = resolveSubTopicPublishMetadata(subTopic);
     const payload: SubTopicPayload = {
       version: 1,
       type: 'subtopic',
@@ -2020,8 +2068,8 @@ export const forumQdnService = {
         ownerName,
         identifier,
         payload,
-        subTopic.title,
-        subTopic.description,
+        metadata.title,
+        metadata.description,
         ['forum', 'subtopic', 'qforum']
       ),
     };

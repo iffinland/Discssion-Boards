@@ -3,7 +3,10 @@ import { memo, useMemo, type DragEvent } from 'react';
 import UserRoleBadge from '../common/UserRoleBadge';
 import HighlightedText from '../common/HighlightedText';
 import type { SubTopic, User } from '../../types';
-import { resolveAccessLabel } from '../../services/forum/forumAccess';
+import {
+  HIDDEN_CONTENT_NOTICE,
+  resolveAccessLabel,
+} from '../../services/forum/forumAccess';
 
 type SubTopicListProps = {
   subTopics: SubTopic[];
@@ -237,6 +240,7 @@ const SubTopicList = ({
                     <button
                       type="button"
                       onClick={() => onToggleSubTopicVisibility?.(subTopic)}
+                      title={HIDDEN_CONTENT_NOTICE}
                       className="bg-surface-card text-ui-strong rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold"
                     >
                       {subTopic.visibility === 'hidden' ? 'Show' : 'Hide'}

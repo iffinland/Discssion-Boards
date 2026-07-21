@@ -10,6 +10,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import HighlightedText from '../components/common/HighlightedText';
+import AccessDisclosureNotice from '../components/forum/AccessDisclosureNotice';
 import { useForumActions, useForumData } from '../hooks/useForumData';
 import { canAccessSubTopic } from '../services/forum/forumAccess';
 import {
@@ -74,23 +75,24 @@ const topicAccessOptions: Array<{
 }> = [
   {
     value: 'everyone',
-    label: 'Everyone',
+    label: 'Anyone can create sub-topics',
     helper: 'Any authenticated member can create sub-topics here.',
   },
   {
     value: 'moderators',
-    label: 'Moderators+',
+    label: 'Moderators+ can create sub-topics',
     helper: 'Moderators, admins and Super Admins can create sub-topics.',
   },
   {
     value: 'admins',
-    label: 'Admins only',
+    label: 'Admins can create sub-topics',
     helper: 'Only admins and Super Admins can create sub-topics.',
   },
   {
     value: 'custom',
-    label: 'Specific wallets',
-    helper: 'Only listed wallet addresses can create sub-topics.',
+    label: 'Listed wallets can create sub-topics',
+    helper:
+      'Listed wallet addresses can create sub-topics; admins retain management access.',
   },
 ];
 
@@ -278,15 +280,24 @@ const Home = ({ searchQuery }: HomeProps) => {
         .filter((topic) => canModerate || topic.visibility !== 'hidden'),
     [canModerate, topics]
   );
+  const visibleTopicIds = useMemo(
+    () => new Set(visibleTopics.map((topic) => topic.id)),
+    [visibleTopics]
+  );
   const visibleSubTopics = useMemo(
     () =>
       subTopics.filter(
         (subTopic) =>
+          visibleTopicIds.has(subTopic.topicId) &&
           (canModerate || subTopic.visibility !== 'hidden') &&
           (canModerate ||
             canAccessSubTopic(subTopic, currentUser, authenticatedAddress))
       ),
-    [authenticatedAddress, canModerate, currentUser, subTopics]
+    [authenticatedAddress, canModerate, currentUser, subTopics, visibleTopicIds]
+  );
+  const accessibleThreadIds = useMemo(
+    () => new Set(visibleSubTopics.map((subTopic) => subTopic.id)),
+    [visibleSubTopics]
   );
   const subTopicsByTopicId = useMemo(() => {
     const grouped = new Map<string, SubTopic[]>();
@@ -361,7 +372,8 @@ const Home = ({ searchQuery }: HomeProps) => {
         const result = await forumSearchIndexService.searchV2Index(
           normalizedDeferredSearchQuery,
           authority,
-          unavailableTargets
+          unavailableTargets,
+          { accessibleThreadIds }
         );
         if (!active) return;
         setV2SearchEntries(result.entries);
@@ -384,7 +396,12 @@ const Home = ({ searchQuery }: HomeProps) => {
     return () => {
       active = false;
     };
-  }, [canModerate, hasDeferredActiveSearch, normalizedDeferredSearchQuery]);
+  }, [
+    accessibleThreadIds,
+    canModerate,
+    hasDeferredActiveSearch,
+    normalizedDeferredSearchQuery,
+  ]);
   const postMatchCountBySubTopicId = useMemo(() => {
     if (!hasActiveSearch) {
       return {} as Record<string, number>;
@@ -409,6 +426,9 @@ const Home = ({ searchQuery }: HomeProps) => {
     const seenPostIds = new Set<string>();
 
     posts.forEach((post) => {
+      if (!accessibleThreadIds.has(post.subTopicId)) {
+        return;
+      }
       if (!matches(post.content, post.authorUserId)) {
         return;
       }
@@ -425,7 +445,14 @@ const Home = ({ searchQuery }: HomeProps) => {
     });
 
     return counts;
-  }, [hasActiveSearch, posts, searchQuery, users, v2SearchEntries]);
+  }, [
+    accessibleThreadIds,
+    hasActiveSearch,
+    posts,
+    searchQuery,
+    users,
+    v2SearchEntries,
+  ]);
 
   const filteredTopics = useMemo<DisplayTopic[]>(() => {
     if (!hasActiveSearch) {
@@ -573,13 +600,7 @@ const Home = ({ searchQuery }: HomeProps) => {
       return Number.isFinite(timestamp) ? timestamp : 0;
     };
 
-    return [...subTopics]
-      .filter((subTopic) => canModerate || subTopic.visibility !== 'hidden')
-      .filter(
-        (subTopic) =>
-          canModerate ||
-          canAccessSubTopic(subTopic, currentUser, authenticatedAddress)
-      )
+    return [...visibleSubTopics]
       .map((subTopic) => {
         const indexedLatest = latestBySubTopicId.get(subTopic.id);
         const subTopicLastMs = toTimestamp(subTopic.lastPostAt);
@@ -611,16 +632,7 @@ const Home = ({ searchQuery }: HomeProps) => {
       })
       .sort((a, b) => b.activityMs - a.activityMs)
       .slice(0, ACTIVE_SUBTOPIC_LIMIT);
-  }, [
-    activeTopicsNowMs,
-    authenticatedAddress,
-    canModerate,
-    currentUser,
-    posts,
-    subTopics,
-    threadSearchIndexes,
-    users,
-  ]);
+  }, [activeTopicsNowMs, posts, threadSearchIndexes, users, visibleSubTopics]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -1416,6 +1428,13 @@ const Home = ({ searchQuery }: HomeProps) => {
                     </option>
                   ))}
                 </select>
+                <AccessDisclosureNotice
+                  kind="topic-creation-policy"
+                  access={managedTopicAccess}
+                />
+                {managedTopicVisibility === 'hidden' ? (
+                  <AccessDisclosureNotice kind="hidden" />
+                ) : null}
                 {managedTopicAccess === 'custom' ? (
                   <textarea
                     value={managedTopicAllowedAddresses}
@@ -1633,6 +1652,7 @@ const Home = ({ searchQuery }: HomeProps) => {
                   <p className="text-ui-muted text-xs">
                     {topicDescription.length}/{TOPIC_DESCRIPTION_MAX_LENGTH}
                   </p>
+                  <AccessDisclosureNotice kind="public-storage" />
                   <select
                     value={topicStatus}
                     onChange={(event) =>
@@ -1663,6 +1683,10 @@ const Home = ({ searchQuery }: HomeProps) => {
                       )?.helper
                     }
                   </p>
+                  <AccessDisclosureNotice
+                    kind="topic-creation-policy"
+                    access={topicAccess}
+                  />
                   {topicAccess === 'custom' ? (
                     <textarea
                       value={topicAllowedAddresses}

@@ -75,6 +75,12 @@ export type ReducedV2Index = {
   diagnostics: V2IndexDiagnostic[];
 };
 
+export type V2IndexFragmentDisclosure = 'content-hint' | 'locator-only';
+
+export type V2IndexSearchAccessScope = {
+  accessibleThreadIds: ReadonlySet<string>;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -173,7 +179,11 @@ const expectedAuthorityIdentifier = (
   entity: V2EntityCreate
 ) => `${namespace}-v2-${entity.entityType}-${entity.entityId}`;
 
-const hintFor = (entity: V2EntityCreate): V2IndexFragmentBody['hint'] => {
+const hintFor = (
+  entity: V2EntityCreate,
+  disclosure: V2IndexFragmentDisclosure = 'content-hint'
+): V2IndexFragmentBody['hint'] => {
+  if (disclosure === 'locator-only') return {};
   if (entity.entityType === 'topic' || entity.entityType === 'thread')
     return { title: entity.title.slice(0, 240) };
   return { excerpt: entity.content.slice(0, 500) };
@@ -181,7 +191,8 @@ const hintFor = (entity: V2EntityCreate): V2IndexFragmentBody['hint'] => {
 
 export const buildV2IndexFragmentEnvelope = (
   namespace: string,
-  entity: V2EntityCreate
+  entity: V2EntityCreate,
+  disclosure: V2IndexFragmentDisclosure = 'content-hint'
 ): V2IndexFragmentEnvelope => {
   const parentId = parentIdOf(entity);
   const recordId = buildV2IndexFragmentIdentifier(
@@ -205,7 +216,7 @@ export const buildV2IndexFragmentEnvelope = (
         publisherName: entity.publisherName,
         identifier: expectedAuthorityIdentifier(namespace, entity),
       },
-      hint: hintFor(entity),
+      hint: hintFor(entity, disclosure),
     },
   };
 };
@@ -238,6 +249,9 @@ const hintIsCurrent = (
   hint: V2IndexFragmentBody['hint'],
   entity: V2EntityCreate
 ) => {
+  // An empty hint is an intentional locator-only disclosure, used for
+  // restricted UI content. It remains current without copying content.
+  if (hint.title === undefined && hint.excerpt === undefined) return true;
   const expected = hintFor(entity);
   return hint.title === expected.title && hint.excerpt === expected.excerpt;
 };
@@ -363,14 +377,23 @@ export const reduceV2IndexFragments = (
 
 export const searchValidatedV2Index = (
   entries: ValidatedV2IndexEntry[],
-  query: string
+  query: string,
+  accessScope?: V2IndexSearchAccessScope
 ) => {
+  const accessFiltered = accessScope
+    ? entries.filter(({ entity }) => {
+        if (entity.entityType === 'topic') return true;
+        if (entity.entityType === 'thread')
+          return accessScope.accessibleThreadIds.has(entity.entityId);
+        return accessScope.accessibleThreadIds.has(entity.parentThreadId);
+      })
+    : entries;
   const normalized = query.trim().toLowerCase();
   if (!normalized)
-    return [...entries].sort((left, right) =>
+    return [...accessFiltered].sort((left, right) =>
       left.entity.entityId.localeCompare(right.entity.entityId)
     );
-  return entries
+  return accessFiltered
     .filter(({ entity }) => {
       const text =
         entity.entityType === 'post'

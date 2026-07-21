@@ -7,7 +7,10 @@ import {
   getAttachmentSizeLimit,
   isAllowedAttachmentFile,
 } from '../../../services/forum/attachments';
-import { canAccessSubTopic } from '../../../services/forum/forumAccess';
+import {
+  canAccessSubTopic,
+  isRestrictedUiAccess,
+} from '../../../services/forum/forumAccess';
 import { encodeQdnImageTag } from '../../../services/forum/richText';
 import { encodeQdnVideoTag } from '../../../services/forum/videoEmbed';
 import { threadPostCache } from '../../../services/forum/threadPostCache';
@@ -748,6 +751,16 @@ export const useForumCommands = ({
         return { ok: false, error: 'Main topic not found.' };
       }
       if (
+        parentTopic.visibility === 'hidden' &&
+        !isModeratorRole(currentUser.role)
+      ) {
+        return {
+          ok: false,
+          error:
+            'This main topic is hidden from standard app views. Its QDN resources remain public, but Thread creation is blocked in this app.',
+        };
+      }
+      if (
         parentTopic.dataAvailability &&
         parentTopic.dataAvailability !== 'verified-current'
       )
@@ -859,7 +872,10 @@ export const useForumCommands = ({
         const fragmentResource =
           forumSearchIndexService.buildV2IndexFragmentPublishResource(
             v2Entity,
-            currentUser.username
+            currentUser.username,
+            isRestrictedUiAccess(newSubTopic.access)
+              ? 'locator-only'
+              : 'content-hint'
           );
         const followup = await publishCompatibilityAndDerivedFragment(
           subTopicResource.resource,
@@ -1205,7 +1221,10 @@ export const useForumCommands = ({
               title: input.title.trim(),
               description: input.description.trim(),
             },
-            currentUser.username
+            currentUser.username,
+            isRestrictedUiAccess(target.access)
+              ? 'locator-only'
+              : 'content-hint'
           );
         try {
           await publishMultipleQortiumResources([fragment.resource]);
@@ -2063,7 +2082,10 @@ export const useForumCommands = ({
         const fragmentResource =
           forumSearchIndexService.buildV2IndexFragmentPublishResource(
             v2Entity,
-            currentUser.username
+            currentUser.username,
+            isRestrictedUiAccess(targetSubTopic.access)
+              ? 'locator-only'
+              : 'content-hint'
           );
         const followup = await publishCompatibilityAndDerivedFragment(
           postResource.resource,
@@ -2162,6 +2184,33 @@ export const useForumCommands = ({
         return { ok: false, error: 'Post not found.' };
       }
 
+      const targetSubTopic = subTopics.find(
+        (subTopic) => subTopic.id === target.subTopicId
+      );
+      if (!targetSubTopic) {
+        return {
+          ok: false,
+          error:
+            '[PARTIAL_DISCOVERY] Thread access classification is unavailable; post edit failed closed.',
+        };
+      }
+
+      if (
+        targetSubTopic.visibility === 'hidden' &&
+        !isModeratorRole(currentUser.role)
+      ) {
+        return { ok: false, error: 'This sub-topic is hidden.' };
+      }
+
+      if (
+        !canAccessSubTopic(targetSubTopic, currentUser, authenticatedAddress)
+      ) {
+        return {
+          ok: false,
+          error: 'You do not have access to edit a post in this sub-topic.',
+        };
+      }
+
       if (target.authorUserId !== currentUser.id) {
         return { ok: false, error: 'Only owner can edit this post.' };
       }
@@ -2242,7 +2291,10 @@ export const useForumCommands = ({
                 ? toPersistedNativePollReference(updatedPost.poll)
                 : null,
             },
-            currentUser.username
+            currentUser.username,
+            isRestrictedUiAccess(targetSubTopic.access)
+              ? 'locator-only'
+              : 'content-hint'
           );
         const followup = await publishCompatibilityAndDerivedFragment(
           postResource.resource,
@@ -2300,6 +2352,7 @@ export const useForumCommands = ({
       posts,
       setPosts,
       setThreadSearchIndexes,
+      subTopics,
     ]
   );
 
