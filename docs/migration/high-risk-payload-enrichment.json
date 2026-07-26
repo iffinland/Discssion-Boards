@@ -39,10 +39,7 @@
       },
       "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Q-Music",
-        "free man"
-      ],
+      "publishers": ["Q-Music", "free man"],
       "resources": [
         {
           "availability": "available",
@@ -182,10 +179,7 @@
       },
       "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Q-Music",
-        "iffi vaba mees"
-      ],
+      "publishers": ["Q-Music", "iffi vaba mees"],
       "resources": [
         {
           "availability": "available",
@@ -325,10 +319,7 @@
       },
       "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Discussion_Boards",
-        "Q-Music"
-      ],
+      "publishers": ["Discussion_Boards", "Q-Music"],
       "resources": [
         {
           "availability": "available",
@@ -468,11 +459,7 @@
       },
       "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Q-Music",
-        "iffi forest life",
-        "iffi vaba mees"
-      ],
+      "publishers": ["Q-Music", "iffi forest life", "iffi vaba mees"],
       "resources": [
         {
           "availability": "available",
@@ -645,10 +632,7 @@
       },
       "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "developer iffi",
-        "iffi vaba mees"
-      ],
+      "publishers": ["developer iffi", "iffi vaba mees"],
       "resources": [
         {
           "availability": "available",
@@ -774,10 +758,7 @@
       },
       "manualReviewReason": "legacy/partitioned identifier-family conflict requires cross-family equivalence proof",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Q-Music",
-        "developer iffi"
-      ],
+      "publishers": ["Q-Music", "developer iffi"],
       "resources": [
         {
           "availability": "available",
@@ -960,9 +941,7 @@
               "question": "Mis on parem",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_w4pf6j817qhbr2rc"],
                   "votedAt": "2026-04-26T18:48:58.971Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 }
@@ -1021,16 +1000,12 @@
               "question": "Mis on parem",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_w4pf6j817qhbr2rc"],
                   "votedAt": "2026-04-26T18:48:58.971Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_jdv16rgax1mk8rxm"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_jdv16rgax1mk8rxm"],
                   "votedAt": "2026-04-26T18:54:54.905Z",
                   "voterId": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz"
                 }
@@ -1092,23 +1067,17 @@
               "question": "Mis on parem",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_w4pf6j817qhbr2rc"],
                   "votedAt": "2026-04-26T18:48:58.971Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_jdv16rgax1mk8rxm"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_jdv16rgax1mk8rxm"],
                   "votedAt": "2026-04-26T18:54:54.905Z",
                   "voterId": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_w4pf6j817qhbr2rc"],
                   "votedAt": "2026-04-27T07:05:10.932Z",
                   "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
                 }
@@ -1170,23 +1139,17 @@
               "question": "Mis on parem",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_w4pf6j817qhbr2rc"],
                   "votedAt": "2026-04-26T18:48:58.971Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_jdv16rgax1mk8rxm"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_jdv16rgax1mk8rxm"],
                   "votedAt": "2026-04-26T18:54:54.905Z",
                   "voterId": "QTowvz1e89MP4FEFpHvEfZ4x8G3LwMpthz"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq5hybbvywsq_w4pf6j817qhbr2rc"
-                  ],
+                  "optionIds": ["option_01kq5hybbvywsq_w4pf6j817qhbr2rc"],
                   "votedAt": "2026-04-27T11:33:56.597Z",
                   "voterId": "QTRKB2qCSANjYj5JbhybkvQyPmSC24PZZZ"
                 }
@@ -1244,11 +1207,7 @@
       },
       "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Discussion_Boards",
-        "Q-Music",
-        "developer iffi"
-      ],
+      "publishers": ["Discussion_Boards", "Q-Music", "developer iffi"],
       "resources": [
         {
           "availability": "available",
@@ -1531,9 +1490,7 @@
               "question": "Cast your vote, what do you think about this voting system?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_vk4pgazvwy3jps07"],
                   "votedAt": "2026-04-27T12:51:11.434Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 }
@@ -1599,16 +1556,12 @@
               "question": "Cast your vote, what do you think about this voting system?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_vk4pgazvwy3jps07"],
                   "votedAt": "2026-04-27T12:51:11.434Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_mp9vhafa5s31ajv2"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_mp9vhafa5s31ajv2"],
                   "votedAt": "2026-04-27T12:53:37.795Z",
                   "voterId": "QTRKB2qCSANjYj5JbhybkvQyPmSC24PZZZ"
                 }
@@ -1674,16 +1627,12 @@
               "question": "Cast your vote, what do you think about this voting system?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_vk4pgazvwy3jps07"],
                   "votedAt": "2026-04-27T12:51:11.434Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_vk4pgazvwy3jps07"],
                   "votedAt": "2026-04-27T12:56:50.010Z",
                   "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
                 }
@@ -1749,23 +1698,17 @@
               "question": "Cast your vote, what do you think about this voting system?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_vk4pgazvwy3jps07"],
                   "votedAt": "2026-04-27T12:51:11.434Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_vk4pgazvwy3jps07"],
                   "votedAt": "2026-04-27T12:56:50.010Z",
                   "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
                 },
                 {
-                  "optionIds": [
-                    "option_01kq7fvw3gywsq_vk4pgazvwy3jps07"
-                  ],
+                  "optionIds": ["option_01kq7fvw3gywsq_vk4pgazvwy3jps07"],
                   "votedAt": "2026-04-28T04:16:56.270Z",
                   "voterId": "QcKMRd52VET8FvT7N6LwqppXEd6gZo9da4"
                 }
@@ -1823,11 +1766,7 @@
       },
       "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Discussion_Boards",
-        "Simon James",
-        "iffi vaba mees"
-      ],
+      "publishers": ["Discussion_Boards", "Simon James", "iffi vaba mees"],
       "resources": [
         {
           "availability": "available",
@@ -2021,16 +1960,12 @@
               "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-15T07:28:59.974Z",
                   "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-16T08:40:15.913Z",
                   "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
                 }
@@ -2111,16 +2046,12 @@
               "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-15T07:28:59.974Z",
                   "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-16T08:40:15.913Z",
                   "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
                 }
@@ -2178,16 +2109,12 @@
               "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-15T07:28:59.974Z",
                   "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-16T05:38:54.985Z",
                   "voterId": "QNLCcmfyoMBop4b9XP2hCrJxzjPcWDKw5T"
                 }
@@ -2245,23 +2172,17 @@
               "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-15T07:28:59.974Z",
                   "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-16T08:40:15.913Z",
                   "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-16T10:09:10.202Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 }
@@ -2319,30 +2240,22 @@
               "question": "Direct upload of Youtube videos to Q-Tube - what does the community think about it?",
               "votes": [
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-15T07:28:59.974Z",
                   "voterId": "QRQcRdEGMhWkTemAfz5MM9DkxWAiDt8qUa"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-16T08:40:15.913Z",
                   "voterId": "QRTUysZHKgxrdqsATotaffNVfFrD4KPE2Q"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_k2prcwk1nwe778c9"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_k2prcwk1nwe778c9"],
                   "votedAt": "2026-05-16T10:09:10.202Z",
                   "voterId": "QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE"
                 },
                 {
-                  "optionIds": [
-                    "option_01krn8k49fyuaj_4anggp8x72r25jcq"
-                  ],
+                  "optionIds": ["option_01krn8k49fyuaj_4anggp8x72r25jcq"],
                   "votedAt": "2026-05-17T02:28:20.573Z",
                   "voterId": "QfMPvGEBJMhhNSfhNqRy6qRYvybdnQAiuJ"
                 }
@@ -2400,11 +2313,7 @@
       },
       "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Discussion_Boards",
-        "developer iffi",
-        "iffi vaba mees"
-      ],
+      "publishers": ["Discussion_Boards", "developer iffi", "iffi vaba mees"],
       "resources": [
         {
           "availability": "available",
@@ -2674,11 +2583,7 @@
       },
       "manualReviewReason": "duplicate publisher sequence requires payload/immutable-field and mutation-path review",
       "mutationPath": "inferable only from entity type; source paths include admin/moderation/reaction/vote/edit/delete/tip operations",
-      "publishers": [
-        "Discussion_Boards",
-        "developer iffi",
-        "iffi vaba mees"
-      ],
+      "publishers": ["Discussion_Boards", "developer iffi", "iffi vaba mees"],
       "resources": [
         {
           "availability": "available",

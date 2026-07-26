@@ -9,12 +9,12 @@ The capture script is [build_legacy_fixture_inventory.py](../../tools/migration/
 
 ## Inventory totals
 
-| Family | Resources | Logical IDs | Duplicate groups |
-| --- | ---: | ---: | ---: |
-| Topic (`qdbm-topic-`) | 39 | 20 | 18 |
-| Thread/SubTopic (`qdbm-sub-`) | 62 | 49 | 11 |
-| Post (`qdbm-post-`, including legacy and partitioned forms) | 212 | 169 | 20 |
-| Total | 313 | 238 | 49 |
+| Family                                                      | Resources | Logical IDs | Duplicate groups |
+| ----------------------------------------------------------- | --------: | ----------: | ---------------: |
+| Topic (`qdbm-topic-`)                                       |        39 |          20 |               18 |
+| Thread/SubTopic (`qdbm-sub-`)                               |        62 |          49 |               11 |
+| Post (`qdbm-post-`, including legacy and partitioned forms) |       212 |         169 |               20 |
+| Total                                                       |       313 |         238 |               49 |
 
 Every record preserves service, publisher, identifier, Core `created` and
 `updated`, latest signature, Core status, logical ID, identifier family, and a
@@ -34,11 +34,11 @@ The generated maintainer package is
 [legacy-canonical-publisher-review.json](./legacy-canonical-publisher-review.json).
 Its deterministic envelope-only classification is:
 
-| Status | Groups | Meaning |
-| --- | ---: | --- |
-| `AUTO-CANDIDATE` | 35 | Unique earliest same-family candidate; expedited human review still required |
-| `REVIEW-REQUIRED` | 5 | Duplicate sequence or metadata needs payload and mutation-path review |
-| `QUARANTINE` | 9 | Legacy/partitioned identifier conflict or four-or-more publishers |
+| Status            | Groups | Meaning                                                                      |
+| ----------------- | -----: | ---------------------------------------------------------------------------- |
+| `AUTO-CANDIDATE`  |     35 | Unique earliest same-family candidate; expedited human review still required |
+| `REVIEW-REQUIRED` |      5 | Duplicate sequence or metadata needs payload and mutation-path review        |
+| `QUARANTINE`      |      9 | Legacy/partitioned identifier conflict or four-or-more publishers            |
 
 `AUTO-CANDIDATE` is not approval. No entry has a canonical publisher filled in
 as a human decision. The package contains one concise record for each of the
@@ -62,12 +62,12 @@ remaining decisions, safest options, and consequences of an incorrect choice.
 Known legitimate V1 mutation paths represented by the current source and to be
 covered by fixtures are:
 
-| Entity | Path | Expected publisher of later snapshot |
-| --- | --- | --- |
-| Topic | settings/admin update; SuperAdmin/SysOp order | acting admin/staff name |
-| Thread | moderation, visibility, lock, pin, solved, pinned ordering | acting moderator/admin name |
-| Post | author edit | author’s then-current name |
-| Post | like/reaction, poll vote/close, staff pin, deletion/tombstone, tip sync | acting user/staff name |
+| Entity | Path                                                                    | Expected publisher of later snapshot |
+| ------ | ----------------------------------------------------------------------- | ------------------------------------ |
+| Topic  | settings/admin update; SuperAdmin/SysOp order                           | acting admin/staff name              |
+| Thread | moderation, visibility, lock, pin, solved, pinned ordering              | acting moderator/admin name          |
+| Post   | author edit                                                             | author’s then-current name           |
+| Post   | like/reaction, poll vote/close, staff pin, deletion/tombstone, tip sync | acting user/staff name               |
 
 Index and role resources are excluded from entity ownership candidacy. A later
 publisher is therefore not presumed to be an unauthorized replacement merely
@@ -120,20 +120,22 @@ The proposed review manifest is deterministic JSON:
 {
   "schema": "qortium.discussion-boards.migration-manifest/v1",
   "cutoff": { "height": 0, "timestamp": 0 },
-  "entries": [{
-    "entityType": "Topic|Thread|Post",
-    "entityId": "...",
-    "canonicalPublisher": "...",
-    "candidateCreated": 0,
-    "status": "AUTO-CANDIDATE|REVIEW-REQUIRED|QUARANTINE|APPROVED",
-    "evidenceRef": "legacy-fixture-inventory.json#/duplicateGroups/Topic:...",
-    "conflictingPublishers": ["..."],
-    "reviewedBy": "",
-    "reviewedAt": "",
-    "reason": "",
-    "notes": "",
-    "supersedes": ""
-  }]
+  "entries": [
+    {
+      "entityType": "Topic|Thread|Post",
+      "entityId": "...",
+      "canonicalPublisher": "...",
+      "candidateCreated": 0,
+      "status": "AUTO-CANDIDATE|REVIEW-REQUIRED|QUARANTINE|APPROVED",
+      "evidenceRef": "legacy-fixture-inventory.json#/duplicateGroups/Topic:...",
+      "conflictingPublishers": ["..."],
+      "reviewedBy": "",
+      "reviewedAt": "",
+      "reason": "",
+      "notes": "",
+      "supersedes": ""
+    }
+  ]
 }
 ```
 

@@ -51,10 +51,15 @@ See [.env.example](.env.example).
 
 ## Development
 
-Install dependencies:
+The verified development baseline is Node.js 24.18.0 and npm 12.0.1. Use the
+repository `.nvmrc` and the npm version declared by `packageManager`; other
+runtime lines are not part of the tested support claim.
+
+Install the exact locked dependency graph:
 
 ```bash
-npm install
+nvm use
+npm ci
 ```
 
 Start the dev server:
@@ -69,10 +74,10 @@ Run lint:
 npm run lint
 ```
 
-Run a TypeScript build check:
+Check repository formatting:
 
 ```bash
-npx tsc -b
+npm run format:check
 ```
 
 Create a production build:
@@ -81,14 +86,23 @@ Create a production build:
 npm run build
 ```
 
+Run the complete deterministic verification sequence:
+
+```bash
+npm run verify
+```
+
 ## Utility scripts
 
 - `npm run backup:workspace`
 - `npm run restore:workspace`
 - `npm run test:richtext`
+- `npm run verify`
 
 The backup and restore flow is documented in
 [scripts/BACKUP-RESTORE.md](scripts/BACKUP-RESTORE.md).
+Dependency, advisory, and routing maintenance decisions are recorded in
+[docs/DEPENDENCY-BASELINE.md](docs/DEPENDENCY-BASELINE.md).
 
 ## Current architecture notes
 
@@ -102,5 +116,6 @@ The backup and restore flow is documented in
 At the time of the latest verification pass:
 
 - `npm run lint` passes
-- `npx tsc -b` passes
+- `npm run format:check` passes
+- all Architecture V2 and Qortium integration suites pass
 - `npm run build` should be used as the final production verification step before release

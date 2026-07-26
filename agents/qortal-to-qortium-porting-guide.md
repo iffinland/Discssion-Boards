@@ -319,7 +319,7 @@ Build and Routing Rules
 For Vite apps in Qortium/QDN style runtime:
 
 ```ts
-base: './'
+base: './';
 ```
 
 Keep assets relative. Avoid absolute root paths unless the runtime is

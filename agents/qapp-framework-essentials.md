@@ -67,9 +67,9 @@ The key fields are:
 Expected shape:
 
 ```tsx
-import { GlobalProvider } from "qapp-core";
-import Layout from "./styles/Layout";
-import { publicSalt } from "./qapp-config";
+import { GlobalProvider } from 'qapp-core';
+import Layout from './styles/Layout';
+import { publicSalt } from './qapp-config';
 
 export const AppWrapper = () => {
   return (
@@ -83,7 +83,7 @@ export const AppWrapper = () => {
           authenticateOnMount: true,
         },
         publicSalt,
-        appName: "Your App Name",
+        appName: 'Your App Name',
       }}
     >
       <Layout />
@@ -161,13 +161,13 @@ At minimum, provide:
 Typical baseline:
 
 ```tsx
-import { ResourceListDisplay, QortalSearchParams } from "qapp-core";
+import { ResourceListDisplay, QortalSearchParams } from 'qapp-core';
 
 const search: QortalSearchParams = {
-  service: "DOCUMENT",
+  service: 'DOCUMENT',
   limit: 20,
   reverse: true,
-  identifier: "example-",
+  identifier: 'example-',
 };
 
 <ResourceListDisplay

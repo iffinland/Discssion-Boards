@@ -25,33 +25,42 @@
     "test:architecture-v2-pagination": "tsc scripts/architectureV2.pagination.test.ts --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/architectureV2.pagination.test.js",
     "test:architecture-v2-access": "tsc scripts/architectureV2.access.test.tsx --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --jsx react-jsx --skipLibCheck && node .tmp-tests/scripts/architectureV2.access.test.js",
     "test:qortium-bridge-publication": "tsc scripts/qortiumBridgePublication.test.ts --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/qortiumBridgePublication.test.js",
-    "test:qortium-home-display": "tsc scripts/qortiumHomeDisplay.test.ts --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/qortiumHomeDisplay.test.js"
+    "test:qortium-home-display": "tsc scripts/qortiumHomeDisplay.test.ts --outDir .tmp-tests --module ES2022 --target ES2022 --moduleResolution bundler --lib ES2022,DOM --types vite/client --skipLibCheck && node .tmp-tests/scripts/qortiumHomeDisplay.test.js",
+    "verify": "npm run lint && npm run format:check && npm run test:architecture-v2 && npm run test:architecture-v2-runtime && npm run test:architecture-v2-reactions && npm run test:architecture-v2-polls && npm run test:architecture-v2-moderation && npm run test:architecture-v2-roles && npm run test:architecture-v2-tips && npm run test:architecture-v2-pagination && npm run test:architecture-v2-access && npm run test:qortium-bridge-publication && npm run test:qortium-home-display && npm run test:richtext && npm run build"
   },
+  "engines": {
+    "node": "24.x",
+    "npm": "12.x"
+  },
+  "packageManager": "npm@12.0.1",
   "dependencies": {
     "i18next": "^25.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^15.5.1",
-    "react-router-dom": "^7.3.0"
+    "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.21.0",
+    "@eslint/js": "^9.39.5",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.24",
-    "eslint": "^9.21.0",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.23",
     "prettier": "^3.5.3",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.7.2",
-    "typescript-eslint": "^8.24.1",
-    "vite": "^6.3.5"
+    "typescript-eslint": "^8.65.0",
+    "vite": "^6.4.3"
+  },
+  "allowScripts": {
+    "esbuild@0.25.0": true
   }
 }

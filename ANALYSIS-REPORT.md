@@ -19,18 +19,20 @@ The application occasionally displays only the header with a "no content" messag
 **Location:** `src/features/forum/hooks/useForumDataQuery.ts` (lines 314-446)
 
 **Problem:**
+
 - The `bootstrapQdnData()` function wraps all data loading in a try-catch block
 - When data loading fails (Topic Directory Index not found OR Forum Structure loading fails), the error is caught silently
 - The app sets `isAuthReady = true` with empty topics/subTopics arrays
 - Users see the app interface but with no content
 
 **Code Evidence:**
+
 ```typescript
 // Lines 423-446
 catch {
   endTiming({ error: true });
   if (!active) return;
-  
+
   // Sets empty state but marks auth as ready
   setTopics([]);
   setSubTopics([]);
@@ -48,22 +50,28 @@ catch {
 **Location:** `src/features/forum/hooks/useForumDataQuery.ts` (lines 265-312)
 
 **Problem:**
+
 - Data loading only triggers when `isLoadingUser` becomes false
 - If authentication takes time or has issues, the identity key might not be properly set
 - The identity check (lines 307-312) might return early, skipping data load entirely
 
 **Code Evidence:**
+
 ```typescript
 // Lines 298-303
 if (isLoadingUser) {
   setIsAuthReady(false);
-  return () => { active = false; };
+  return () => {
+    active = false;
+  };
 }
 
 // Lines 307-312
 if (loadedIdentityRef.current === identityKey) {
   setIsAuthReady(true); // ⚠️ Returns without checking if data exists
-  return () => { active = false; };
+  return () => {
+    active = false;
+  };
 }
 ```
 
@@ -76,11 +84,13 @@ if (loadedIdentityRef.current === identityKey) {
 **Location:** `src/services/qdn/forumSearchIndexService.ts` & `src/services/qdn/forumQdnService.ts`
 
 **Problem:**
+
 - Unlike the Qortal best practices (see `agents/qortal-runtime-performance-rules.md`), the app doesn't explicitly check if QDN resources are in READY state before loading
 - The `qdnReadiness.ts` service exists but isn't used during initial bootstrap
 - QDN resources might be in PUBLISHED, DOWNLOADING, or BUILDING state but the app treats fetch errors as permanent failures
 
 **Missing Implementation:**
+
 ```typescript
 // Should check resource status first:
 // 1. GET_QDN_RESOURCE_STATUS
@@ -99,11 +109,13 @@ if (loadedIdentityRef.current === identityKey) {
 **Location:** `src/pages/Home.tsx` (lines 1059-1067)
 
 **Problem:**
+
 - Loading state only checks: `!isAuthReady && topics.length === 0 && subTopics.length === 0`
 - Once `isAuthReady` becomes true, the component renders fully even if topics failed to load
 - No distinction between "loading", "loaded successfully", and "loaded with errors"
 
 **Code Evidence:**
+
 ```typescript
 // Lines 1059-1067
 if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
@@ -127,6 +139,7 @@ if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
 **Location:** Throughout data loading flow
 
 **Problem:**
+
 - When initial data load fails, there's no automatic retry
 - Users must manually refresh the entire application
 - Transient network issues or QDN sync delays become permanent failures
@@ -140,11 +153,13 @@ if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
 **Location:** `src/services/qdn/forumSearchIndexService.ts` (line 26) & `src/services/qdn/forumQdnService.ts` (line 30)
 
 **Problem:**
+
 - Topic Directory Index cache TTL: 15 seconds
 - Forum Structure cache TTL: 30 seconds
 - If cache is set with null/empty data after a failed load, subsequent loads within TTL window will continue showing empty state
 
 **Code Evidence:**
+
 ```typescript
 // forumSearchIndexService.ts lines 709-722
 .then((result) => {
@@ -164,7 +179,9 @@ if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
 ## Comparison with Other Qortal Applications
 
 ### BAZAAR-1.0 (Successful Implementation)
+
 ✅ **Better Practices:**
+
 - Explicit loading states with progress indicators
 - Shows sync information to users (`syncInfo`, `syncProgress`)
 - Multiple retry mechanisms
@@ -172,6 +189,7 @@ if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
 - QDN error events handled with user notifications
 
 ### Q-Shop (Different Architecture)
+
 - Simpler data model without complex index structures
 - Relies more on direct QDN resource fetching
 - Less complex bootstrap process
@@ -183,26 +201,29 @@ if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
 ### 🔴 **CRITICAL - Immediate Fixes**
 
 #### 1. Add Explicit Error States in useForumDataQuery
+
 **File:** `src/features/forum/hooks/useForumDataQuery.ts`
 
 Add error state tracking:
+
 ```typescript
 const [loadError, setLoadError] = useState<string | null>(null);
 const [isRetrying, setIsRetrying] = useState(false);
 ```
 
 Update error handling:
+
 ```typescript
 catch (error) {
   endTiming({ error: true });
   if (!active) return;
-  
-  const errorMessage = error instanceof Error 
-    ? error.message 
+
+  const errorMessage = error instanceof Error
+    ? error.message
     : 'Failed to load forum data';
-  
+
   setLoadError(errorMessage);
-  
+
   // Still set basic user info
   if (session && session.user.id !== GUEST_USER.id) {
     setAuthenticatedAddress(session.authenticatedAddress);
@@ -213,7 +234,7 @@ catch (error) {
     setUsers([GUEST_USER]);
     setCurrentUserId(GUEST_USER.id);
   }
-  
+
   setTopics([]);
   setSubTopics([]);
   setPosts([]);
@@ -222,37 +243,41 @@ catch (error) {
 ```
 
 #### 2. Implement QDN Readiness Check Before Loading
+
 **File:** `src/services/qdn/forumQdnService.ts`
 
 Add readiness check in `loadForumStructure()`:
+
 ```typescript
 async loadForumStructure() {
   const endTiming = perfDebugTimeStart('forum-structure-load');
-  
+
   // NEW: Check if primary resources are ready
   try {
     await ensureQdnResourceReady(
-      FORUM_SERVICE, 
+      FORUM_SERVICE,
       'primary-admin-or-known-publisher', // Should be from config
       TOPIC_DIRECTORY_IDENTIFIER
     );
   } catch {
     // Resource not found or not ready yet - acceptable for first load
   }
-  
+
   const [topicPayloads, subTopicPayloads] = await Promise.all([
     fetchTopicPayloads(),
     fetchSubTopicPayloads(),
   ]);
-  
+
   // Rest of existing code...
 }
 ```
 
 #### 3. Add Retry Button in Home Page
+
 **File:** `src/pages/Home.tsx`
 
 Update loading check:
+
 ```typescript
 if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
   return (
@@ -299,6 +324,7 @@ if (isAuthReady && topics.length === 0 && subTopics.length === 0 && loadError) {
 ### 🟡 **HIGH PRIORITY - Enhanced Reliability**
 
 #### 4. Implement Automatic Retry with Exponential Backoff
+
 **File:** `src/features/forum/hooks/useForumDataQuery.ts`
 
 ```typescript
@@ -314,16 +340,18 @@ const retryWithBackoff = async (
     } catch (error) {
       if (attempt === maxAttempts - 1) throw error;
       const delayMs = baseDelayMs * Math.pow(2, attempt);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 };
 ```
 
 #### 5. Add Loading Progress Indicators
+
 **File:** `src/features/forum/hooks/useForumDataQuery.ts`
 
 Track loading stages:
+
 ```typescript
 const [loadingStage, setLoadingStage] = useState<string>('Initializing...');
 
@@ -336,9 +364,11 @@ setLoadingStage('Ready');
 ```
 
 #### 6. Implement Cache Validation
+
 **Files:** `src/services/qdn/forumSearchIndexService.ts` & `src/services/qdn/forumQdnService.ts`
 
 Before returning cached data:
+
 ```typescript
 if (
   !force &&
@@ -346,8 +376,10 @@ if (
   now - forumStructureCache.updatedAt <= maxAgeMs
 ) {
   // NEW: Validate cache isn't empty/invalid
-  if (forumStructureCache.value.topics.length === 0 && 
-      forumStructureCache.value.subTopics.length === 0) {
+  if (
+    forumStructureCache.value.topics.length === 0 &&
+    forumStructureCache.value.subTopics.length === 0
+  ) {
     // Cache is empty - treat as stale
     forumStructureCache.updatedAt = 0;
   } else {
@@ -361,7 +393,9 @@ if (
 ### 🟢 **MEDIUM PRIORITY - UX Improvements**
 
 #### 7. Add Onboarding State for New Forums
+
 Show helpful message when forum is genuinely empty:
+
 ```typescript
 if (isAuthReady && topics.length === 0 && !loadError) {
   return (
@@ -377,9 +411,11 @@ if (isAuthReady && topics.length === 0 && !loadError) {
 ```
 
 #### 8. Implement Health Check Endpoint
+
 Create a service method to verify QDN connectivity:
+
 ```typescript
-async healthCheck(): Promise<{ 
+async healthCheck(): Promise<{
   qdnAvailable: boolean;
   resourcesAccessible: boolean;
   estimatedReadyIn?: number;
@@ -391,7 +427,9 @@ async healthCheck(): Promise<{
 ```
 
 #### 9. Add Debug Information Panel
+
 For developers and admins to diagnose issues:
+
 ```typescript
 {isDevelopment && (
   <details className="mt-4">
@@ -411,6 +449,7 @@ For developers and admins to diagnose issues:
 ## Testing Recommendations
 
 ### Manual Test Cases
+
 1. **Cold Start Test:** Clear all browser cache, reload app
 2. **Slow Network Test:** Throttle network to 3G, observe behavior
 3. **QDN Sync Test:** Load app immediately after publishing new topic
@@ -418,6 +457,7 @@ For developers and admins to diagnose issues:
 5. **Offline Test:** Disconnect network entirely, verify error messaging
 
 ### Automated Tests to Add
+
 ```typescript
 describe('Forum Data Loading', () => {
   it('should show loading state initially', () => {});
@@ -433,7 +473,9 @@ describe('Forum Data Loading', () => {
 ## Configuration Recommendations
 
 ### Environment Variables
+
 Add to `.env.example`:
+
 ```bash
 # QDN Loading Configuration
 VITE_QDN_READINESS_TIMEOUT_MS=30000
@@ -449,6 +491,7 @@ VITE_FORUM_PRIMARY_ADMIN=QiY1TzA7WYAN8DQpNLFpnWLqFnwnwyviLE
 ## Official Qortal Resources Referenced
 
 During analysis, I reviewed:
+
 - ✅ Project documentation in `README.md`
 - ✅ Qortal framework essentials in `agents/qapp-framework-essentials.md`
 - ✅ Qortal runtime performance rules in `agents/qortal-runtime-performance-rules.md`
@@ -461,16 +504,19 @@ During analysis, I reviewed:
 ## Implementation Priority
 
 ### Phase 1 (Critical - Do First)
+
 1. Add error state to `useForumDataQuery` ✅ **MUST DO**
 2. Update Home.tsx to show error UI ✅ **MUST DO**
 3. Add retry mechanism ✅ **MUST DO**
 
 ### Phase 2 (High Priority)
+
 4. Implement QDN readiness checks
 5. Add loading stage indicators
 6. Fix cache validation
 
 ### Phase 3 (Nice to Have)
+
 7. Add onboarding for empty forums
 8. Implement health check
 9. Add debug panel

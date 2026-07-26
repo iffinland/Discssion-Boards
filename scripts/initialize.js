@@ -22,9 +22,10 @@ try {
 
   try {
     await writeFile(filePath, tsContent, 'utf8');
-    console.log('✅ qapp-config.ts has been created with a unique public salt.');
+    console.log(
+      '✅ qapp-config.ts has been created with a unique public salt.'
+    );
   } catch (error) {
     console.error('❌ Error writing qapp-config.ts:', error);
   }
 }
-
