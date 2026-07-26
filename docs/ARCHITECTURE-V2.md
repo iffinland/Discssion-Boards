@@ -2,7 +2,8 @@
 
 Status: **Implemented through Phase 6, delegated-role persistence issue #7,
 restricted-access terminology issue #9, bridge/publication hardening issue
-#11, and Home display/localization alignment issue #12**
+#11, Home display/localization alignment issue #12, and release metadata
+issue #14**
 
 This document defines the Architecture V2 state, authority, validation, and
 migration model for Discussion Boards. It is the prerequisite deliverable for
@@ -2292,3 +2293,24 @@ Each operation phase tests:
    confidentiality becomes a confirmed product requirement.
 
 Deferred decisions may not violate the invariants in section 3.
+
+## 29. Release and QAVS boundary
+
+Issue #14 adds release metadata without changing any Architecture V2 authority,
+operation, compatibility, or migration rule.
+
+At Qortium Home commit
+`a41e5f9678d7f20d7fb77a223c45fddc0096632e`, QAVS draft v1 defines only a
+required `version` and optional `name` in root `qortium-app.json`. Its `X.Y`
+means the minimum Qortium platform level used by an app, while `Z` is an app
+release counter. Discussion Boards uses Home 1.5 display-setting capabilities,
+so the current release candidate is `1.5.0-rc.1`. A conventional
+`2.0.0-rc.1` app version would incorrectly claim a Qortium platform 2.0
+requirement. Architecture V2 remains the major state-schema boundary through
+`schemaVersion: 2`.
+
+`package.json` is the canonical release-version source. Repository validation
+requires package, lockfile, QAVS manifest, build-injected UI, expected tag,
+artifact, and provenance metadata to agree. The complete source-to-QDN release
+contract is in `docs/RELEASE.md`. Automatic legacy adoption and canonical
+migration-manifest activation remain disabled regardless of release version.

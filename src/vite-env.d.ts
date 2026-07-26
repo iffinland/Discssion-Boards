@@ -2,6 +2,8 @@
 
 declare module '*.css';
 
+declare const __APP_VERSION__: string;
+
 interface Window {
   qdnRequest?: <T = unknown>(request: Record<string, unknown>) => Promise<T>;
   _qdnBase?: string;

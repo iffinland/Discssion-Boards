@@ -2,7 +2,13 @@ const en = {
   app: {
     name: 'Qortium Discussion Boards',
     loadingPage: 'Loading page...',
-    version: 'Discussion Boards - Since 2026 | App version 0.1',
+  },
+  legal: {
+    summary:
+      'Discussion Boards v{{version}} · Copyright © 2026 iffinland · GPL-3.0-only',
+    noWarranty: 'This program comes with absolutely no warranty.',
+    source: 'Source code',
+    license: 'License',
   },
   common: {
     cancel: 'Cancel',

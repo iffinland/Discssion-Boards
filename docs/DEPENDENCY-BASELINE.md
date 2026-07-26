@@ -171,3 +171,9 @@ Refresh on a routed page under an actually injected QDN base, legacy/share
 redirects with live content, lazy-chunk recovery, and embedded runtime console
 observation remain documented manual release checks. The router API and
 application route definitions did not require source changes.
+
+Issue #14 subsequently added `@types/node` on the Node 24 line so the
+TypeScript-checked Vite configuration can emit validated license/QAVS release
+metadata from repository files. It is development-only, introduces no runtime
+bundle capability, and does not reopen the controlled issue #13 dependency
+decisions.

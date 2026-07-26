@@ -1,16 +1,30 @@
 # Qortium Discussion Boards
 
 Qortium Discussion Boards is a Qortium Q-App for managing forum-style conversations on QDN.
-It supports main topics, sub-topics, thread replies, role-based moderation, image attachments,
-and Qortium-native account detection through the `qdnRequest` bridge.
+It supports topics, threads, replies, authenticated reactions, Qortium-native polls,
+role-authorized moderation, verified QORT tips, media/attachments, and Qortium-native account
+detection through the `qdnRequest` bridge.
+
+Current release status: **Architecture V2 release candidate `1.5.0-rc.1`**.
+The version follows the current Qortium App Versioning Standard (QAVS): `1.5`
+is the minimum Qortium platform level used by the app, and the remaining
+version identifies this app release.
 
 ## What the app does
 
-- Loads forum structure from QDN resources.
-- Loads thread posts on demand instead of pulling the full post set on first render.
-- Uses persistent thread search indexes and local cache to reduce repeated QDN reads.
-- Supports forum roles backed by a QDN role registry.
-- Runs inside Qortium Home with relative asset paths and QDN readiness handling.
+- Reduces authoritative Architecture V2 Topic, Thread, and Post records
+  deterministically from trusted QDN metadata.
+- Keeps legacy V1 forum content readable without allowing ambiguous legacy
+  publishers to inherit V2 authority.
+- Stores reactions, moderation, roles, and verified tip references as
+  independent operations rather than mutable whole-Post snapshots.
+- Uses native Qortium polls and Core-authoritative poll results.
+- Uses paginated discovery and rebuildable, non-authoritative index fragments.
+- Runs inside Qortium Home with relative assets, display settings,
+  localization, wallet approval, and QDN readiness handling.
+
+Architecture and migration details are in
+[docs/ARCHITECTURE-V2.md](docs/ARCHITECTURE-V2.md).
 
 ## Stack
 
@@ -39,7 +53,15 @@ src/
 - Vite build base is set to `./` for Qortium QDN compatibility.
 - Static assets must stay relative-path friendly.
 - QDN resources are treated as asynchronous and may require readiness polling.
-- Thread content should prefer thread-scoped indexes and caches before broader fallback scans.
+- Derived indexes and caches never establish entity or operation authority.
+- Content described as restricted is still public and unencrypted on QDN.
+- Signing, wallet access, native transactions, Home settings, and QDN
+  publication require the injected Qortium Home bridge.
+- Local browser development is limited/read-only where data is already
+  available; it does not emulate secure bridge actions.
+- New files through 2 MiB may use bounded inline publication. Larger accepted
+  files through the currently verified 100 MiB Home limit use Home source
+  tokens rather than page-side base64.
 
 ## Environment variables
 
@@ -92,24 +114,51 @@ Run the complete deterministic verification sequence:
 npm run verify
 ```
 
+Validate QAVS and version metadata independently:
+
+```bash
+npm run validate:manifest
+npm run verify:version
+```
+
+The checked-in [qortium-app.json](qortium-app.json) is the current draft-v1
+QAVS manifest. The authoritative version source is `package.json`; validation
+requires the package, lockfile, manifest, build-injected UI value, and expected
+release tag to remain synchronized.
+
 ## Utility scripts
 
 - `npm run backup:workspace`
 - `npm run restore:workspace`
 - `npm run test:richtext`
 - `npm run verify`
+- `npm run validate:manifest`
+- `npm run verify:version`
+- `npm run release:dry-run`
 
 The backup and restore flow is documented in
 [scripts/BACKUP-RESTORE.md](scripts/BACKUP-RESTORE.md).
 Dependency, advisory, and routing maintenance decisions are recorded in
 [docs/DEPENDENCY-BASELINE.md](docs/DEPENDENCY-BASELINE.md).
+Release tags, artifacts, provenance, source availability, embedded Home checks,
+and the non-publishing dry run are documented in
+[docs/RELEASE.md](docs/RELEASE.md). Draft Architecture V2 candidate notes are
+in
+[docs/releases/ARCHITECTURE-V2-RC1.md](docs/releases/ARCHITECTURE-V2-RC1.md).
 
-## Current architecture notes
+## QDN deployment and source
 
-- `ForumProvider` owns forum data loading, thread loading, and cache warming.
-- `forumSearchIndexService` provides persistent topic and thread indexes.
-- `forumQdnService` handles QDN publish/read flows for topics, sub-topics, posts, and images.
-- `forumRolesService` resolves the forum role registry from trusted QDN resources.
+The architecture review identified the existing app target as:
+
+```text
+qdn://APP/Discussion_Boards/discussion-boards
+```
+
+No production QDN publication is performed by repository build or verification
+commands. Every approved deployment must identify the exact source commit and
+release tag, artifact SHA-256, and resulting QDN transaction/resource
+reference. Source repository:
+[github.com/iffinland/Discssion-Boards](https://github.com/iffinland/Discssion-Boards).
 
 ## Verification status
 
@@ -119,3 +168,12 @@ At the time of the latest verification pass:
 - `npm run format:check` passes
 - all Architecture V2 and Qortium integration suites pass
 - `npm run build` should be used as the final production verification step before release
+
+## License
+
+Copyright © 2026 iffinland.
+
+Discussion Boards is free software licensed under the
+[GNU General Public License v3.0 only](LICENSE), SPDX identifier
+`GPL-3.0-only`. It comes with absolutely no warranty. Third-party component
+attributions are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

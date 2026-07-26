@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/iffinland/Discssion-Boards/blob/main/docs/release-provenance.schema.json",
+  "title": "Discussion Boards release provenance",
+  "type": "object",
+  "required": [
+    "schema",
+    "appName",
+    "version",
+    "source",
+    "build",
+    "qavs",
+    "artifact",
+    "expectedReleaseTag",
+    "qdn"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qortium.discussion-boards.release-provenance/v1"
+    },
+    "appName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "required": ["commit", "branch", "dirty"],
+      "properties": {
+        "commit": { "type": "string", "minLength": 40 },
+        "branch": { "type": "string", "minLength": 1 },
+        "dirty": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "build": {
+      "type": "object",
+      "required": ["timestamp", "sourceDateEpoch", "nodeVersion", "npmVersion"],
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "sourceDateEpoch": { "type": "integer", "minimum": 1 },
+        "nodeVersion": { "type": "string", "minLength": 1 },
+        "npmVersion": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "qavs": {
+      "type": "object",
+      "required": [
+        "status",
+        "specificationCommit",
+        "referenceCommit",
+        "manifestVersion"
+      ],
+      "properties": {
+        "status": { "const": "draft-v1" },
+        "specificationCommit": { "type": "string", "minLength": 40 },
+        "referenceCommit": { "type": "string", "minLength": 40 },
+        "manifestVersion": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["filename", "sha256", "byteSize"],
+      "properties": {
+        "filename": { "type": "string", "pattern": "\\.zip$" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "byteSize": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "expectedReleaseTag": {
+      "type": "string",
+      "pattern": "^v"
+    },
+    "qdn": {
+      "type": "object",
+      "required": ["service", "publisher", "identifier", "resourceReference"],
+      "properties": {
+        "service": { "const": "APP" },
+        "publisher": { "type": "string", "minLength": 1 },
+        "identifier": { "type": "string", "minLength": 1 },
+        "resourceReference": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules', '.tmp-tests'],
+    ignores: ['dist', 'node_modules', '.release', '.tmp-tests'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -34,7 +34,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.{js,ts}'],
+    files: ['scripts/**/*.{js,mjs,cjs,ts}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: {
