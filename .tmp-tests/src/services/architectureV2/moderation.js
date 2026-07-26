@@ -1,0 +1,599 @@
+import { validateMetadata } from './validation.js';
+import { resolveRole, resolveRoleAt, roleLineageEquals, } from './roles.js';
+const MODERATION_ACTIONS = [
+    'pin',
+    'unpin',
+    'lock',
+    'unlock',
+    'solve',
+    'unsolve',
+    'hide',
+    'unhide',
+    'remove',
+    'restore',
+    'set-order',
+];
+const ROLE_RANK = {
+    Member: 0,
+    Moderator: 1,
+    Admin: 2,
+    SuperAdmin: 3,
+    SysOp: 4,
+};
+const MINIMUM_ROLE = {
+    topic: {
+        lock: 'Admin',
+        unlock: 'Admin',
+        hide: 'Admin',
+        unhide: 'Admin',
+        remove: 'Admin',
+        restore: 'Admin',
+        'set-order': 'SuperAdmin',
+    },
+    thread: {
+        pin: 'Admin',
+        unpin: 'Admin',
+        lock: 'Moderator',
+        unlock: 'Moderator',
+        solve: 'Moderator',
+        unsolve: 'Moderator',
+        hide: 'Admin',
+        unhide: 'Admin',
+        remove: 'Admin',
+        restore: 'Admin',
+        'set-order': 'SuperAdmin',
+    },
+    post: {
+        pin: 'Moderator',
+        unpin: 'Moderator',
+        hide: 'Admin',
+        unhide: 'Admin',
+        remove: 'Admin',
+        restore: 'Admin',
+    },
+};
+const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+const hasOnlyKeys = (value, allowed) => Object.keys(value).every((key) => allowed.includes(key));
+const isUserRole = (value) => value === 'Member' ||
+    value === 'Moderator' ||
+    value === 'Admin' ||
+    value === 'SuperAdmin' ||
+    value === 'SysOp';
+const isEntityType = (value) => value === 'topic' || value === 'thread' || value === 'post';
+const isModerationAction = (value) => MODERATION_ACTIONS.some((action) => action === value);
+export const resolveRoleFromTrustedState = (address, state) => resolveRole(address, state.registry);
+const isAuthorizationReference = (value) => {
+    if (!isUserRole(value.actorRole))
+        return false;
+    if (value.model === 'current-primary-registry-revalidation')
+        return (hasOnlyKeys(value, [
+            'model',
+            'actorRole',
+            'registryIdentifier',
+            'registrySignature',
+        ]) &&
+            (typeof value.registryIdentifier === 'string' ||
+                value.registryIdentifier === null) &&
+            (typeof value.registrySignature === 'string' ||
+                value.registrySignature === null));
+    if (value.model !== 'v2-role-operation-history')
+        return false;
+    if (!hasOnlyKeys(value, [
+        'model',
+        'actorRole',
+        'bootstrapIdentifier',
+        'bootstrapSignature',
+        'previousOperationId',
+        'previousOperationSignature',
+    ]))
+        return false;
+    const paired = (left, right) => (left === null && right === null) ||
+        (typeof left === 'string' &&
+            left.trim().length > 0 &&
+            typeof right === 'string' &&
+            right.trim().length > 0);
+    return (paired(value.bootstrapIdentifier, value.bootstrapSignature) &&
+        paired(value.previousOperationId, value.previousOperationSignature));
+};
+export const isModerationEnvelope = (value) => {
+    if (!isRecord(value) || !isRecord(value.body))
+        return false;
+    const body = value.body;
+    if (!isRecord(body.authorization))
+        return false;
+    const authorization = body.authorization;
+    return (hasOnlyKeys(value, [
+        'schema',
+        'schemaVersion',
+        'kind',
+        'recordType',
+        'recordId',
+        'targetId',
+        'body',
+        'clientCreatedAt',
+    ]) &&
+        hasOnlyKeys(body, [
+            'operation',
+            'action',
+            'targetType',
+            'targetId',
+            'actorName',
+            'actorAddress',
+            'authorization',
+            'reason',
+            'orderValue',
+        ]) &&
+        value.schema === 'qdb-v2' &&
+        value.schemaVersion === 2 &&
+        value.kind === 'operation' &&
+        value.recordType === 'moderation' &&
+        typeof value.recordId === 'string' &&
+        value.recordId.trim().length > 0 &&
+        typeof value.targetId === 'string' &&
+        value.targetId.trim().length > 0 &&
+        (value.clientCreatedAt === undefined ||
+            typeof value.clientCreatedAt === 'string') &&
+        body.operation === 'moderation' &&
+        isModerationAction(body.action) &&
+        isEntityType(body.targetType) &&
+        typeof body.targetId === 'string' &&
+        body.targetId === value.targetId &&
+        typeof body.actorName === 'string' &&
+        body.actorName.trim().length > 0 &&
+        typeof body.actorAddress === 'string' &&
+        body.actorAddress.trim().length > 0 &&
+        (body.reason === undefined || typeof body.reason === 'string') &&
+        (body.action === 'set-order'
+            ? Number.isSafeInteger(body.orderValue) &&
+                typeof body.orderValue === 'number' &&
+                body.orderValue >= 0
+            : body.orderValue === undefined) &&
+        isAuthorizationReference(authorization));
+};
+export const classifyInvalidModerationEnvelope = (value) => {
+    if (!isRecord(value) || !isRecord(value.body))
+        return 'MALFORMED_MODERATION_ENVELOPE';
+    if (typeof value.targetId === 'string' &&
+        typeof value.body.targetId === 'string' &&
+        value.targetId !== value.body.targetId)
+        return 'MODERATION_INVALID_TARGET';
+    const allowedEnvelope = [
+        'schema',
+        'schemaVersion',
+        'kind',
+        'recordType',
+        'recordId',
+        'targetId',
+        'body',
+        'clientCreatedAt',
+    ];
+    const allowedBody = [
+        'operation',
+        'action',
+        'targetType',
+        'targetId',
+        'actorName',
+        'actorAddress',
+        'authorization',
+        'reason',
+        'orderValue',
+    ];
+    if (!hasOnlyKeys(value, allowedEnvelope) ||
+        !hasOnlyKeys(value.body, allowedBody))
+        return 'MODERATION_FORBIDDEN_FIELD';
+    if (value.body.operation === 'moderation' &&
+        !isModerationAction(value.body.action))
+        return 'MODERATION_UNSUPPORTED_ACTION';
+    return 'MALFORMED_MODERATION_ENVELOPE';
+};
+export const buildModerationEnvelope = (body, recordId, clientCreatedAt = new Date().toISOString()) => ({
+    schema: 'qdb-v2',
+    schemaVersion: 2,
+    kind: 'operation',
+    recordType: 'moderation',
+    recordId,
+    targetId: body.targetId,
+    body,
+    clientCreatedAt,
+});
+const canonicalize = (value) => {
+    if (Array.isArray(value))
+        return `[${value.map(canonicalize).join(',')}]`;
+    if (isRecord(value))
+        return `{${Object.keys(value)
+            .sort()
+            .map((key) => `${JSON.stringify(key)}:${canonicalize(value[key])}`)
+            .join(',')}}`;
+    return JSON.stringify(value);
+};
+const compareRecords = (left, right) => {
+    if (left.metadata.created !== right.metadata.created)
+        return left.metadata.created - right.metadata.created;
+    const signature = (left.metadata.latestSignature ?? '').localeCompare(right.metadata.latestSignature ?? '');
+    if (signature)
+        return signature;
+    const identifier = left.metadata.identifier.localeCompare(right.metadata.identifier);
+    if (identifier)
+        return identifier;
+    return left.metadata.publisherName.localeCompare(right.metadata.publisherName);
+};
+const dimensionForAction = (action) => {
+    if (action === 'pin' || action === 'unpin')
+        return 'pin';
+    if (action === 'lock' || action === 'unlock')
+        return 'lock';
+    if (action === 'solve' || action === 'unsolve')
+        return 'solve';
+    if (action === 'hide' || action === 'unhide')
+        return 'hide';
+    if (action === 'remove' || action === 'restore')
+        return 'remove';
+    return 'order';
+};
+const authorizationMatchesCheckpoint = (authorization, checkpoint) => {
+    if (authorization.model === 'v2-role-operation-history')
+        return roleLineageEquals(authorization, checkpoint);
+    return (checkpoint.previousOperationId === null &&
+        checkpoint.previousOperationSignature === null &&
+        authorization.registryIdentifier === checkpoint.bootstrapIdentifier &&
+        authorization.registrySignature === checkpoint.bootstrapSignature);
+};
+const diagnostic = (code, record, detail) => ({
+    code,
+    identifier: record.metadata.identifier,
+    detail,
+});
+const validateRecord = (record, authority, identity, roleState) => {
+    const metadata = validateMetadata(record.metadata);
+    if (metadata.ok === false)
+        return {
+            ok: false,
+            diagnostic: diagnostic(metadata.code, record, metadata.detail),
+        };
+    if (record.metadata.updated !== null)
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_RESOURCE_REPUBLISHED', record, 'moderation operations are append-only and cannot reuse an updated QDN resource'),
+        };
+    if (record.metadata.identifier !== record.envelope.recordId)
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_IDENTIFIER_MISMATCH', record, 'trusted QDN identifier does not match moderation record id'),
+        };
+    const body = record.envelope.body;
+    const target = authority.entities[body.targetId];
+    if (!target)
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_INVALID_TARGET', record, 'target has no authoritative V2 entity; unresolved legacy authority is read-only'),
+        };
+    if (target.entityType !== body.targetType)
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_TARGET_TYPE_MISMATCH', record, 'moderation target type does not match authoritative entity'),
+        };
+    const publisher = identity.validatePublisher(record.metadata, body.actorName);
+    if (publisher.ok === false)
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_FORGED_ACTOR', record, publisher.detail),
+        };
+    const wallet = identity.validateWalletBinding(body.actorName, body.actorAddress);
+    if (wallet.ok === false)
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_WALLET_BINDING_MISSING', record, wallet.detail),
+        };
+    if (roleState.status === 'UNAVAILABLE')
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_ROLE_STATE_UNAVAILABLE', record, roleState.detail),
+        };
+    if (roleState.status === 'UNVERIFIED')
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_ROLE_STATE_UNVERIFIED', record, roleState.detail),
+        };
+    const historical = resolveRoleAt(roleState, record.metadata);
+    if (historical.ok === false)
+        return {
+            ok: false,
+            diagnostic: diagnostic(historical.code === 'ROLE_BOOTSTRAP_TRUST_FAILURE'
+                ? 'MODERATION_ROLE_STATE_UNAVAILABLE'
+                : 'MODERATION_ROLE_CLAIM_MISMATCH', record, historical.detail),
+        };
+    const actorRole = resolveRole(body.actorAddress, historical.registry);
+    if (!authorizationMatchesCheckpoint(body.authorization, historical.checkpoint))
+        return {
+            ok: false,
+            diagnostic: diagnostic(ROLE_RANK[actorRole] < ROLE_RANK[body.authorization.actorRole]
+                ? 'MODERATION_ROLE_REVOKED'
+                : 'MODERATION_ROLE_CLAIM_MISMATCH', record, ROLE_RANK[actorRole] < ROLE_RANK[body.authorization.actorRole]
+                ? 'trusted prior role history no longer authorizes the claimed role at publication order'
+                : 'moderation authorization does not reference the trusted role checkpoint immediately preceding publication'),
+        };
+    if (actorRole !== body.authorization.actorRole)
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_ROLE_CLAIM_MISMATCH', record, 'payload role claim does not match trusted role state at publication order'),
+        };
+    const minimumRole = MINIMUM_ROLE[body.targetType][body.action];
+    if (!minimumRole || ROLE_RANK[actorRole] < ROLE_RANK[minimumRole])
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_INSUFFICIENT_ROLE', record, `${actorRole} cannot ${body.action} ${body.targetType}`),
+        };
+    const targetOwnerRole = resolveRole(target.walletAddress, historical.registry);
+    const sameWallet = target.walletAddress.trim() === body.actorAddress.trim();
+    if (!sameWallet &&
+        targetOwnerRole !== 'Member' &&
+        ROLE_RANK[actorRole] <= ROLE_RANK[targetOwnerRole])
+        return {
+            ok: false,
+            diagnostic: diagnostic('MODERATION_INSUFFICIENT_ROLE', record, 'staff may not moderate content owned by an equal or higher trusted role'),
+        };
+    return { ok: true, actorRole };
+};
+export const reduceModerationRecords = (records, authority, identity, roleState) => {
+    const state = {
+        targets: {},
+        diagnostics: [],
+        audit: [],
+    };
+    const grouped = new Map();
+    records.forEach((record) => {
+        const group = grouped.get(record.envelope.recordId) ?? [];
+        group.push(record);
+        grouped.set(record.envelope.recordId, group);
+    });
+    const candidates = [];
+    [...grouped.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .forEach(([, group]) => {
+        const distinct = new Map(group.map((record) => [
+            canonicalize({
+                metadata: record.metadata,
+                envelope: record.envelope,
+            }),
+            record,
+        ]));
+        if (distinct.size > 1) {
+            const first = [...group].sort(compareRecords)[0];
+            state.diagnostics.push(diagnostic('MODERATION_CONFLICT', first, 'conflicting records reuse the same moderation record id'));
+            return;
+        }
+        candidates.push([...distinct.values()][0]);
+    });
+    [...candidates].sort(compareRecords).forEach((record) => {
+        const valid = validateRecord(record, authority, identity, roleState);
+        if (valid.ok === false) {
+            state.diagnostics.push(valid.diagnostic);
+            return;
+        }
+        const body = record.envelope.body;
+        const dimension = dimensionForAction(body.action);
+        const current = state.targets[body.targetId] ?? {
+            targetType: body.targetType,
+            decisions: {},
+        };
+        const prior = current.decisions[dimension];
+        if (prior && ROLE_RANK[valid.actorRole] < ROLE_RANK[prior.actorRole]) {
+            state.diagnostics.push(diagnostic('MODERATION_PRECEDENCE_DENIED', record, `${valid.actorRole} cannot override ${prior.actorRole} moderation`));
+            return;
+        }
+        const decision = {
+            action: body.action,
+            actorName: body.actorName,
+            actorAddress: body.actorAddress,
+            actorRole: valid.actorRole,
+            reason: body.reason?.trim() || null,
+            trustedCreated: record.metadata.created,
+            latestSignature: record.metadata.latestSignature ?? null,
+            identifier: record.metadata.identifier,
+        };
+        const next = {
+            ...current,
+            decisions: { ...current.decisions, [dimension]: decision },
+        };
+        if (dimension === 'pin')
+            next.pinned = body.action === 'pin';
+        else if (dimension === 'lock')
+            next.locked = body.action === 'lock';
+        else if (dimension === 'solve')
+            next.solved = body.action === 'solve';
+        else if (dimension === 'hide')
+            next.hidden = body.action === 'hide';
+        else if (dimension === 'remove')
+            next.removed = body.action === 'remove';
+        else
+            next.order = body.orderValue;
+        state.targets[body.targetId] = next;
+        state.audit.push(decision);
+    });
+    return state;
+};
+export const loadModerationState = async (resources, dependencies) => {
+    const records = [];
+    const diagnostics = [];
+    for (const resource of resources) {
+        const identifier = resource.identifier ?? '';
+        if (!resource.name ||
+            !identifier ||
+            !resource.service ||
+            typeof resource.created !== 'number' ||
+            (resource.updated !== undefined &&
+                resource.updated !== null &&
+                typeof resource.updated !== 'number')) {
+            diagnostics.push({
+                code: 'MODERATION_MISSING_TRUSTED_METADATA',
+                identifier,
+                detail: 'moderation resource lacks trusted Core metadata',
+            });
+            continue;
+        }
+        let payload;
+        try {
+            payload = await dependencies.fetchPayload(resource);
+        }
+        catch {
+            diagnostics.push({
+                code: 'MODERATION_RESOURCE_UNAVAILABLE',
+                identifier,
+                detail: 'moderation resource payload is unavailable',
+            });
+            continue;
+        }
+        if (!isModerationEnvelope(payload)) {
+            diagnostics.push({
+                code: classifyInvalidModerationEnvelope(payload),
+                identifier,
+                detail: 'moderation payload failed strict schema validation',
+            });
+            continue;
+        }
+        records.push({
+            metadata: {
+                service: resource.service,
+                publisherName: resource.name,
+                identifier,
+                created: resource.created,
+                updated: resource.updated ?? null,
+                latestSignature: resource.latestSignature,
+            },
+            envelope: payload,
+        });
+    }
+    const reduced = reduceModerationRecords(records, dependencies.authority, dependencies.identity, dependencies.roleState);
+    return {
+        ...reduced,
+        diagnostics: [...diagnostics, ...reduced.diagnostics],
+    };
+};
+export const applyModerationToForumStructure = (topics, subTopics, moderation) => {
+    const moderatedTopics = topics
+        .map((topic) => {
+        const state = moderation.targets[topic.id];
+        if (!state || state.targetType !== 'topic')
+            return topic;
+        return {
+            ...topic,
+            ...(state.locked === undefined
+                ? {}
+                : { status: state.locked ? 'locked' : 'open' }),
+            ...(state.hidden === undefined
+                ? {}
+                : {
+                    visibility: state.hidden
+                        ? 'hidden'
+                        : 'visible',
+                }),
+            ...(state.order === undefined ? {} : { sortOrder: state.order }),
+        };
+    })
+        .filter((topic) => moderation.targets[topic.id]?.removed !== true)
+        .sort((left, right) => left.sortOrder - right.sortOrder);
+    const moderatedSubTopics = subTopics
+        .map((subTopic) => {
+        const state = moderation.targets[subTopic.id];
+        if (!state || state.targetType !== 'thread')
+            return subTopic;
+        const decisions = Object.values(state.decisions).filter((decision) => decision !== undefined);
+        const latest = decisions.sort((left, right) => right.trustedCreated - left.trustedCreated)[0];
+        return {
+            ...subTopic,
+            ...(state.pinned === undefined
+                ? {}
+                : {
+                    isPinned: state.pinned,
+                    pinnedAt: state.pinned
+                        ? new Date(state.decisions.pin?.trustedCreated ?? 0).toISOString()
+                        : null,
+                }),
+            ...(state.locked === undefined
+                ? {}
+                : { status: state.locked ? 'locked' : 'open' }),
+            ...(state.solved === undefined
+                ? {}
+                : {
+                    isSolved: state.solved,
+                    solvedAt: state.solved
+                        ? new Date(state.decisions.solve?.trustedCreated ?? 0).toISOString()
+                        : null,
+                    solvedByUserId: state.solved
+                        ? (state.decisions.solve?.actorName ?? null)
+                        : null,
+                }),
+            ...(state.hidden === undefined
+                ? {}
+                : {
+                    visibility: state.hidden
+                        ? 'hidden'
+                        : 'visible',
+                }),
+            ...(state.order === undefined ? {} : { moderationOrder: state.order }),
+            ...(latest
+                ? {
+                    lastModerationAction: latest.action,
+                    lastModerationReason: latest.reason,
+                    lastModeratedByUserId: latest.actorName,
+                    lastModeratedAt: new Date(latest.trustedCreated).toISOString(),
+                }
+                : {}),
+        };
+    })
+        .filter((subTopic) => moderation.targets[subTopic.id]?.removed !== true);
+    return { topics: moderatedTopics, subTopics: moderatedSubTopics };
+};
+export const applyModerationToPosts = (posts, moderation) => posts
+    .map((post) => {
+    const state = moderation.targets[post.id];
+    if (!state || state.targetType !== 'post')
+        return post;
+    return {
+        ...post,
+        ...(state.pinned === undefined
+            ? {}
+            : {
+                isPinned: state.pinned,
+                pinnedAt: state.pinned
+                    ? new Date(state.decisions.pin?.trustedCreated ?? 0).toISOString()
+                    : null,
+                pinnedByUserId: state.pinned
+                    ? (state.decisions.pin?.actorName ?? null)
+                    : null,
+            }),
+        moderationHidden: state.hidden ?? post.moderationHidden,
+        moderationRemoved: state.removed ?? post.moderationRemoved,
+    };
+})
+    .filter((post) => !post.moderationHidden && !post.moderationRemoved);
+export const publishModerationEnvelope = async (envelope, publishAuthoritative, publishDerived) => {
+    try {
+        await publishAuthoritative(envelope);
+    }
+    catch (error) {
+        return {
+            ok: false,
+            code: 'MODERATION_PUBLICATION_FAILED',
+            detail: error instanceof Error
+                ? error.message
+                : 'moderation operation publication failed',
+        };
+    }
+    if (publishDerived) {
+        try {
+            await publishDerived();
+        }
+        catch (error) {
+            return {
+                ok: true,
+                envelope,
+                partial: { pending: 'derived-index', retryable: true },
+                detail: error instanceof Error
+                    ? error.message
+                    : 'derived index publication failed',
+            };
+        }
+    }
+    return { ok: true, envelope };
+};

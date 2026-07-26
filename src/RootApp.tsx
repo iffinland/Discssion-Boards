@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import App from './App';
 import { AppWrapper } from './AppWrapper';
 import RouteRefreshNotice from './components/common/RouteRefreshNotice';
+import StartupDiagnosticsPanel from './components/debug/StartupDiagnosticsPanel';
 import { DisplaySettingsProvider } from './context/DisplaySettingsContext';
 import { ForumProvider } from './context/ForumContext';
 
@@ -77,6 +78,7 @@ const RootApp = () => {
       <AppWrapper>
         <ForumProvider>
           <App />
+          <StartupDiagnosticsPanel />
         </ForumProvider>
       </AppWrapper>
     </DisplaySettingsProvider>

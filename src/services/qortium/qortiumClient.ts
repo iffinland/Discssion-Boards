@@ -1,4 +1,5 @@
 import i18n from '../../i18n/index.js';
+import { beginStartupRequest } from '../perf/startupDiagnostics.js';
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
@@ -306,9 +307,20 @@ export const requestQortium = async <TResponse>(
   const maxAttempts = READ_ACTIONS.has(action) ? READ_RETRY_COUNT + 1 : 1;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const endDiagnostic = beginStartupRequest({
+      caller: 'requestQortium',
+      action,
+      service,
+      nameFilter: typeof payload.name === 'string' ? payload.name : undefined,
+      identifier,
+      offset: typeof payload.offset === 'number' ? payload.offset : undefined,
+      limit: typeof payload.limit === 'number' ? payload.limit : undefined,
+      retry: attempt,
+    });
     const resolution = await waitForQortiumRequest();
 
     if (resolution.status !== 'AVAILABLE') {
+      endDiagnostic('error', { detail: resolution.status });
       throw toBridgeError(resolution);
     }
 
@@ -346,8 +358,27 @@ export const requestQortium = async <TResponse>(
         throw new Error(requestError);
       }
 
+      endDiagnostic(
+        Array.isArray(response) && response.length === 0 ? 'empty' : 'success',
+        {
+          resultCount: Array.isArray(response) ? response.length : undefined,
+        }
+      );
       return response as TResponse;
     } catch (error) {
+      endDiagnostic(
+        error instanceof QortiumRequestError && error.code === 'REQUEST_TIMEOUT'
+          ? 'timeout'
+          : 'error',
+        {
+          detail:
+            error instanceof QortiumRequestError
+              ? error.code
+              : error instanceof Error
+                ? error.name
+                : 'unknown-error',
+        }
+      );
       if (attempt >= maxAttempts) {
         throw error;
       }

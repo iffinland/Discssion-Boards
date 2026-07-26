@@ -11,6 +11,7 @@ import {
   removeObsoleteDisplayOverrides,
 } from '../services/qortium/homeDisplaySettings';
 import { DisplaySettingsContext } from './displaySettingsContextValue';
+import { beginStartupSpan } from '../services/perf/startupDiagnostics';
 
 const initialSettings = () =>
   typeof window === 'undefined'
@@ -37,13 +38,18 @@ export const DisplaySettingsProvider = ({
     removeObsoleteDisplayOverrides(window.localStorage);
 
     let active = true;
+    const endSettings = beginStartupSpan('HOME_SETTINGS_START');
     void loadHomeDisplaySettings(settingsRef.current).then((loaded) => {
-      if (!active) return;
+      if (!active) {
+        endSettings('HOME_SETTINGS_READY', { completion: 'cancelled' });
+        return;
+      }
       setSettings((current) => {
         const next = preferLiveHomeDisplaySettings(current, loaded);
         settingsRef.current = next;
         return next;
       });
+      endSettings('HOME_SETTINGS_READY', { completion: 'success' });
     });
 
     const handleMessage = (event: MessageEvent) => {

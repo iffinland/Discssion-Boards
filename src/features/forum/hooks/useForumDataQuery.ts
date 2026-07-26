@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   getAccountNames,
@@ -18,6 +18,15 @@ import {
 } from '../../../services/qdn/forumRolesService';
 import { isQortiumRequestAvailable } from '../../../services/qortium/qortiumClient';
 import { perfDebugTimeStart } from '../../../services/perf/perfDebug';
+import {
+  beginStartupSpan,
+  recordStartupEvent,
+  setStartupState,
+} from '../../../services/perf/startupDiagnostics';
+import {
+  StartupTimeoutError,
+  withStartupTimeout,
+} from '../../../services/perf/startupControl';
 import type {
   ForumRoleRegistry,
   Post,
@@ -40,12 +49,6 @@ export type ForumLoadStatus =
   | 'empty-confirmed'
   | 'error';
 
-type BootstrapSession = {
-  user: User;
-  authenticatedAddress: string | null;
-  identityKey: string;
-};
-
 const GUEST_USER: User = {
   id: 'qortium-guest',
   username: 'qortium-guest',
@@ -59,6 +62,11 @@ const GUEST_USER: User = {
 
 const QORTIUM_BRIDGE_MAX_PROBES = 16;
 const QORTIUM_BRIDGE_PROBE_DELAY_MS = 250;
+const IDENTITY_STARTUP_TIMEOUT_MS = 8_000;
+const ROLE_STARTUP_TIMEOUT_MS = 10_000;
+const STRUCTURE_STARTUP_TIMEOUT_MS = 45_000;
+const EMPTY_RECHECK_TIMEOUT_MS = 15_000;
+const INDEX_FALLBACK_WAIT_MS = 5_000;
 
 const createAvatarLink = (identity: string) =>
   `/arbitrary/THUMBNAIL/${encodeURIComponent(identity)}/avatar?async=true`;
@@ -210,10 +218,10 @@ export const useForumDataQuery = () => {
   const [loadingStage, setLoadingStage] = useState<string>('Initializing...');
   const [loadStatus, setLoadStatus] = useState<ForumLoadStatus>('initializing');
   const [qortiumBridgeProbe, setQortiumBridgeProbe] = useState(0);
+  const [retryGeneration, setRetryGeneration] = useState(0);
   const [selectedAccount, setSelectedAccount] = useState<UserAccount | null>(
     null
   );
-  const loadedIdentityRef = useRef<string | null>(null);
   const authMode: ForumAuthMode = 'qortium';
 
   const currentUser = useMemo(() => {
@@ -284,6 +292,29 @@ export const useForumDataQuery = () => {
     };
   }, [selectedAccount]);
 
+  useEffect(() => {
+    const identity = activeAuthName?.trim();
+    const accountAddress = selectedAccount?.address?.trim() ?? '';
+    if (!identity || !selectedAccount) return;
+
+    const nextUser: User = {
+      id: identity,
+      username: identity,
+      displayName: identity,
+      address: accountAddress || null,
+      avatarUrl: selectedAccount.avatarUrl || createAvatarLink(identity),
+      role: resolveRoleForAddress(accountAddress || null, roleRegistry),
+      avatarColor: 'bg-cyan-600',
+      joinedAt: new Date().toISOString(),
+    };
+    setAuthenticatedAddress(accountAddress || null);
+    setCurrentUserId(identity);
+    setUsers((current) => [
+      nextUser,
+      ...current.filter((user) => user.id !== identity),
+    ]);
+  }, [activeAuthName, roleRegistry, selectedAccount]);
+
   const applyForumStructure = useCallback(
     (baseUsers: User[], nextTopics: Topic[], nextSubTopics: SubTopic[]) => {
       setTopics(nextTopics);
@@ -301,6 +332,10 @@ export const useForumDataQuery = () => {
     const isQortium = isQortiumRequestAvailable();
 
     if (!isQortium) {
+      if (qortiumBridgeProbe === 0) {
+        recordStartupEvent('BRIDGE_INIT_START');
+        setStartupState('waiting-qortium');
+      }
       if (qortiumBridgeProbe < QORTIUM_BRIDGE_MAX_PROBES) {
         setIsAuthReady(false);
         setLoadStatus('waiting-qortium');
@@ -315,7 +350,6 @@ export const useForumDataQuery = () => {
         };
       }
 
-      loadedIdentityRef.current = null;
       setUsers([GUEST_USER]);
       setTopics([]);
       setSubTopics([]);
@@ -332,131 +366,108 @@ export const useForumDataQuery = () => {
       setLoadingStage('No Qortium environment detected.');
       setLoadStatus('empty-confirmed');
       setIsAuthReady(true);
+      recordStartupEvent('LOADING_STATE_FALSE', {
+        completion: 'empty',
+        detail: 'bridge-unavailable',
+      });
+      setStartupState('bridge-unavailable', 'empty');
       return () => {
         active = false;
       };
     }
 
     const bootstrapQdnData = async () => {
-      let account: UserAccount | null = null;
-
-      try {
-        setIsAuthReady(false);
-        setLoadError(null);
-        setLoadStatus('loading-auth');
-        setLoadingStage('Loading Qortium account...');
-        account = await getUserAccount();
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        setSelectedAccount(null);
-        setAuthenticatedAddress(null);
-        setUsers([GUEST_USER]);
-        setCurrentUserId(GUEST_USER.id);
-        setLoadError(
-          error instanceof Error
-            ? error.message
-            : 'Unable to read the selected Qortium account.'
-        );
-        setLoadingStage('Qortium account unavailable');
-        setLoadStatus('error');
-        setIsAuthReady(true);
-        return;
-      }
-
-      if (!active) {
-        return;
-      }
-
-      const accountAddress = account.address?.trim() ?? '';
-      const accountName = account.name?.trim() ?? '';
-      const identity = activeAuthName?.trim() || accountName || accountAddress;
-      const identityKey = identity || GUEST_USER.id;
-
-      setSelectedAccount(account);
-
-      if (loadedIdentityRef.current === identityKey) {
-        setAuthenticatedAddress(accountAddress || null);
-        setIsAuthReady(true);
-        return;
-      }
-
       const endTiming = perfDebugTimeStart('initial-forum-data-load', {
-        identityKey,
-        mode: identity ? 'authenticated' : 'guest',
+        trigger: retryGeneration > 0 ? 'retry' : 'mount',
       });
-      let session: BootstrapSession | null = null;
+      recordStartupEvent('BRIDGE_READY', { completion: 'success' });
+      setStartupState('loading-initial-structure');
+      setIsAuthReady(false);
+      setLoadError(null);
+      setLoadingStage('Loading authoritative forum resources from QDN...');
+      setLoadStatus('loading-qdn');
 
-      try {
-        setIsAuthReady(false);
-        setLoadError(null);
-        setLoadingStage('Loading forum roles...');
-        setLoadStatus('loading-roles');
-        const [registryResult] = await Promise.allSettled([
-          forumRolesService.loadRoleRegistry(),
-        ]);
-
-        if (!active) {
-          return;
-        }
-
-        const nextRoleRegistry =
-          registryResult.status === 'fulfilled'
-            ? registryResult.value
-            : createDefaultRoleRegistry();
-        const nextAuthenticatedAddress =
-          identity && accountAddress ? accountAddress : null;
-
-        const nextUser = identity
-          ? {
-              id: identity,
-              username: identity,
-              displayName: identity,
-              address: nextAuthenticatedAddress,
-              avatarUrl: account.avatarUrl || createAvatarLink(identity),
-              role: 'Member' as const,
-              avatarColor: 'bg-cyan-600',
-              joinedAt: new Date().toISOString(),
-            }
-          : GUEST_USER;
-
-        session = {
-          identityKey,
-          authenticatedAddress: nextAuthenticatedAddress,
-          user: identity
-            ? {
-                ...nextUser,
-                role: resolveRoleForAddress(
-                  nextAuthenticatedAddress,
-                  nextRoleRegistry
-                ),
-              }
-            : GUEST_USER,
-        };
-
-        setAuthenticatedAddress(session.authenticatedAddress);
-        setRoleRegistry(nextRoleRegistry);
-        setThreadSearchIndexes({});
-        setCurrentUserId(session.user.id);
-        loadedIdentityRef.current = identityKey;
-
-        setLoadingStage('Loading forum structure...');
-        setLoadStatus('loading-index');
-        const nextTopicDirectoryIndex =
-          await forumSearchIndexService.loadTopicDirectoryIndex();
-        if (!active) {
-          return;
-        }
-        setTopicDirectoryIndex(nextTopicDirectoryIndex);
-
-        setLoadingStage('Loading authoritative forum resources from QDN...');
-        setLoadStatus('loading-qdn');
-        try {
-          let remoteData = await forumQdnService.loadForumStructureCached({
-            force: true,
+      const endIdentity = beginStartupSpan('IDENTITY_START');
+      const identityPromise = withStartupTimeout(
+        getUserAccount(),
+        IDENTITY_STARTUP_TIMEOUT_MS,
+        'Qortium identity'
+      )
+        .then((account) => {
+          endIdentity('IDENTITY_READY', { completion: 'success' });
+          return account;
+        })
+        .catch((error: unknown) => {
+          endIdentity('IDENTITY_READY', {
+            completion:
+              error instanceof StartupTimeoutError ? 'timeout' : 'error',
+            detail: 'guest-read-mode',
           });
+          return null;
+        });
+
+      recordStartupEvent('FORUM_CONFIG_REQUEST_START', {
+        completion: 'success',
+        detail: 'no-separate-forum-config-resource',
+      });
+      recordStartupEvent('FORUM_CONFIG_REQUEST_END', {
+        completion: 'empty',
+        detail: 'configuration-is-local',
+      });
+
+      const rolePromise = withStartupTimeout(
+        forumRolesService.loadRoleRegistry(),
+        ROLE_STARTUP_TIMEOUT_MS,
+        'Forum roles'
+      ).catch(() => createDefaultRoleRegistry());
+
+      const endIndex = beginStartupSpan('STARTUP_STATE', {
+        caller: 'forumSearchIndexService.loadTopicDirectoryIndex',
+        trigger: 'background-derived-index',
+        detail: 'background-derived-index-start',
+      });
+      const indexPromise = forumSearchIndexService
+        .loadTopicDirectoryIndex()
+        .then((snapshot) => {
+          endIndex('BACKGROUND_DISCOVERY_COMPLETE', {
+            completion: snapshot
+              ? snapshot.dataAvailability === 'partial'
+                ? 'partial'
+                : 'success'
+              : 'empty',
+            resultCount:
+              (snapshot?.topics.length ?? 0) +
+              (snapshot?.subTopics.length ?? 0),
+          });
+          if (active) setTopicDirectoryIndex(snapshot);
+          return snapshot;
+        })
+        .catch(() => {
+          endIndex('BACKGROUND_DISCOVERY_COMPLETE', {
+            completion: 'error',
+            detail: 'derived-index-unavailable',
+          });
+          return null;
+        });
+
+      const endLegacy = beginStartupSpan('LEGACY_DISCOVERY_START', {
+        caller: 'forumQdnService.loadForumStructureCached',
+      });
+      const endStructure = beginStartupSpan('STRUCTURE_DISCOVERY_START', {
+        caller: 'forumQdnService.loadForumStructureCached',
+        trigger: 'foreground-authoritative-structure',
+      });
+      const structurePromise = withStartupTimeout(
+        forumQdnService.loadForumStructureCached({ force: true }),
+        STRUCTURE_STARTUP_TIMEOUT_MS,
+        'Forum structure'
+      );
+
+      let loadedTopics: Topic[] = [];
+      let loadedSubTopics: SubTopic[] = [];
+      try {
+        try {
+          let remoteData = await structurePromise;
           if (!active) return;
           if (
             !hasForumStructure(remoteData) &&
@@ -464,16 +475,44 @@ export const useForumDataQuery = () => {
           ) {
             setLoadingStage('No topics found yet, rechecking QDN resources...');
             await sleep(2000);
-            remoteData = await forumQdnService.loadForumStructureCached({
-              force: true,
-            });
+            remoteData = await withStartupTimeout(
+              forumQdnService.loadForumStructureCached({ force: true }),
+              EMPTY_RECHECK_TIMEOUT_MS,
+              'Empty forum structure recheck'
+            );
             if (!active) return;
           }
+          endLegacy('LEGACY_DISCOVERY_END', {
+            completion:
+              remoteData.discovery.completeness === 'complete'
+                ? hasForumStructure(remoteData)
+                  ? 'success'
+                  : 'empty'
+                : 'partial',
+            resultCount: remoteData.topics.length + remoteData.subTopics.length,
+          });
+          loadedTopics = remoteData.topics;
+          loadedSubTopics = remoteData.subTopics;
           applyForumStructure(
-            [session.user],
+            [GUEST_USER],
             remoteData.topics,
             remoteData.subTopics
           );
+          recordStartupEvent('STRUCTURE_FIRST_RESULT', {
+            completion: hasForumStructure(remoteData) ? 'success' : 'empty',
+            resultCount: remoteData.topics.length + remoteData.subTopics.length,
+          });
+          endStructure('STRUCTURE_DISCOVERY_END', {
+            completion:
+              remoteData.discovery.completeness === 'complete'
+                ? 'success'
+                : 'partial',
+            resultCount: remoteData.topics.length + remoteData.subTopics.length,
+          });
+          recordStartupEvent('FIRST_STRUCTURE_AVAILABLE', {
+            completion: hasForumStructure(remoteData) ? 'success' : 'empty',
+            resultCount: remoteData.topics.length + remoteData.subTopics.length,
+          });
           const partial = remoteData.discovery.completeness !== 'complete';
           endTiming({
             usedTopicDirectoryIndex: false,
@@ -496,7 +535,39 @@ export const useForumDataQuery = () => {
                 : 'empty-confirmed'
           );
           setIsAuthReady(true);
+          recordStartupEvent('LOADING_STATE_FALSE', {
+            completion: partial
+              ? 'partial'
+              : hasForumStructure(remoteData)
+                ? 'success'
+                : 'empty',
+          });
+          setStartupState(
+            partial
+              ? 'ready-partial'
+              : hasForumStructure(remoteData)
+                ? 'ready'
+                : 'empty',
+            partial
+              ? 'partial'
+              : hasForumStructure(remoteData)
+                ? 'success'
+                : 'empty'
+          );
         } catch (directError) {
+          endLegacy('LEGACY_DISCOVERY_END', {
+            completion:
+              directError instanceof StartupTimeoutError ? 'timeout' : 'error',
+          });
+          endStructure('STRUCTURE_DISCOVERY_END', {
+            completion:
+              directError instanceof StartupTimeoutError ? 'timeout' : 'error',
+          });
+          const nextTopicDirectoryIndex = await withStartupTimeout(
+            indexPromise,
+            INDEX_FALLBACK_WAIT_MS,
+            'Derived topic-directory fallback'
+          ).catch(() => null);
           if (
             !nextTopicDirectoryIndex ||
             !hasForumStructure(nextTopicDirectoryIndex)
@@ -505,8 +576,10 @@ export const useForumDataQuery = () => {
           const indexedStructure = toForumStructureFromTopicDirectory(
             nextTopicDirectoryIndex
           );
+          loadedTopics = indexedStructure.topics;
+          loadedSubTopics = indexedStructure.subTopics;
           applyForumStructure(
-            [session.user],
+            [GUEST_USER],
             indexedStructure.topics,
             indexedStructure.subTopics
           );
@@ -521,7 +594,54 @@ export const useForumDataQuery = () => {
           );
           setLoadStatus('cached');
           setIsAuthReady(true);
+          recordStartupEvent('FIRST_STRUCTURE_AVAILABLE', {
+            completion: 'partial',
+            resultCount:
+              indexedStructure.topics.length +
+              indexedStructure.subTopics.length,
+            detail: 'derived-index-read-only-fallback',
+          });
+          recordStartupEvent('LOADING_STATE_FALSE', {
+            completion: 'partial',
+          });
+          setStartupState('ready-partial', 'partial');
         }
+
+        const [account, nextRoleRegistry] = await Promise.all([
+          identityPromise,
+          rolePromise,
+        ]);
+        if (!active) return;
+
+        const accountAddress = account?.address?.trim() ?? '';
+        const accountName = account?.name?.trim() ?? '';
+        const identity = accountName || accountAddress;
+        const nextAuthenticatedAddress =
+          identity && accountAddress ? accountAddress : null;
+        const nextUser = identity
+          ? {
+              id: identity,
+              username: identity,
+              displayName: identity,
+              address: nextAuthenticatedAddress,
+              avatarUrl: account?.avatarUrl || createAvatarLink(identity),
+              role: resolveRoleForAddress(
+                nextAuthenticatedAddress,
+                nextRoleRegistry
+              ),
+              avatarColor: 'bg-cyan-600',
+              joinedAt: new Date().toISOString(),
+            }
+          : GUEST_USER;
+
+        setSelectedAccount(account);
+        setAuthenticatedAddress(nextAuthenticatedAddress);
+        setRoleRegistry(nextRoleRegistry);
+        setThreadSearchIndexes({});
+        setCurrentUserId(nextUser.id);
+        setUsers(
+          mergeUsersFromForumData([nextUser], loadedTopics, loadedSubTopics, [])
+        );
       } catch (error) {
         endTiming({ error: true });
         if (!active) {
@@ -537,23 +657,24 @@ export const useForumDataQuery = () => {
         setLoadingStage('Error');
         setLoadStatus('error');
 
-        if (session && session.user.id !== GUEST_USER.id) {
-          setAuthenticatedAddress(session.authenticatedAddress);
-          setUsers([session.user]);
-          setCurrentUserId(session.user.id);
-        } else {
-          setAuthenticatedAddress(null);
-          setUsers([GUEST_USER]);
-          setCurrentUserId(GUEST_USER.id);
-        }
+        setAuthenticatedAddress(null);
+        setUsers([GUEST_USER]);
+        setCurrentUserId(GUEST_USER.id);
         setTopics([]);
         setSubTopics([]);
         setPosts([]);
         setRoleRegistry(createDefaultRoleRegistry());
         setTopicDirectoryIndex(null);
         setThreadSearchIndexes({});
-        loadedIdentityRef.current = session ? identityKey : null;
         setIsAuthReady(true);
+        recordStartupEvent('LOADING_STATE_FALSE', {
+          completion:
+            error instanceof StartupTimeoutError ? 'timeout' : 'error',
+        });
+        setStartupState(
+          error instanceof StartupTimeoutError ? 'timeout' : 'error',
+          error instanceof StartupTimeoutError ? 'timeout' : 'error'
+        );
       }
     };
 
@@ -562,21 +683,21 @@ export const useForumDataQuery = () => {
     return () => {
       active = false;
     };
-  }, [activeAuthName, applyForumStructure, qortiumBridgeProbe]);
+  }, [applyForumStructure, qortiumBridgeProbe, retryGeneration]);
 
   const authenticate = useCallback(async () => {
     const account = await getUserAccount();
     setSelectedAccount(account);
     setActiveAuthName(account.name?.trim() || account.address?.trim() || null);
-    loadedIdentityRef.current = null;
+    setRetryGeneration((current) => current + 1);
   }, []);
 
   const retryLoadData = useCallback(() => {
     setIsRetrying(true);
     setLoadError(null);
     setLoadStatus('initializing');
-    loadedIdentityRef.current = null;
     setQortiumBridgeProbe(0);
+    setRetryGeneration((current) => current + 1);
     setIsAuthReady(false);
 
     setTimeout(() => {

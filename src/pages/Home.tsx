@@ -29,6 +29,7 @@ import { getAccountNames } from '../services/qortium/walletService';
 import type { ValidatedV2IndexEntry } from '../services/architectureV2/indexes';
 import { forumQdnService } from '../services/qdn/forumQdnService';
 import type { SubTopic, Topic, TopicAccess } from '../types';
+import { recordStartupEvent } from '../services/perf/startupDiagnostics';
 
 const parseAddressInput = (value: string) =>
   value
@@ -995,6 +996,22 @@ const Home = ({ searchQuery }: HomeProps) => {
 
     setRoleType(assignableRoleOptions[0]?.value ?? 'Moderator');
   }, [assignableRoleOptions, roleType]);
+
+  const firstUsefulRenderRecordedRef = useRef(false);
+  useEffect(() => {
+    if (
+      firstUsefulRenderRecordedRef.current ||
+      (!isAuthReady && topics.length === 0 && subTopics.length === 0)
+    ) {
+      return;
+    }
+    firstUsefulRenderRecordedRef.current = true;
+    recordStartupEvent('FIRST_USEFUL_RENDER', {
+      completion:
+        topics.length > 0 || subTopics.length > 0 ? 'success' : 'empty',
+      resultCount: topics.length + subTopics.length,
+    });
+  }, [isAuthReady, subTopics.length, topics.length]);
 
   if (!isAuthReady && topics.length === 0 && subTopics.length === 0) {
     return (

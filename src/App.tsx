@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom';
 
 import Layout from './components/layout/Layout';
+import { preserveStartupDebugQuery } from './services/perf/startupControl';
 import { getInitialShareTarget } from './services/qortium/share';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -28,8 +29,18 @@ const LegacyHashRedirect = () => {
       return;
     }
 
-    navigate(location.hash.slice(1), { replace: true });
-  }, [location.hash, navigate]);
+    const [pathname, targetSearch = ''] = location.hash.slice(1).split('?');
+    navigate(
+      {
+        pathname,
+        search: preserveStartupDebugQuery(
+          location.search,
+          targetSearch ? `?${targetSearch}` : ''
+        ),
+      },
+      { replace: true }
+    );
+  }, [location.hash, location.search, navigate]);
 
   return null;
 };
@@ -53,7 +64,10 @@ const InitialShareTargetRedirect = () => {
       navigate(
         {
           pathname: `/thread/${target.threadId}`,
-          search: search ? `?${search}` : '',
+          search: preserveStartupDebugQuery(
+            location.search,
+            search ? `?${search}` : ''
+          ),
         },
         { replace: true }
       );
@@ -61,7 +75,13 @@ const InitialShareTargetRedirect = () => {
     }
 
     if (target.topicId) {
-      navigate(`/topic/${target.topicId}`, { replace: true });
+      navigate(
+        {
+          pathname: `/topic/${target.topicId}`,
+          search: preserveStartupDebugQuery(location.search),
+        },
+        { replace: true }
+      );
     }
   }, [location.pathname, location.search, navigate]);
 

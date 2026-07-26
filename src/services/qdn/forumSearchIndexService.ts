@@ -7,6 +7,7 @@ import {
 } from '../qortium/qortiumClient';
 import { getUserAccount } from '../qortium/walletService';
 import { perfDebugTimeStart } from '../perf/perfDebug';
+import { selectReadyDerivedCopies } from '../perf/startupControl.js';
 import {
   isNativePollReference,
   isNativePostPoll,
@@ -242,6 +243,15 @@ const parseJsonLike = (raw: unknown): unknown => {
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
+};
+
+export const selectTopicDirectoryFetchCandidates = (
+  resources: DiscoveredQdnResource[]
+) => {
+  const exact = resources.filter(
+    (item) => item.identifier === TOPIC_DIRECTORY_IDENTIFIER
+  );
+  return selectReadyDerivedCopies(exact);
 };
 
 const sanitizePostAttachments = (value: unknown): PostAttachment[] => {
@@ -1030,22 +1040,19 @@ export const forumSearchIndexService = {
 
     const loadPromise = (async () => {
       const discovery = await searchByPrefix(TOPIC_DIRECTORY_IDENTIFIER);
+      const { candidates, skippedUnavailableCount } =
+        selectTopicDirectoryFetchCandidates(discovery.items);
       let unavailableResourceCount = 0;
-      const payloads = await mapWithConcurrency(
-        discovery.items.filter(
-          (item) => item.identifier === TOPIC_DIRECTORY_IDENTIFIER
-        ),
-        async (item) => {
-          try {
-            const raw = await fetchResource(item.name, item.identifier);
-            const payload = parseTopicDirectoryPayload(raw);
-            return payload ? { payload, resource: item } : null;
-          } catch {
-            unavailableResourceCount += 1;
-            return null;
-          }
+      const payloads = await mapWithConcurrency(candidates, async (item) => {
+        try {
+          const raw = await fetchResource(item.name, item.identifier);
+          const payload = parseTopicDirectoryPayload(raw);
+          return payload ? { payload, resource: item } : null;
+        } catch {
+          unavailableResourceCount += 1;
+          return null;
         }
-      );
+      });
       const selected = pickLatestTrusted(payloads)?.payload.snapshot ?? null;
       if (!selected && discovery.completeness !== 'complete')
         throw new Error(
@@ -1065,7 +1072,8 @@ export const forumSearchIndexService = {
             ...selected,
             dataAvailability:
               discovery.completeness === 'complete' &&
-              unavailableResourceCount === 0
+              unavailableResourceCount === 0 &&
+              skippedUnavailableCount === 0
                 ? ('index-only' as const)
                 : ('partial' as const),
             diagnostics: [
@@ -1078,6 +1086,14 @@ export const forumSearchIndexService = {
                     {
                       code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
                       detail: `${unavailableResourceCount} discovered legacy topic-directory resource(s) could not be loaded.`,
+                    },
+                  ]
+                : []),
+              ...(skippedUnavailableCount > 0
+                ? [
+                    {
+                      code: 'NON_READY_DERIVED_COPY_SKIPPED',
+                      detail: `${skippedUnavailableCount} non-ready legacy topic-directory copy/copies were skipped because ready copies were available.`,
                     },
                   ]
                 : []),

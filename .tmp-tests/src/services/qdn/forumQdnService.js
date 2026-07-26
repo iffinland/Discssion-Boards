@@ -1,0 +1,1573 @@
+import { generateForumEntityId, toPartitionKey } from '../forum/forumId.js';
+import { ensureQdnResourceReady, fetchWithQdnReadyFallback, mapWithConcurrency, } from './qdnReadiness.js';
+import { requestQortium, } from '../qortium/qortiumClient.js';
+import { publishQdnFileResource } from '../qortium/qdnFilePublication.js';
+import { getUserAccount, resolveNameWalletAddress, } from '../qortium/walletService.js';
+import { perfDebugTimeStart } from '../perf/perfDebug.js';
+import { isRestrictedUiAccess, resolveCompatibilityAccessClassification, } from '../forum/forumAccess.js';
+import { buildV2Envelope, buildV2OwnerEditEnvelope, isV2EntityEnvelope, reduceV2RuntimeRecords, toV2RuntimeRecord, } from '../architectureV2/runtime.js';
+import { applyOwnerEdit } from '../architectureV2/reducer.js';
+import { validateEntityCreate } from '../architectureV2/validation.js';
+import { buildReactionEnvelope, buildReactionIdentifier, buildReactionTargetPrefix, loadReactionState, publishReactionEnvelope, resolveReactionDisplay, } from '../architectureV2/reactions.js';
+import { isNativePollReference, isNativePostPoll, toPersistedNativePollReference, } from '../architectureV2/polls.js';
+import { loadNativePostPoll } from '../qortium/nativePollService.js';
+import { buildModerationEnvelope, applyModerationToForumStructure, applyModerationToPosts, loadModerationState, publishModerationEnvelope, reduceModerationRecords, resolveRoleFromTrustedState, } from '../architectureV2/moderation.js';
+import { forumRolesService } from './forumRolesService.js';
+import { finalizeTipDerivedState, forumTipsService, } from './forumTipsService.js';
+import { combineQdnDiscoveryResults, compareDiscoveredQdnResources, discoverQdnResources, } from './qdnPagination.js';
+const FORUM_SERVICE = import.meta.env?.VITE_QORTIUM_QDN_SERVICE ?? 'DOCUMENT';
+const FORUM_IMAGE_SERVICE = import.meta.env?.VITE_QORTIUM_QDN_IMAGE_SERVICE ?? 'IMAGE';
+const FORUM_NAMESPACE = import.meta.env?.VITE_QORTIUM_QDN_IDENTIFIER?.trim() || 'qdbm';
+const FORUM_IDENTIFIER_PREFIX = `${FORUM_NAMESPACE}-`;
+const TOPIC_PREFIX = `${FORUM_IDENTIFIER_PREFIX}topic-`;
+const SUBTOPIC_PREFIX = `${FORUM_IDENTIFIER_PREFIX}sub-`;
+const POST_PREFIX = `${FORUM_IDENTIFIER_PREFIX}post-`;
+const MODERATION_PREFIX = `${FORUM_IDENTIFIER_PREFIX}v2-mod-`;
+const IMAGE_PREFIX = `${FORUM_IDENTIFIER_PREFIX}img-`;
+const ATTACHMENT_PREFIX = `${FORUM_IDENTIFIER_PREFIX}att-`;
+const VIDEO_PREFIX = `${FORUM_IDENTIFIER_PREFIX}video-`;
+const VERIFY_RETRIES = 5;
+const VERIFY_DELAY_MS = 1500;
+const IMAGE_PUBLISH_TIMEOUT_MS = 5 * 60 * 1000;
+const MAX_SAFE_QDN_IDENTIFIER_LENGTH = 64;
+const FORUM_STRUCTURE_CACHE_TTL_MS = 30 * 1000;
+const V2_AUTHORITY_CACHE_TTL_MS = 30 * 1000;
+const LEGACY_POST_DISCOVERY_CACHE_TTL_MS = 30 * 1000;
+const imageUrlCache = new Map();
+let forumStructureCache = {
+    value: null,
+    updatedAt: 0,
+    inflight: null,
+};
+let v2AuthorityCache = null;
+let legacyPostPayloadCache = null;
+const encodeBase64Json = (value) => {
+    const json = JSON.stringify(value);
+    const bytes = new TextEncoder().encode(json);
+    let binary = '';
+    bytes.forEach((byte) => {
+        binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+};
+const decodeBase64Json = (value) => {
+    const binary = atob(value);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const decoded = new TextDecoder().decode(bytes);
+    return JSON.parse(decoded);
+};
+const parseJsonLike = (raw) => {
+    if (typeof raw !== 'string') {
+        return raw;
+    }
+    const trimmed = raw.trim();
+    try {
+        return JSON.parse(trimmed);
+    }
+    catch {
+        return decodeBase64Json(trimmed);
+    }
+};
+const sleep = async (durationMs) => {
+    await new Promise((resolve) => {
+        setTimeout(resolve, durationMs);
+    });
+};
+const assertIdentifierLength = (identifier) => {
+    if (identifier.length > MAX_SAFE_QDN_IDENTIFIER_LENGTH) {
+        throw new Error(`Generated QDN identifier is too long (${identifier.length}). Maximum supported length is ${MAX_SAFE_QDN_IDENTIFIER_LENGTH}.`);
+    }
+};
+const toTopicIdentifier = (topicId) => `${TOPIC_PREFIX}${topicId}`;
+const toSubTopicIdentifier = (subTopicId) => `${SUBTOPIC_PREFIX}${subTopicId}`;
+const toThreadPostPartition = (subTopicId) => toPartitionKey(subTopicId, 8);
+const toThreadPostPrefix = (subTopicId) => `${POST_PREFIX}${toThreadPostPartition(subTopicId)}-`;
+const toLegacyPostSearchPrefix = () => POST_PREFIX;
+const toPostIdentifier = (post) => `${toThreadPostPrefix(post.subTopicId)}${post.id}`;
+const toImageIdentifier = (imageId) => `${IMAGE_PREFIX}${imageId}`;
+const toAttachmentIdentifier = (attachmentId) => `${ATTACHMENT_PREFIX}${attachmentId}`;
+const toVideoIdentifier = (videoId) => `${VIDEO_PREFIX}${videoId}`;
+const sanitizePostAttachments = (value) => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value
+        .filter((item) => isObject(item))
+        .map((item) => ({
+        id: typeof item.id === 'string' ? item.id : '',
+        service: typeof item.service === 'string' ? item.service : 'FILE',
+        name: typeof item.name === 'string' ? item.name : '',
+        identifier: typeof item.identifier === 'string' ? item.identifier : '',
+        filename: typeof item.filename === 'string' ? item.filename : '',
+        mimeType: typeof item.mimeType === 'string'
+            ? item.mimeType
+            : 'application/octet-stream',
+        size: typeof item.size === 'number' && Number.isFinite(item.size)
+            ? item.size
+            : 0,
+    }))
+        .filter((attachment) => Boolean(attachment.id &&
+        attachment.name &&
+        attachment.identifier &&
+        attachment.filename));
+};
+const resolveOwnerName = async (providedName) => {
+    if (providedName?.trim()) {
+        return providedName.trim();
+    }
+    const account = await getUserAccount();
+    if (account.name?.trim()) {
+        return account.name.trim();
+    }
+    throw new Error('Authenticated account has no Qortium name.');
+};
+const verifyPublication = async (ownerName, identifier, expectedType) => {
+    for (let attempt = 1; attempt <= VERIFY_RETRIES; attempt += 1) {
+        try {
+            const raw = await requestQortium({
+                action: 'FETCH_QDN_RESOURCE',
+                service: FORUM_SERVICE,
+                name: ownerName,
+                identifier,
+            });
+            const parsed = parseJsonLike(raw);
+            if (parsed && parsed.type === expectedType) {
+                return;
+            }
+        }
+        catch {
+            // Keep retrying.
+        }
+        if (attempt < VERIFY_RETRIES) {
+            await sleep(VERIFY_DELAY_MS);
+        }
+    }
+    throw new Error('Publish was submitted but resource could not be verified yet.');
+};
+const searchByPrefix = async (prefix) => discoverQdnResources({
+    service: FORUM_SERVICE,
+    identifier: prefix,
+    prefix: true,
+    mode: 'ALL',
+    reverse: true,
+});
+const fetchResource = async (name, identifier) => {
+    const fetcher = () => requestQortium({
+        action: 'FETCH_QDN_RESOURCE',
+        service: FORUM_SERVICE,
+        name,
+        identifier,
+    });
+    const raw = await fetchWithQdnReadyFallback(FORUM_SERVICE, name, identifier, fetcher);
+    return parseJsonLike(raw);
+};
+const mapLatestPayloads = (payloads, keyOf) => {
+    // This selector is V1 display compatibility only. Its client timestamp
+    // never establishes V2 authority or mutation permission.
+    const nextMap = new Map();
+    payloads.filter(Boolean).forEach((payload) => {
+        if (!payload)
+            return;
+        const key = keyOf(payload);
+        const current = nextMap.get(key);
+        if (!current || payload.updatedAt > current.updatedAt) {
+            nextMap.set(key, payload);
+        }
+    });
+    return nextMap;
+};
+const assertCompleteAuthorityDiscovery = (state) => {
+    if (state.discovery.completeness !== 'complete')
+        throw new Error('[PARTIAL_DISCOVERY] V2 authority discovery is incomplete; authority-sensitive mutation failed closed');
+};
+const fetchTopicPayloads = async () => {
+    const discovery = await searchByPrefix(TOPIC_PREFIX);
+    const topicResults = discovery.items;
+    let failedCount = 0;
+    const payloads = await mapWithConcurrency(topicResults, async (item) => {
+        try {
+            const raw = await fetchResource(item.name, item.identifier);
+            return parseTopicPayload(raw, item);
+        }
+        catch {
+            failedCount += 1;
+            return null;
+        }
+    });
+    return {
+        payloads,
+        resourceCount: topicResults.length,
+        failedCount,
+        discovery,
+    };
+};
+const fetchSubTopicPayloads = async () => {
+    const discovery = await searchByPrefix(SUBTOPIC_PREFIX);
+    const subTopicResults = discovery.items;
+    let failedCount = 0;
+    const payloads = await mapWithConcurrency(subTopicResults, async (item) => {
+        try {
+            const raw = await fetchResource(item.name, item.identifier);
+            return parseSubTopicPayload(raw, item);
+        }
+        catch {
+            failedCount += 1;
+            return null;
+        }
+    });
+    return {
+        payloads,
+        resourceCount: subTopicResults.length,
+        failedCount,
+        discovery,
+    };
+};
+const fetchPostPayloads = async (resources) => {
+    let failedCount = 0;
+    const payloads = await mapWithConcurrency(resources, async (item) => {
+        try {
+            const raw = await fetchResource(item.name, item.identifier);
+            const payload = parsePostPayload(raw, item);
+            if (!payload)
+                failedCount += 1;
+            return payload;
+        }
+        catch {
+            failedCount += 1;
+            return null;
+        }
+    });
+    return { payloads, failedCount };
+};
+const fetchLegacyPostPayloadsCached = async () => {
+    if (legacyPostPayloadCache &&
+        Date.now() - legacyPostPayloadCache.cachedAt <=
+            LEGACY_POST_DISCOVERY_CACHE_TTL_MS)
+        return legacyPostPayloadCache.value;
+    const discovery = await searchByPrefix(toLegacyPostSearchPrefix());
+    const fetched = await fetchPostPayloads(discovery.items);
+    const value = {
+        discovery,
+        ...fetched,
+    };
+    legacyPostPayloadCache = { value, cachedAt: Date.now() };
+    return value;
+};
+const isObject = (value) => {
+    return typeof value === 'object' && value !== null;
+};
+const sanitizeAddressList = (value) => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const seen = new Set();
+    const next = [];
+    value.forEach((entry) => {
+        if (typeof entry !== 'string') {
+            return;
+        }
+        const normalized = entry.trim();
+        if (!normalized || seen.has(normalized)) {
+            return;
+        }
+        seen.add(normalized);
+        next.push(normalized);
+    });
+    return next;
+};
+const sanitizePostPoll = (value) => {
+    if (!isObject(value)) {
+        return null;
+    }
+    if (isNativePollReference(value)) {
+        return value;
+    }
+    if (value.kind === 'native' || value.schema === 'qdb-native-poll') {
+        return null;
+    }
+    const options = Array.isArray(value.options)
+        ? value.options
+            .filter((item) => isObject(item))
+            .map((item) => ({
+            id: typeof item.id === 'string' ? item.id : '',
+            label: typeof item.label === 'string' ? item.label.trim() : '',
+        }))
+            .filter((option) => option.id && option.label)
+            .slice(0, 6)
+        : [];
+    if (typeof value.id !== 'string' ||
+        typeof value.question !== 'string' ||
+        !value.question.trim() ||
+        options.length < 2) {
+        return null;
+    }
+    const validOptionIds = new Set(options.map((option) => option.id));
+    const votes = Array.isArray(value.votes)
+        ? value.votes
+            .filter((item) => isObject(item))
+            .map((item) => ({
+            voterId: typeof item.voterId === 'string' ? item.voterId : '',
+            optionIds: sanitizeAddressList(item.optionIds).filter((optionId) => validOptionIds.has(optionId)),
+            votedAt: typeof item.votedAt === 'string' ? item.votedAt : '',
+        }))
+            .filter((vote) => vote.voterId && vote.optionIds.length > 0 && vote.votedAt)
+        : [];
+    return {
+        kind: 'legacy',
+        id: value.id,
+        question: value.question.trim(),
+        description: typeof value.description === 'string' ? value.description.trim() : '',
+        mode: value.mode === 'multiple' ? 'multiple' : 'single',
+        options,
+        votes,
+        closesAt: typeof value.closesAt === 'string' && value.closesAt.trim()
+            ? value.closesAt
+            : null,
+        closedAt: typeof value.closedAt === 'string' && value.closedAt.trim()
+            ? value.closedAt
+            : null,
+        closedByUserId: typeof value.closedByUserId === 'string' && value.closedByUserId.trim()
+            ? value.closedByUserId
+            : null,
+    };
+};
+const toPersistedPost = (post) => {
+    const persisted = { ...post };
+    delete persisted.tipSummary;
+    return {
+        ...persisted,
+        poll: isNativePostPoll(post.poll)
+            ? toPersistedNativePollReference(post.poll)
+            : (post.poll ?? null),
+    };
+};
+const sanitizeTopic = (value) => {
+    if (!isObject(value)) {
+        return null;
+    }
+    if (typeof value.id !== 'string' ||
+        typeof value.title !== 'string' ||
+        typeof value.description !== 'string' ||
+        typeof value.createdByUserId !== 'string' ||
+        typeof value.createdAt !== 'string') {
+        return null;
+    }
+    return {
+        id: value.id,
+        title: value.title,
+        description: value.description,
+        createdByUserId: value.createdByUserId,
+        createdAt: value.createdAt,
+        sortOrder: typeof value.sortOrder === 'number' && Number.isFinite(value.sortOrder)
+            ? value.sortOrder
+            : new Date(value.createdAt).getTime(),
+        status: value.status === 'locked' ? 'locked' : 'open',
+        visibility: value.visibility === 'hidden' ? 'hidden' : 'visible',
+        subTopicAccess: value.subTopicAccess === 'moderators' ||
+            value.subTopicAccess === 'admins' ||
+            value.subTopicAccess === 'custom'
+            ? value.subTopicAccess
+            : 'everyone',
+        allowedAddresses: sanitizeAddressList(value.allowedAddresses),
+    };
+};
+const sanitizeSubTopic = (value) => {
+    if (!isObject(value)) {
+        return null;
+    }
+    if (typeof value.id !== 'string' ||
+        typeof value.topicId !== 'string' ||
+        typeof value.title !== 'string' ||
+        typeof value.description !== 'string' ||
+        typeof value.authorUserId !== 'string' ||
+        typeof value.createdAt !== 'string' ||
+        typeof value.lastPostAt !== 'string') {
+        return null;
+    }
+    return {
+        id: value.id,
+        topicId: value.topicId,
+        title: value.title,
+        description: value.description,
+        authorUserId: value.authorUserId,
+        createdAt: value.createdAt,
+        lastPostAt: value.lastPostAt,
+        lastPostAuthorUserId: typeof value.lastPostAuthorUserId === 'string' &&
+            value.lastPostAuthorUserId.trim()
+            ? value.lastPostAuthorUserId
+            : value.authorUserId,
+        isPinned: value.isPinned === true,
+        pinnedAt: typeof value.pinnedAt === 'string' && value.pinnedAt.trim()
+            ? value.pinnedAt
+            : null,
+        isSolved: value.isSolved === true,
+        solvedAt: typeof value.solvedAt === 'string' && value.solvedAt.trim()
+            ? value.solvedAt
+            : null,
+        solvedByUserId: typeof value.solvedByUserId === 'string' && value.solvedByUserId.trim()
+            ? value.solvedByUserId
+            : null,
+        isPoll: value.isPoll === true,
+        access: value.access === 'moderators' ||
+            value.access === 'admins' ||
+            value.access === 'custom'
+            ? value.access
+            : 'everyone',
+        allowedAddresses: sanitizeAddressList(value.allowedAddresses),
+        status: value.status === 'locked' ? 'locked' : 'open',
+        visibility: value.visibility === 'hidden' ? 'hidden' : 'visible',
+        lastModerationAction: typeof value.lastModerationAction === 'string' &&
+            value.lastModerationAction.trim()
+            ? value.lastModerationAction
+            : null,
+        lastModerationReason: typeof value.lastModerationReason === 'string' &&
+            value.lastModerationReason.trim()
+            ? value.lastModerationReason
+            : null,
+        lastModeratedByUserId: typeof value.lastModeratedByUserId === 'string' &&
+            value.lastModeratedByUserId.trim()
+            ? value.lastModeratedByUserId
+            : null,
+        lastModeratedAt: typeof value.lastModeratedAt === 'string' && value.lastModeratedAt.trim()
+            ? value.lastModeratedAt
+            : null,
+    };
+};
+const isPost = (value) => {
+    if (!isObject(value)) {
+        return false;
+    }
+    return (typeof value.id === 'string' &&
+        typeof value.subTopicId === 'string' &&
+        typeof value.authorUserId === 'string' &&
+        (typeof value.parentPostId === 'string' || value.parentPostId === null) &&
+        typeof value.content === 'string' &&
+        (Array.isArray(value.attachments) || value.attachments === undefined) &&
+        typeof value.createdAt === 'string' &&
+        (typeof value.updatedAt === 'string' ||
+            value.updatedAt === null ||
+            value.updatedAt === undefined) &&
+        (typeof value.editedAt === 'string' ||
+            value.editedAt === null ||
+            value.editedAt === undefined) &&
+        (typeof value.isPinned === 'boolean' || value.isPinned === undefined) &&
+        (typeof value.pinnedAt === 'string' ||
+            value.pinnedAt === null ||
+            value.pinnedAt === undefined) &&
+        (typeof value.pinnedByUserId === 'string' ||
+            value.pinnedByUserId === null ||
+            value.pinnedByUserId === undefined) &&
+        (typeof value.likes === 'number' || value.likes === undefined) &&
+        (typeof value.tips === 'number' || value.tips === undefined) &&
+        (Array.isArray(value.likedByAddresses) ||
+            value.likedByAddresses === undefined));
+};
+const toLegacyProvenance = (resource) => {
+    if (typeof resource.service !== 'string' ||
+        typeof resource.created !== 'number' ||
+        (resource.updated !== undefined &&
+            resource.updated !== null &&
+            typeof resource.updated !== 'number')) {
+        return undefined;
+    }
+    return {
+        resource: {
+            service: resource.service,
+            publisherName: resource.name,
+            identifier: resource.identifier,
+            created: resource.created,
+            updated: resource.updated ?? null,
+            latestSignature: resource.latestSignature,
+        },
+        availability: 'available',
+        authorityState: 'UNRESOLVED',
+    };
+};
+const parseTopicPayload = (raw, resource) => {
+    if (!isObject(raw) || raw.type !== 'topic') {
+        return null;
+    }
+    const topic = sanitizeTopic(raw.topic);
+    if (!topic) {
+        return null;
+    }
+    const status = raw.status === 'deleted' ? 'deleted' : 'active';
+    return {
+        version: 1,
+        type: 'topic',
+        status,
+        updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : Date.now(),
+        topic,
+        provenance: toLegacyProvenance(resource),
+    };
+};
+const parseSubTopicPayload = (raw, resource) => {
+    if (!isObject(raw) || raw.type !== 'subtopic') {
+        return null;
+    }
+    const subTopic = sanitizeSubTopic(raw.subTopic);
+    if (!subTopic) {
+        return null;
+    }
+    const status = raw.status === 'deleted' ? 'deleted' : 'active';
+    return {
+        version: 1,
+        type: 'subtopic',
+        status,
+        updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : Date.now(),
+        subTopic,
+        provenance: toLegacyProvenance(resource),
+    };
+};
+const parsePostPayload = (raw, resource) => {
+    if (!isObject(raw) || raw.type !== 'post' || !isPost(raw.post)) {
+        return null;
+    }
+    const status = raw.status === 'deleted' ? 'deleted' : 'active';
+    return {
+        version: 1,
+        type: 'post',
+        status,
+        updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : Date.now(),
+        post: {
+            ...raw.post,
+            attachments: sanitizePostAttachments(raw.post.attachments),
+            poll: sanitizePostPoll(raw.post.poll),
+            updatedAt: typeof raw.post.updatedAt === 'string'
+                ? raw.post.updatedAt
+                : (raw.post.editedAt ?? raw.post.createdAt),
+            isPinned: raw.post.isPinned === true,
+            pinnedAt: typeof raw.post.pinnedAt === 'string' ? raw.post.pinnedAt : null,
+            pinnedByUserId: typeof raw.post.pinnedByUserId === 'string'
+                ? raw.post.pinnedByUserId
+                : null,
+            likes: typeof raw.post.likes === 'number' && Number.isFinite(raw.post.likes)
+                ? raw.post.likes
+                : 0,
+            tips: typeof raw.post.tips === 'number' && Number.isFinite(raw.post.tips)
+                ? raw.post.tips
+                : 0,
+            likedByAddresses: sanitizeAddressList(raw.post.likedByAddresses),
+        },
+        provenance: toLegacyProvenance(resource),
+    };
+};
+const publishPayload = async (ownerName, identifier, payload, title, description, tags) => {
+    assertIdentifierLength(identifier);
+    await requestQortium({
+        action: 'PUBLISH_QDN_RESOURCE',
+        service: FORUM_SERVICE,
+        name: ownerName,
+        identifier,
+        title,
+        description,
+        tags,
+        data64: encodeBase64Json(payload),
+    });
+};
+const resolveSubTopicPublishMetadata = (subTopic) => isRestrictedUiAccess(subTopic.access)
+    ? {
+        title: `Forum discussion ${subTopic.id}`,
+        description: 'Qortium discussion board thread',
+    }
+    : {
+        title: subTopic.title,
+        description: subTopic.description,
+    };
+const toPublishResource = (ownerName, identifier, payload, title, description, tags) => {
+    assertIdentifierLength(identifier);
+    return {
+        service: FORUM_SERVICE,
+        name: ownerName,
+        identifier,
+        title,
+        description,
+        tags,
+        data64: encodeBase64Json(payload),
+    };
+};
+export const forumQdnService = {
+    async loadV2ModerationState(options) {
+        const discovery = await searchByPrefix(MODERATION_PREFIX);
+        const resources = discovery.items;
+        if (discovery.completeness !== 'complete')
+            throw new Error('[PARTIAL_DISCOVERY] moderation discovery is incomplete; state cannot be reduced as complete');
+        const walletByName = new Map();
+        if (!options?.identity) {
+            await mapWithConcurrency([...new Set(resources.map((item) => item.name.trim()).filter(Boolean))], async (name) => {
+                try {
+                    walletByName.set(name.trim().toLowerCase(), await resolveNameWalletAddress(name));
+                }
+                catch {
+                    walletByName.set(name.trim().toLowerCase(), null);
+                }
+            });
+        }
+        const identity = options?.identity ?? {
+            validatePublisher: (metadata, claimedPublisher) => metadata.publisherName.trim().toLowerCase() ===
+                claimedPublisher.trim().toLowerCase()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'moderation actor does not match QDN publisher',
+                },
+            validateWalletBinding: (publisherName, walletAddress) => walletByName.get(publisherName.trim().toLowerCase())?.trim() ===
+                walletAddress.trim()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'current QDN name-to-wallet binding is unavailable',
+                },
+        };
+        const [authority, roleState] = await Promise.all([
+            options?.authority
+                ? Promise.resolve(options.authority)
+                : this.loadV2AuthorityState(options?.identity),
+            options?.roleState
+                ? Promise.resolve(options.roleState)
+                : forumRolesService.loadTrustedRoleAuthorizationState({ force: true }),
+        ]);
+        return loadModerationState(resources, {
+            fetchPayload: (resource) => fetchResource(resource.name ?? '', resource.identifier ?? ''),
+            identity,
+            roleState,
+            authority: authority.authoritative,
+        });
+    },
+    async publishV2ModerationOperation(input, publishDerived) {
+        const roleState = await forumRolesService.loadTrustedRoleAuthorizationState({
+            force: true,
+        });
+        const resolvedWallet = await resolveNameWalletAddress(input.actorName);
+        if (!resolvedWallet || resolvedWallet.trim() !== input.actorAddress.trim())
+            throw new Error('[MODERATION_WALLET_BINDING_MISSING] current actor name/wallet binding could not be verified');
+        const identity = {
+            validatePublisher: (metadata, claimedPublisher) => metadata.publisherName.trim().toLowerCase() ===
+                claimedPublisher.trim().toLowerCase()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'moderation actor does not match QDN publisher',
+                },
+            validateWalletBinding: (publisherName, walletAddress) => publisherName.trim().toLowerCase() ===
+                input.actorName.trim().toLowerCase() &&
+                walletAddress.trim() === resolvedWallet.trim()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'moderation wallet binding mismatch',
+                },
+        };
+        const authority = await this.loadV2AuthorityState(undefined, {
+            force: true,
+        });
+        assertCompleteAuthorityDiscovery(authority);
+        const operation = {
+            operation: 'moderation',
+            action: input.action,
+            targetType: input.targetType,
+            targetId: input.targetId,
+            actorName: input.actorName,
+            actorAddress: input.actorAddress,
+            authorization: {
+                model: 'v2-role-operation-history',
+                actorRole: resolveRoleFromTrustedState(input.actorAddress, roleState),
+                ...roleState.checkpoint,
+            },
+            ...(input.reason?.trim() ? { reason: input.reason.trim() } : {}),
+            ...(input.action === 'set-order' ? { orderValue: input.orderValue } : {}),
+        };
+        const recordId = `${MODERATION_PREFIX}${generateForumEntityId('moderation', input.actorName)}`;
+        assertIdentifierLength(recordId);
+        const envelope = buildModerationEnvelope(operation, recordId);
+        const now = Date.now();
+        const preflight = reduceModerationRecords([
+            {
+                metadata: {
+                    service: FORUM_SERVICE,
+                    publisherName: input.actorName,
+                    identifier: recordId,
+                    created: now,
+                    updated: null,
+                },
+                envelope,
+            },
+        ], authority.authoritative, identity, roleState);
+        const rejection = preflight.diagnostics[0];
+        if (rejection)
+            throw new Error(`[${rejection.code}] ${rejection.detail}`);
+        const result = await publishModerationEnvelope(envelope, async (record) => {
+            await requestQortium({
+                action: 'PUBLISH_QDN_RESOURCE',
+                service: FORUM_SERVICE,
+                name: input.actorName,
+                identifier: recordId,
+                tags: ['forum', 'qdb-v2', 'moderation', input.action],
+                data64: encodeBase64Json(record),
+            });
+        }, publishDerived);
+        if (result.ok === false)
+            throw new Error(`[${result.code}] ${result.detail}`);
+        return result;
+    },
+    async applyForumModerationState(topics, subTopics) {
+        let moderation;
+        try {
+            moderation = await this.loadV2ModerationState();
+        }
+        catch {
+            return { topics, subTopics };
+        }
+        return applyModerationToForumStructure(topics, subTopics, moderation);
+    },
+    async applyPostModerationState(posts) {
+        let moderation;
+        try {
+            moderation = await this.loadV2ModerationState();
+        }
+        catch {
+            return posts;
+        }
+        return applyModerationToPosts(posts, moderation);
+    },
+    async publishPostReaction(targetId, state, publisherName, walletAddress) {
+        const resolvedWallet = await resolveNameWalletAddress(publisherName);
+        if (!resolvedWallet || resolvedWallet !== walletAddress)
+            throw new Error('[IDENTITY_UNVERIFIED] reaction publisher wallet binding failed');
+        const identifier = await buildReactionIdentifier(FORUM_NAMESPACE, targetId, publisherName, walletAddress);
+        const envelope = buildReactionEnvelope({
+            operation: 'reaction',
+            targetType: 'post',
+            targetId,
+            reaction: 'like',
+            state,
+            publisherName,
+            walletAddress,
+        }, identifier);
+        assertIdentifierLength(identifier);
+        return publishReactionEnvelope(envelope, async (reactionEnvelope) => {
+            await requestQortium({
+                action: 'PUBLISH_QDN_RESOURCE',
+                service: FORUM_SERVICE,
+                name: publisherName,
+                identifier,
+                tags: ['forum', 'qdb-v2', 'reaction', 'like'],
+                data64: encodeBase64Json(reactionEnvelope),
+            });
+        });
+    },
+    async loadPostReactions(targetId) {
+        const discovery = await searchByPrefix(await buildReactionTargetPrefix(FORUM_NAMESPACE, targetId));
+        const state = await loadReactionState(targetId, discovery.items, {
+            fetchPayload: (resource) => fetchResource(resource.name ?? '', resource.identifier ?? ''),
+            resolveWalletAddress: resolveNameWalletAddress,
+            expectedIdentifier: (body) => buildReactionIdentifier(FORUM_NAMESPACE, body.targetId, body.publisherName, body.walletAddress),
+        });
+        if (discovery.completeness !== 'complete')
+            throw new Error('[PARTIAL_DISCOVERY] reaction discovery is incomplete; legacy display fallback remains readable');
+        return state;
+    },
+    async applyPostReactionState(posts) {
+        return mapWithConcurrency(posts, async (post) => {
+            try {
+                const reactions = await this.loadPostReactions(post.id);
+                const display = resolveReactionDisplay(post.likes, post.likedByAddresses, reactions);
+                return {
+                    ...post,
+                    likes: display.count,
+                    likedByAddresses: display.actors,
+                };
+            }
+            catch {
+                // Reaction discovery is non-authoritative. Preserve readable legacy
+                // display data when the independent reaction domain is unavailable.
+                return post;
+            }
+        });
+    },
+    async applyNativePollState(posts, currentWalletAddress) {
+        return mapWithConcurrency(posts, async (post) => isNativePostPoll(post.poll)
+            ? {
+                ...post,
+                poll: await loadNativePostPoll(toPersistedNativePollReference(post.poll), currentWalletAddress),
+            }
+            : post);
+    },
+    async loadPostTipState(authority) {
+        return forumTipsService.load(authority ?? (await this.loadV2AuthorityState()));
+    },
+    async applyPostTipState(posts) {
+        try {
+            const authority = await this.loadV2AuthorityState();
+            return await forumTipsService.apply(posts, authority);
+        }
+        catch {
+            return posts.map((post) => ({
+                ...post,
+                tipSummary: {
+                    status: 'unavailable',
+                    verifiedCount: 0,
+                    verifiedTotalQort: '0.00000000',
+                    legacyCount: Number.isSafeInteger(post.tips) && post.tips > 0 ? post.tips : 0,
+                    legacyIsUnverified: true,
+                    diagnostics: [
+                        {
+                            code: 'TIP_VERIFICATION_UNAVAILABLE',
+                            detail: 'verified tip references are temporarily unavailable',
+                        },
+                    ],
+                },
+            }));
+        }
+    },
+    async resolvePostTipRecipient(postId) {
+        const authority = await this.loadV2AuthorityState(undefined, {
+            force: true,
+        });
+        assertCompleteAuthorityDiscovery(authority);
+        return forumTipsService.resolveRecipient(authority, postId);
+    },
+    async submitPostTip(input, refreshDerived) {
+        const authority = await this.loadV2AuthorityState(undefined, {
+            force: true,
+        });
+        assertCompleteAuthorityDiscovery(authority);
+        const result = input.recovery
+            ? forumTipsService.retry(input.recovery, authority)
+            : forumTipsService.submit({ ...input, authority });
+        const resolved = await result;
+        return finalizeTipDerivedState(resolved, refreshDerived);
+    },
+    async applyPostOperationState(posts, currentWalletAddress) {
+        const moderated = await this.applyPostModerationState(posts);
+        const reactions = await this.applyPostReactionState(moderated);
+        const polls = await this.applyNativePollState(reactions, currentWalletAddress);
+        return this.applyPostTipState(polls);
+    },
+    async publishV2OwnerEdit(edit, ownerName, identity) {
+        const current = await this.loadV2AuthorityState(identity, { force: true });
+        assertCompleteAuthorityDiscovery(current);
+        const target = current.authoritative.entities[edit.targetId];
+        if (!target)
+            throw new Error('[UNAUTHORIZED_PUBLISHER] target V2 entity is not authoritative');
+        const metadata = {
+            service: FORUM_SERVICE,
+            publisherName: ownerName,
+            identifier: `${FORUM_IDENTIFIER_PREFIX}v2-operation-${edit.targetId}`,
+            created: Date.now(),
+            updated: Date.now(),
+        };
+        const quarantineCount = current.authoritative.quarantined.length;
+        const checked = applyOwnerEdit(current.authoritative, metadata, edit, identity);
+        const rejection = checked.quarantined.length > quarantineCount
+            ? checked.quarantined[checked.quarantined.length - 1]
+            : undefined;
+        if (rejection)
+            throw new Error(`[${rejection.code}] ${rejection.detail}`);
+        const envelope = buildV2OwnerEditEnvelope(edit, `${FORUM_IDENTIFIER_PREFIX}v2-edit-${edit.targetId}-${Date.now()}`);
+        await requestQortium({
+            action: 'PUBLISH_QDN_RESOURCE',
+            service: FORUM_SERVICE,
+            name: ownerName,
+            identifier: envelope.recordId,
+            tags: ['forum', 'qdb-v2', 'owner-edit'],
+            data64: encodeBase64Json(envelope),
+        });
+        v2AuthorityCache = null;
+        return envelope;
+    },
+    async publishV2Entity(body, identity) {
+        const envelope = buildV2Envelope(body, `${FORUM_IDENTIFIER_PREFIX}v2-${body.entityType}-${body.entityId}`);
+        const now = Date.now();
+        const metadata = {
+            service: FORUM_SERVICE,
+            publisherName: body.publisherName,
+            identifier: envelope.recordId,
+            created: now,
+            updated: now,
+        };
+        const validation = validateEntityCreate(metadata, envelope, identity);
+        if (validation.ok === false) {
+            throw new Error(`[${validation.code}] ${validation.detail}`);
+        }
+        await requestQortium({
+            action: 'PUBLISH_QDN_RESOURCE',
+            service: FORUM_SERVICE,
+            name: body.publisherName,
+            identifier: envelope.recordId,
+            tags: ['forum', 'qdb-v2', body.entityType],
+            data64: encodeBase64Json(envelope),
+        });
+        v2AuthorityCache = null;
+        return envelope;
+    },
+    async loadV2AuthorityState(identity, options) {
+        const previousCachedAuthority = !identity ? v2AuthorityCache?.value : null;
+        if (!identity &&
+            !options?.force &&
+            v2AuthorityCache &&
+            Date.now() - v2AuthorityCache.cachedAt <= V2_AUTHORITY_CACHE_TTL_MS)
+            return {
+                ...v2AuthorityCache.value,
+                discovery: {
+                    ...v2AuthorityCache.value.discovery,
+                    source: 'cache',
+                },
+            };
+        const discoveries = await Promise.all(['topic-', 'thread-', 'post-', 'edit-'].map((family) => searchByPrefix(`${FORUM_IDENTIFIER_PREFIX}v2-${family}`)));
+        const discovery = combineQdnDiscoveryResults(discoveries, {
+            keyOf: (resource) => `${resource.service ?? ''}\u0000${resource.name.trim().toLowerCase()}\u0000${resource.identifier}`,
+            compareItems: compareDiscoveredQdnResources,
+        });
+        const results = discovery.items;
+        const records = [];
+        const diagnostics = [];
+        const walletByName = new Map();
+        if (!identity) {
+            await mapWithConcurrency([...new Set(results.map((item) => item.name.trim()).filter(Boolean))], async (name) => {
+                try {
+                    walletByName.set(name.trim().toLowerCase(), await resolveNameWalletAddress(name));
+                }
+                catch {
+                    walletByName.set(name.trim().toLowerCase(), null);
+                }
+            });
+        }
+        const loadedResources = await mapWithConcurrency(results, async (item) => {
+            if (typeof item.service !== 'string' ||
+                typeof item.created !== 'number' ||
+                (item.updated !== undefined &&
+                    item.updated !== null &&
+                    typeof item.updated !== 'number'))
+                return {
+                    diagnostics: [
+                        {
+                            code: 'MISSING_TRUSTED_METADATA',
+                            identifier: item.identifier,
+                        },
+                    ],
+                };
+            let payload;
+            try {
+                payload = await fetchResource(item.name, item.identifier);
+            }
+            catch {
+                return {
+                    diagnostics: [
+                        { code: 'UNAVAILABLE_RESOURCE', identifier: item.identifier },
+                        {
+                            code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
+                            identifier: item.identifier,
+                            detail: 'discovered V2 authority payload could not be fetched',
+                        },
+                    ],
+                };
+            }
+            if (!isV2EntityEnvelope(payload))
+                return {
+                    diagnostics: [
+                        { code: 'MALFORMED_ENVELOPE', identifier: item.identifier },
+                    ],
+                };
+            const metadata = {
+                service: item.service,
+                publisherName: item.name,
+                identifier: item.identifier,
+                created: item.created,
+                updated: item.updated ?? null,
+                latestSignature: item.latestSignature,
+            };
+            return {
+                record: toV2RuntimeRecord(metadata, payload),
+                diagnostics: [],
+            };
+        });
+        for (const loaded of loadedResources) {
+            if (loaded.record)
+                records.push(loaded.record);
+            diagnostics.push(...loaded.diagnostics);
+        }
+        const resolvedIdentity = identity ?? {
+            validatePublisher: (metadata, claimedPublisher) => metadata.publisherName.trim().toLowerCase() ===
+                claimedPublisher.trim().toLowerCase()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'QDN resource publisher does not match V2 claim',
+                },
+            validateWalletBinding: (publisherName, walletAddress) => walletByName.get(publisherName.trim().toLowerCase())?.trim() ===
+                walletAddress.trim()
+                ? { ok: true }
+                : {
+                    ok: false,
+                    code: 'IDENTITY_UNVERIFIED',
+                    detail: 'current QDN name-to-wallet binding is unavailable',
+                },
+        };
+        const reduced = reduceV2RuntimeRecords(records, resolvedIdentity);
+        const authorityDataUnavailable = diagnostics.some((item) => item.code === 'UNAVAILABLE_RESOURCE' ||
+            item.code === 'MISSING_TRUSTED_METADATA' ||
+            item.code === 'AUTHORITATIVE_RESOURCE_UNAVAILABLE');
+        let state = {
+            authoritative: reduced.authoritative,
+            diagnostics: [
+                ...diagnostics,
+                ...reduced.diagnostics,
+                ...discovery.diagnostics.map((item) => ({
+                    code: item.code,
+                    identifier: `${FORUM_IDENTIFIER_PREFIX}v2`,
+                    detail: item.detail,
+                })),
+            ],
+            discovery: {
+                completeness: discovery.completeness === 'complete' && authorityDataUnavailable
+                    ? 'partial'
+                    : discovery.completeness,
+                pagesFetched: discovery.pagesFetched,
+                resourcesSeen: discovery.resourcesSeen,
+                stoppedReason: authorityDataUnavailable
+                    ? 'authoritative-resource-unavailable'
+                    : discovery.stoppedReason,
+                source: 'network',
+            },
+        };
+        if (!identity &&
+            state.discovery.completeness !== 'complete' &&
+            previousCachedAuthority &&
+            Object.keys(previousCachedAuthority.authoritative.entities).length > 0) {
+            state = {
+                ...state,
+                authoritative: {
+                    entities: {
+                        ...previousCachedAuthority.authoritative.entities,
+                        ...state.authoritative.entities,
+                    },
+                    quarantined: state.authoritative.quarantined,
+                },
+                diagnostics: [
+                    ...state.diagnostics,
+                    {
+                        code: 'CACHED_LAST_KNOWN_GOOD',
+                        identifier: `${FORUM_IDENTIFIER_PREFIX}v2`,
+                        detail: 'V2 authority refresh was incomplete; validated cached entities were retained read-only.',
+                    },
+                ],
+                discovery: {
+                    ...state.discovery,
+                    source: 'cache',
+                },
+            };
+        }
+        if (!identity)
+            v2AuthorityCache = { value: state, cachedAt: Date.now() };
+        return state;
+    },
+    async loadForumStructure() {
+        const endTiming = perfDebugTimeStart('forum-structure-load');
+        const [topicResult, subTopicResult] = await Promise.all([
+            fetchTopicPayloads(),
+            fetchSubTopicPayloads(),
+        ]);
+        const topicPayloads = topicResult.payloads;
+        const subTopicPayloads = subTopicResult.payloads;
+        const discoveredResourceCount = topicResult.resourceCount + subTopicResult.resourceCount;
+        const failedResourceCount = topicResult.failedCount + subTopicResult.failedCount;
+        const discovery = combineQdnDiscoveryResults([topicResult.discovery, subTopicResult.discovery], {
+            keyOf: (resource) => `${resource.service ?? ''}\u0000${resource.name.trim().toLowerCase()}\u0000${resource.identifier}`,
+            compareItems: compareDiscoveredQdnResources,
+        });
+        if (discoveredResourceCount > 0 &&
+            failedResourceCount === discoveredResourceCount) {
+            throw new Error('Forum QDN resources were found but are not readable yet. This node may still be syncing or building QDN data.');
+        }
+        const topicMap = mapLatestPayloads(topicPayloads, (payload) => payload.topic.id);
+        const subTopicMap = mapLatestPayloads(subTopicPayloads, (payload) => payload.subTopic.id);
+        let topics = [...topicMap.values()]
+            .filter((payload) => payload.status !== 'deleted')
+            .map((payload) => ({
+            ...payload.topic,
+            dataAvailability: discovery.completeness === 'complete'
+                ? 'verified-current'
+                : 'partial',
+            dataProvenance: 'legacy-v1',
+        }))
+            .sort((a, b) => a.sortOrder - b.sortOrder);
+        let subTopics = [...subTopicMap.values()]
+            .filter((payload) => payload.status !== 'deleted')
+            .map((payload) => ({
+            ...payload.subTopic,
+            dataAvailability: discovery.completeness === 'complete'
+                ? 'verified-current'
+                : 'partial',
+            dataProvenance: 'legacy-v1',
+        }))
+            .filter((subTopic) => topics.some((topic) => topic.id === subTopic.topicId));
+        let authority = null;
+        let missingV2AccessClassificationCount = 0;
+        try {
+            authority = await this.loadV2AuthorityState();
+            const v2Entities = Object.values(authority.authoritative.entities);
+            const topicById = new Map(topics.map((topic) => [topic.id, topic]));
+            const threadById = new Map(subTopics.map((subTopic) => [subTopic.id, subTopic]));
+            for (const entity of v2Entities) {
+                if (entity.entityType === 'topic') {
+                    const legacyTopic = topicById.get(entity.entityId);
+                    const accessClassification = resolveCompatibilityAccessClassification(legacyTopic
+                        ? {
+                            access: legacyTopic.subTopicAccess,
+                            allowedAddresses: legacyTopic.allowedAddresses,
+                        }
+                        : null);
+                    if (!accessClassification.classificationAvailable)
+                        missingV2AccessClassificationCount += 1;
+                    topicById.set(entity.entityId, {
+                        id: entity.entityId,
+                        title: entity.title,
+                        description: entity.description,
+                        createdByUserId: entity.publisherName,
+                        createdAt: legacyTopic?.createdAt ?? new Date(0).toISOString(),
+                        sortOrder: legacyTopic?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+                        status: legacyTopic?.status ?? 'open',
+                        visibility: legacyTopic?.visibility ?? 'visible',
+                        // Access policy has not yet migrated into V2 authority. Missing
+                        // compatibility evidence must fail closed for child creation.
+                        subTopicAccess: accessClassification.access,
+                        allowedAddresses: accessClassification.allowedAddresses,
+                        dataAvailability: !accessClassification.classificationAvailable
+                            ? 'partial'
+                            : authority.discovery.completeness === 'complete' &&
+                                authority.discovery.source === 'network'
+                                ? 'verified-current'
+                                : authority.discovery.source === 'cache'
+                                    ? 'cached-last-known-good'
+                                    : 'partial',
+                        dataProvenance: 'authoritative-qdn',
+                    });
+                }
+                if (entity.entityType === 'thread') {
+                    const legacyThread = threadById.get(entity.entityId);
+                    const accessClassification = resolveCompatibilityAccessClassification(legacyThread);
+                    if (!accessClassification.classificationAvailable)
+                        missingV2AccessClassificationCount += 1;
+                    threadById.set(entity.entityId, {
+                        id: entity.entityId,
+                        topicId: entity.parentTopicId,
+                        title: entity.title,
+                        description: entity.description,
+                        authorUserId: entity.publisherName,
+                        createdAt: legacyThread?.createdAt ?? new Date(0).toISOString(),
+                        lastPostAt: legacyThread?.lastPostAt ?? new Date(0).toISOString(),
+                        lastPostAuthorUserId: legacyThread?.lastPostAuthorUserId ?? entity.publisherName,
+                        isPinned: legacyThread?.isPinned ?? false,
+                        pinnedAt: legacyThread?.pinnedAt ?? null,
+                        isSolved: legacyThread?.isSolved ?? false,
+                        solvedAt: legacyThread?.solvedAt ?? null,
+                        solvedByUserId: legacyThread?.solvedByUserId ?? null,
+                        isPoll: legacyThread?.isPoll ?? false,
+                        // A V2 Thread without its compatibility access classification is
+                        // readable content, but is restricted in the official UI until
+                        // the classification can be recovered. Never default it public.
+                        access: accessClassification.access,
+                        allowedAddresses: accessClassification.allowedAddresses,
+                        status: legacyThread?.status ?? 'open',
+                        visibility: legacyThread?.visibility ?? 'visible',
+                        lastModerationAction: legacyThread?.lastModerationAction ?? null,
+                        lastModerationReason: legacyThread?.lastModerationReason ?? null,
+                        lastModeratedByUserId: legacyThread?.lastModeratedByUserId ?? null,
+                        lastModeratedAt: legacyThread?.lastModeratedAt ?? null,
+                        dataAvailability: !accessClassification.classificationAvailable
+                            ? 'partial'
+                            : authority.discovery.completeness === 'complete' &&
+                                authority.discovery.source === 'network'
+                                ? 'verified-current'
+                                : authority.discovery.source === 'cache'
+                                    ? 'cached-last-known-good'
+                                    : 'partial',
+                        dataProvenance: 'authoritative-qdn',
+                    });
+                }
+            }
+            topics = [...topicById.values()].sort((left, right) => left.sortOrder - right.sortOrder);
+            subTopics = [...threadById.values()].filter((subTopic) => topicById.has(subTopic.topicId));
+        }
+        catch {
+            // V1 remains readable, but cannot gain V2 authority from this fallback.
+        }
+        let moderated = {
+            topics,
+            subTopics,
+        };
+        try {
+            const moderation = await this.loadV2ModerationState({
+                ...(authority ? { authority } : {}),
+            });
+            moderated = applyModerationToForumStructure(topics, subTopics, moderation);
+        }
+        catch {
+            // Preserve readable entity content while moderation discovery is unavailable.
+        }
+        const effectiveCompleteness = discovery.completeness === 'complete' &&
+            failedResourceCount === 0 &&
+            missingV2AccessClassificationCount === 0 &&
+            (!authority ||
+                (authority.discovery.completeness === 'complete' &&
+                    authority.discovery.source === 'network'))
+            ? 'complete'
+            : discovery.completeness === 'unavailable' &&
+                (!authority ||
+                    authority.discovery.completeness === 'unavailable') &&
+                topics.length === 0 &&
+                subTopics.length === 0
+                ? 'unavailable'
+                : 'partial';
+        const result = {
+            topics: moderated.topics,
+            subTopics: moderated.subTopics,
+            discovery: {
+                completeness: effectiveCompleteness,
+                pagesFetched: discovery.pagesFetched,
+                resourcesSeen: discovery.resourcesSeen,
+                unavailableResources: failedResourceCount,
+                diagnostics: [
+                    ...discovery.diagnostics.map((item) => ({
+                        code: item.code,
+                        detail: item.detail,
+                    })),
+                    ...(failedResourceCount > 0
+                        ? [
+                            {
+                                code: 'AUTHORITATIVE_RESOURCE_UNAVAILABLE',
+                                detail: `${failedResourceCount} discovered forum resource(s) could not be loaded or validated.`,
+                            },
+                        ]
+                        : []),
+                    ...(missingV2AccessClassificationCount > 0
+                        ? [
+                            {
+                                code: 'RESTRICTED_ACCESS_CLASSIFICATION_UNAVAILABLE',
+                                detail: `${missingV2AccessClassificationCount} V2 Topic/Thread resource(s) lack readable compatibility access classification and were restricted fail-closed.`,
+                            },
+                        ]
+                        : []),
+                ],
+            },
+            legacy: {
+                authorityState: 'UNRESOLVED',
+                topicRecords: topicPayloads.filter((payload) => payload !== null),
+                subTopicRecords: subTopicPayloads.filter((payload) => payload !== null),
+                failedResourceCount,
+            },
+        };
+        endTiming({
+            topicCount: topics.length,
+            subTopicCount: subTopics.length,
+        });
+        return result;
+    },
+    async loadForumStructureCached(options) {
+        const force = options?.force === true;
+        const maxAgeMs = options?.maxAgeMs ?? FORUM_STRUCTURE_CACHE_TTL_MS;
+        const now = Date.now();
+        if (!force &&
+            forumStructureCache.value &&
+            now - forumStructureCache.updatedAt <= maxAgeMs &&
+            (forumStructureCache.value.topics.length > 0 ||
+                forumStructureCache.value.subTopics.length > 0)) {
+            return forumStructureCache.value;
+        }
+        if (!force && forumStructureCache.inflight) {
+            return forumStructureCache.inflight;
+        }
+        const loadPromise = this.loadForumStructure()
+            .then((result) => {
+            forumStructureCache = {
+                value: result,
+                updatedAt: Date.now(),
+                inflight: null,
+            };
+            return result;
+        })
+            .catch((error) => {
+            forumStructureCache = {
+                ...forumStructureCache,
+                inflight: null,
+            };
+            throw error;
+        });
+        forumStructureCache = {
+            ...forumStructureCache,
+            inflight: loadPromise,
+        };
+        return loadPromise;
+    },
+    invalidateForumStructureCache() {
+        forumStructureCache = {
+            value: null,
+            updatedAt: 0,
+            inflight: null,
+        };
+    },
+    async loadPostsBySubTopic(subTopicId, currentWalletAddress) {
+        const legacy = await fetchLegacyPostPayloadsCached();
+        const threadScopedDiscovery = legacy.discovery.completeness === 'complete'
+            ? null
+            : await searchByPrefix(toThreadPostPrefix(subTopicId));
+        const discovery = combineQdnDiscoveryResults(threadScopedDiscovery
+            ? [legacy.discovery, threadScopedDiscovery]
+            : [legacy.discovery], {
+            keyOf: (resource) => `${resource.service ?? ''}\u0000${resource.name.trim().toLowerCase()}\u0000${resource.identifier}`,
+            compareItems: compareDiscoveredQdnResources,
+        });
+        const scoped = threadScopedDiscovery
+            ? await fetchPostPayloads(threadScopedDiscovery.items)
+            : null;
+        const postPayloads = scoped
+            ? [...legacy.payloads, ...scoped.payloads]
+            : legacy.payloads;
+        const failedResourceCount = legacy.failedCount + (scoped?.failedCount ?? 0);
+        const postMap = mapLatestPayloads(postPayloads, (payload) => payload.post.id);
+        let posts = [...postMap.values()]
+            .filter((payload) => payload.status !== 'deleted')
+            .map((payload) => ({
+            ...payload.post,
+            dataAvailability: discovery.completeness === 'complete' && failedResourceCount === 0
+                ? 'verified-current'
+                : 'partial',
+            dataProvenance: 'legacy-v1',
+        }))
+            .filter((post) => post.subTopicId === subTopicId);
+        let authority = null;
+        try {
+            authority = await this.loadV2AuthorityState();
+            const postById = new Map(posts.map((post) => [post.id, post]));
+            for (const entity of Object.values(authority.authoritative.entities)) {
+                if (entity.entityType !== 'post' ||
+                    entity.parentThreadId !== subTopicId)
+                    continue;
+                const legacyPost = postById.get(entity.entityId);
+                postById.set(entity.entityId, {
+                    id: entity.entityId,
+                    subTopicId: entity.parentThreadId,
+                    authorUserId: entity.publisherName,
+                    parentPostId: entity.parentPostId,
+                    content: entity.content,
+                    attachments: legacyPost?.attachments ?? [],
+                    poll: entity.pollReference ?? legacyPost?.poll ?? null,
+                    createdAt: legacyPost?.createdAt ?? new Date(0).toISOString(),
+                    updatedAt: legacyPost?.updatedAt ?? null,
+                    editedAt: legacyPost?.editedAt ?? null,
+                    isPinned: legacyPost?.isPinned ?? false,
+                    pinnedAt: legacyPost?.pinnedAt ?? null,
+                    pinnedByUserId: legacyPost?.pinnedByUserId ?? null,
+                    likes: legacyPost?.likes ?? 0,
+                    tips: legacyPost?.tips ?? 0,
+                    likedByAddresses: legacyPost?.likedByAddresses ?? [],
+                    dataAvailability: authority.discovery.completeness === 'complete' &&
+                        authority.discovery.source === 'network'
+                        ? 'verified-current'
+                        : authority.discovery.source === 'cache'
+                            ? 'cached-last-known-good'
+                            : 'partial',
+                    dataProvenance: 'authoritative-qdn',
+                });
+            }
+            posts = [...postById.values()];
+        }
+        catch {
+            // Preserve safely parsed V1 compatibility content when V2 is unavailable.
+        }
+        if (posts.length === 0 &&
+            (discovery.completeness === 'unavailable' ||
+                (discovery.items.length > 0 &&
+                    postPayloads.every((payload) => payload === null))))
+            throw new Error('[AUTHORITATIVE_RESOURCE_UNAVAILABLE] discovered post authority is unavailable');
+        const reduced = await this.applyPostOperationState(posts, currentWalletAddress);
+        return reduced.map((post) => ({
+            ...post,
+            dataAvailability: authority?.discovery.source === 'cache'
+                ? 'cached-last-known-good'
+                : discovery.completeness === 'complete' &&
+                    failedResourceCount === 0 &&
+                    (!authority ||
+                        (authority.discovery.completeness === 'complete' &&
+                            authority.discovery.source === 'network'))
+                    ? 'verified-current'
+                    : 'partial',
+            dataProvenance: post.dataProvenance ?? 'legacy-v1',
+        }));
+    },
+    async publishTopic(topic, ownerName) {
+        const resolvedOwner = await resolveOwnerName(ownerName);
+        const { identifier } = this.buildTopicPublishResource(topic, resolvedOwner);
+        await publishPayload(resolvedOwner, identifier, {
+            version: 1,
+            type: 'topic',
+            status: 'active',
+            updatedAt: Date.now(),
+            topic,
+        }, topic.title, topic.description, ['forum', 'topic', 'qforum']);
+        await verifyPublication(resolvedOwner, identifier, 'topic');
+    },
+    buildTopicPublishResource(topic, ownerName) {
+        const identifier = toTopicIdentifier(topic.id);
+        const payload = {
+            version: 1,
+            type: 'topic',
+            status: 'active',
+            updatedAt: Date.now(),
+            topic,
+        };
+        return {
+            identifier,
+            resource: toPublishResource(ownerName, identifier, payload, topic.title, topic.description, ['forum', 'topic', 'qforum']),
+        };
+    },
+    async publishSubTopic(subTopic, ownerName) {
+        const resolvedOwner = await resolveOwnerName(ownerName);
+        const { identifier } = this.buildSubTopicPublishResource(subTopic, resolvedOwner);
+        const metadata = resolveSubTopicPublishMetadata(subTopic);
+        await publishPayload(resolvedOwner, identifier, {
+            version: 1,
+            type: 'subtopic',
+            status: 'active',
+            updatedAt: Date.now(),
+            subTopic,
+        }, metadata.title, metadata.description, ['forum', 'subtopic', 'qforum']);
+        await verifyPublication(resolvedOwner, identifier, 'subtopic');
+    },
+    buildSubTopicPublishResource(subTopic, ownerName) {
+        const identifier = toSubTopicIdentifier(subTopic.id);
+        const metadata = resolveSubTopicPublishMetadata(subTopic);
+        const payload = {
+            version: 1,
+            type: 'subtopic',
+            status: 'active',
+            updatedAt: Date.now(),
+            subTopic,
+        };
+        return {
+            identifier,
+            resource: toPublishResource(ownerName, identifier, payload, metadata.title, metadata.description, ['forum', 'subtopic', 'qforum']),
+        };
+    },
+    async publishPost(post, ownerName) {
+        const resolvedOwner = await resolveOwnerName(ownerName);
+        const { identifier } = this.buildPostPublishResource(post, resolvedOwner);
+        await publishPayload(resolvedOwner, identifier, {
+            version: 1,
+            type: 'post',
+            status: 'active',
+            updatedAt: Date.now(),
+            post: toPersistedPost(post),
+        }, `Forum post ${post.id}`, 'Qortium discussion board post', ['forum', 'post', 'qforum']);
+        await verifyPublication(resolvedOwner, identifier, 'post');
+    },
+    buildPostPublishResource(post, ownerName) {
+        const identifier = toPostIdentifier(post);
+        const payload = {
+            version: 1,
+            type: 'post',
+            status: 'active',
+            updatedAt: Date.now(),
+            post: toPersistedPost(post),
+        };
+        return {
+            identifier,
+            resource: toPublishResource(ownerName, identifier, payload, `Forum post ${post.id}`, 'Qortium discussion board post', ['forum', 'post', 'qforum']),
+        };
+    },
+    async deletePost() {
+        throw new Error('[MODERATION_LEGACY_TARGET_BLOCKED] legacy full-snapshot deletion is disabled; use an owner tombstone or V2 moderation removal');
+    },
+    async publishPostImage(file, ownerName) {
+        const resolvedOwner = await resolveOwnerName(ownerName);
+        const imageId = generateForumEntityId('image', resolvedOwner);
+        const identifier = toImageIdentifier(imageId);
+        assertIdentifierLength(identifier);
+        const published = await publishQdnFileResource({
+            file,
+            service: FORUM_IMAGE_SERVICE,
+            name: resolvedOwner,
+            identifier,
+            timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
+        });
+        return {
+            service: published.resource.service,
+            name: published.resource.name,
+            identifier: published.resource.identifier,
+            filename: published.resource.filename,
+        };
+    },
+    async publishPostAttachment(file, ownerName) {
+        const resolvedOwner = await resolveOwnerName(ownerName);
+        const attachmentId = generateForumEntityId('attachment', resolvedOwner);
+        const identifier = toAttachmentIdentifier(attachmentId);
+        assertIdentifierLength(identifier);
+        const published = await publishQdnFileResource({
+            file,
+            service: 'FILE',
+            name: resolvedOwner,
+            identifier,
+            timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
+        });
+        return {
+            service: published.resource.service,
+            name: published.resource.name,
+            identifier: published.resource.identifier,
+            filename: published.resource.filename,
+            mimeType: published.resource.mimeType,
+            size: published.resource.size,
+        };
+    },
+    async publishPostVideo(file, ownerName) {
+        const resolvedOwner = await resolveOwnerName(ownerName);
+        const videoId = generateForumEntityId('video', resolvedOwner);
+        const identifier = toVideoIdentifier(videoId);
+        assertIdentifierLength(identifier);
+        const published = await publishQdnFileResource({
+            file,
+            service: 'VIDEO',
+            name: resolvedOwner,
+            identifier,
+            timeoutMs: IMAGE_PUBLISH_TIMEOUT_MS,
+        });
+        return {
+            service: 'VIDEO',
+            name: published.resource.name,
+            identifier: published.resource.identifier,
+            filename: published.resource.filename,
+            mimeType: published.resource.mimeType,
+            size: published.resource.size,
+        };
+    },
+    async getQdnResourceUrl(reference) {
+        const cacheKey = `${reference.service}:${reference.name}:${reference.identifier}:${reference.filename ?? ''}`;
+        const cached = imageUrlCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        try {
+            await ensureQdnResourceReady(reference.service, reference.name, reference.identifier);
+        }
+        catch {
+            // Continue with direct URL fetch when readiness polling fails.
+        }
+        const resourceUrl = await requestQortium({
+            action: 'GET_QDN_RESOURCE_URL',
+            service: reference.service,
+            name: reference.name,
+            identifier: reference.identifier,
+            path: reference.filename?.trim() || undefined,
+        });
+        imageUrlCache.set(cacheKey, resourceUrl);
+        return resourceUrl;
+    },
+    async getPostImageResourceUrl(reference) {
+        return this.getQdnResourceUrl(reference);
+    },
+};
