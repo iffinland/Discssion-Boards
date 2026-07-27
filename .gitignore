@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 .release
+.tmp-tests
+coverage
+.vite
 *.local
 
 # Editor directories and files

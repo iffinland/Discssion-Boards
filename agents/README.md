@@ -1,119 +1,133 @@
-Agents Workflow Kit
+# Qortium Development Knowledge Base
 
-Purpose
+## Purpose
 
-This folder contains a reusable workflow kit for starting and managing
-new Qortal qApp projects with an AI agent.
+This directory is the operational knowledge base for AI-assisted Qortium
+development. It supports new applications, existing-application audits,
+issue-driven implementation, runtime diagnosis, QDN design, Home integration,
+live validation, and releases.
 
-The goal is to avoid rewriting the same instructions in every new
-session. Instead of explaining the full process again, the user can
-point the agent to the files in this folder.
+## Use when
 
-Recommended File Order
+Start every substantial repository task with
+[`00-SESSION-START.md`](00-SESSION-START.md). Use this README when reviewing the
+guide architecture or the issue #16 migration.
 
-For a brand new project, the agent should read files in this order:
+## Do not use when
 
-1. a project-specific vision file such as
-   `agents/my-real-app-vision.md`
-2. `agents/master-workflow.md`
+This README is not a task router and does not define a platform API. Do not load
+every guide by default. Do not use removed Qortal material as current Qortium
+guidance.
 
-The master workflow then points the agent to the supporting files in the
-correct order.
+## Prerequisites
 
-Files in This Folder
+- Exact repository and local path.
+- Current branch and working-tree state.
 
-- `README.md`
-  Short index for this folder and how to use it.
+## Required inputs
 
-- `master-workflow.md`
-  Top-level orchestration file. This is the main entrypoint for the
-  agent after the project vision file.
+- Owner request or GitHub issue.
+- Current checked-out Qortium Home/Core sources when platform behavior matters.
+- The matching project file, if one exists.
 
-- `project-vision-template.md`
-  Template for writing a new project vision.
+## Original file inventory and migration
 
-- `session-start-prompt.md`
-  Copy-paste prompt for starting a new AI session.
+| Original file                         | Original purpose                                        | Relevance and problems                                                                                                                                    | Scope           | Action and destination                                                                                                                                |
+| ------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `README.md`                           | Index for a reusable Qortal qApp kit                    | Routed new work through Qortal bootstrapping and missing files; duplicated the master workflow                                                            | Global          | **Rewrite** as this Qortium-native catalog and migration record                                                                                       |
+| `master-workflow.md`                  | Orchestrate new Qortal projects                         | Assumed `create-qortal-app`, `GlobalProvider`, Qortal URLs, mandatory GitHub sync, and Estonian communication; did not support audits or focused issues   | Global          | **Merge/rewrite** into `00-SESSION-START.md`, `01-TASK-CLASSIFICATION.md`, and the focused guides; remove                                             |
+| `project-sync-backup-workflow.md`     | GitHub initialization plus a specific backup convention | Useful Git safety fragments mixed with owner-specific paths, retention, language, and automatic commit/push behavior                                      | Mixed           | **Split** reusable Git/generated-file rules into `git-generated-files-and-hygiene.md`; retain project commands only in the project file; remove       |
+| `project-vision-template.md`          | Product template for new Qortal qApps                   | Product questions remain useful, but Qortal identity and old reading order are obsolete                                                                   | Global          | **Merge/rewrite** product discovery into `qortium-native-app-workflow.md`; remove                                                                     |
+| `qapp-framework-essentials.md`        | Bootstrap with `create-qortal-app` and qapp-core        | Qortal-only runtime, framework, routing, and bridge assumptions conflict with the approved Qortium-native strategy                                        | Global obsolete | **Remove**; replacement is `qortium-native-app-workflow.md`                                                                                           |
+| `qortal-runtime-performance-rules.md` | Qortal/QDN readiness and UX advice                      | Some general readiness and fallback lessons remain useful; authority sources and runtime assumptions are stale                                            | Global mixed    | **Split/rewrite** into `runtime-diagnostics-and-performance.md`, `qdn-publication-discovery-and-scaling.md`, and `qortium-home-and-bridge.md`; remove |
+| `qortal-to-qortium-porting-guide.md`  | Convert Discussion Boards from Qortal to Qortium        | Overfit to one project; recommended porting, blanket base64, version reset, and frozen bridge behavior; embedded project secrets/facts in global guidance | Mixed obsolete  | **Split** verified reusable lessons into current guides, isolate project facts in `projects/Discssion-Boards.md`, and **remove** porting workflow     |
 
-- `qapp-framework-essentials.md`
-  Compact guide for bootstrapping a new Qortal qApp with
-  `create-qortal-app`.
+No original file is archived. Historical Qortal instructions have no active
+operational value and would remain discoverable by agents if retained here.
+Git history is the historical record.
 
-- `qortal-runtime-performance-rules.md`
-  Qortal-specific runtime, QDN readiness, routing, and performance
-  rules.
-
-- `qortal-to-qortium-porting-guide.md`
-  Practical guide for converting an existing Qortal qApp into a
-  Qortium-only app, including bridge changes, QDN publish rules,
-  account detection, media uploads, cleanup rules, and current
-  Qortium share-link limitations.
-
-- `project-sync-backup-workflow.md`
-  GitHub sync, backup, restore, and usage-guide workflow.
-
-- `qapp-framework.md`
-  Longer legacy reference file. Keep as source material, but prefer the
-  essentials file for actual agent workflow.
-
-Minimum Practical Setup for a New Project
-
-Usually the user only needs to do these things:
-
-1. copy this whole `agents` folder into the new project
-2. create a new vision file based on `project-vision-template.md`
-3. start a new AI session using `session-start-prompt.md`
-
-Suggested Naming Convention
-
-For project-specific vision files, use a clear name such as:
-
-- `agents/my-real-app-vision.md`
-- `agents/qtube-mobile-vision.md`
-- `agents/qmusic-rebuild-vision.md`
-
-Maintenance Advice
-
-When a new recurring lesson appears, do not dump everything into one
-giant file.
-
-Instead:
-
-- add product goals to the project vision file
-- add bootstrap rules to `qapp-framework-essentials.md`
-- add Qortal and QDN behavior rules to
-  `qortal-runtime-performance-rules.md`
-- add Qortal-to-Qortium migration lessons to
-  `qortal-to-qortium-porting-guide.md`
-- add repository, GitHub, backup, and restore rules to
-  `project-sync-backup-workflow.md`
-- update `master-workflow.md` only when the reading order or top-level
-  process changes
-
-Why This Structure Works
-
-- the project vision changes every project
-- the Qortal bootstrap process is mostly stable
-- runtime and QDN behavior rules are reusable
-- GitHub sync and backup logic are reusable
-- the agent gets a cleaner context than from one oversized instruction
-  file
-
-Recommended Starter Prompt
+## Final guide tree
 
 ```text
-Read agents/my-real-app-vision.md first.
-Then follow agents/master-workflow.md.
-Communicate with me in Estonian, but write project files in English.
+agents/
+├── README.md
+├── 00-SESSION-START.md
+├── 01-TASK-CLASSIFICATION.md
+├── qortium-native-app-workflow.md
+├── qortium-architecture-and-data-integrity.md
+├── qortium-home-and-bridge.md
+├── qdn-publication-discovery-and-scaling.md
+├── issue-driven-audit-and-refactor.md
+├── runtime-diagnostics-and-performance.md
+├── live-qdn-validation.md
+├── qavs-versioning-and-release.md
+├── git-generated-files-and-hygiene.md
+├── final-report-and-owner-handoff.md
+└── projects/
+    └── Discssion-Boards.md
 ```
 
-Optional Improvement
+## Dependency map
 
-If a project develops its own recurring patterns, create one more file
-for that project only, for example:
+```text
+00-SESSION-START
+  -> 01-TASK-CLASSIFICATION
+  -> matching project file
+  -> one or more task guides
 
-- `agents/project-specific-rules.md`
+qortium-native-app-workflow
+  -> qortium-architecture-and-data-integrity
+  -> qortium-home-and-bridge
+  -> qdn-publication-discovery-and-scaling
 
-This is useful when one app has special publish logic, naming rules,
-identifier conventions, or UI constraints that should not affect all
-future projects.
+issue-driven-audit-and-refactor
+  -> architecture guide and/or runtime guide
+
+runtime-diagnostics-and-performance
+  -> live-qdn-validation
+
+qavs-versioning-and-release
+  -> live-qdn-validation
+  -> git-generated-files-and-hygiene
+
+every substantial task
+  -> final-report-and-owner-handoff
+```
+
+## Mandatory rules
+
+- Qortium Home and Core behavior MUST be verified from their current checked-out
+  sources before implementation depends on it.
+- Project-specific facts MUST stay under `projects/`.
+- One task SHOULD normally implement one issue.
+- Agents MUST NOT commit, push, tag, release, or publish without explicit owner
+  authorization.
+- Obsolete Qortal-to-Qortium porting MUST NOT be used as the default new-app
+  workflow.
+
+## Workflow
+
+1. Enter through `00-SESSION-START.md`.
+2. Classify the task.
+3. Read the matching project file and only the routed domain guides.
+4. Verify current authoritative sources.
+5. Validate and report through the handoff guide.
+
+## Validation
+
+- Validate all relative Markdown links.
+- Search this directory for obsolete active Qortal assumptions.
+- Run repository formatting, lint, and `git diff --check`.
+- Confirm generated output is not tracked.
+
+## Completion criteria
+
+This knowledge base is usable when an agent can begin either a brand-new
+Qortium-native application or an audit of another existing application without
+Discussion Boards context or Qortal bootstrap assumptions.
+
+## Related files
+
+- [`00-SESSION-START.md`](00-SESSION-START.md)
+- [`01-TASK-CLASSIFICATION.md`](01-TASK-CLASSIFICATION.md)
+- [`final-report-and-owner-handoff.md`](final-report-and-owner-handoff.md)
