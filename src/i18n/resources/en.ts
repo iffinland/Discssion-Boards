@@ -3,13 +3,6 @@ const en = {
     name: 'Qortium Discussion Boards',
     loadingPage: 'Loading page...',
   },
-  legal: {
-    summary:
-      'Discussion Boards v{{version}} · Copyright © 2026 iffinland · GPL-3.0-only',
-    noWarranty: 'This program comes with absolutely no warranty.',
-    source: 'Source code',
-    license: 'License',
-  },
   common: {
     cancel: 'Cancel',
     close: 'Close',
@@ -36,11 +29,6 @@ const en = {
     more: '+{{count}} more',
     view: 'View',
     download: 'Download',
-  },
-  display: {
-    inherited: 'Display settings are inherited from Qortium Home.',
-    light: 'Light theme',
-    dark: 'Dark theme',
   },
   navigation: {
     breadcrumb: 'Breadcrumb',

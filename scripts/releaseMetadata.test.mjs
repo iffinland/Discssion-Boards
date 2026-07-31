@@ -55,7 +55,6 @@ const readme = readText('README.md');
 const releasePolicy = readText('docs/RELEASE.md');
 const releaseNotes = readText('docs/releases/ARCHITECTURE-V2-RC1.md');
 const footer = readText('src/components/layout/Footer.tsx');
-const translations = readText('src/i18n/resources/en.ts');
 const releaseTool = readText('scripts/releaseArtifact.mjs');
 
 assert.match(readme, /GPL-3\.0-only/);
@@ -74,13 +73,8 @@ assert.match(
   /Automatic V1 adoption[\s\S]*activation remain\s+disabled/
 );
 assert.match(footer, /__APP_VERSION__/);
-assert.match(
-  footer,
-  /github\.com\/iffinland\/Discssion-Boards\/tree\/v.*__APP_VERSION__/
-);
-assert.match(footer, /legal\.noWarranty/);
-assert.match(translations, /absolutely no warranty/);
-assert.match(footer, /rel="license"/);
+assert.match(footer, /Discussion Boards v\{__APP_VERSION__\} · Since 2026/);
+assert.doesNotMatch(footer, /warranty|sourceUrl|github\.com|rel="license"/i);
 assert.equal(releaseSchema.properties.qdn.properties.service.const, 'APP');
 assert.equal(releaseSchema.additionalProperties, false);
 assert.doesNotMatch(releaseTool, /PUBLISH_QDN_RESOURCE|git.+tag|gh.+release/i);

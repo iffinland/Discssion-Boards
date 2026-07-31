@@ -8,50 +8,12 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import UserRoleBadge from '../common/UserRoleBadge';
-import { useDisplaySettings } from '../../context/displaySettingsContextValue';
 import { useForumActions, useForumData } from '../../hooks/useForumData';
 import {
   followName,
   FORUM_FOLLOW_NAME,
   isNameFollowed,
 } from '../../services/qortium/followService';
-
-const SunIcon = ({ active }: { active: boolean }) => (
-  <svg
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-    className={[
-      'h-4 w-4 transition',
-      active ? 'text-brand-accent-strong' : 'text-ui-muted',
-    ].join(' ')}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6M18.7 18.7l-1.6-1.6M6.9 6.9 5.3 5.3" />
-  </svg>
-);
-
-const MoonIcon = ({ active }: { active: boolean }) => (
-  <svg
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-    className={[
-      'h-4 w-4 transition',
-      active ? 'text-brand-primary-strong' : 'text-ui-muted',
-    ].join(' ')}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M20.5 14.8A8.5 8.5 0 1 1 9.2 3.5a7 7 0 1 0 11.3 11.3Z" />
-  </svg>
-);
 
 const initialsFromName = (name: string | null) => {
   if (!name) {
@@ -85,7 +47,6 @@ const HelpIcon = () => (
 
 const Header = () => {
   const { t } = useTranslation();
-  const { theme } = useDisplaySettings();
   const { availableAuthNames, activeAuthName, currentUser } = useForumData();
   const { setCurrentUser } = useForumActions();
   const [isNameMenuOpen, setIsNameMenuOpen] = useState(false);
@@ -286,17 +247,6 @@ const Header = () => {
         </h1>
 
         <div className="flex flex-wrap items-center gap-3">
-          <span
-            className="forum-pill-primary flex items-center gap-2 rounded-md px-3 py-2"
-            aria-label={
-              theme === 'dark' ? t('display.dark') : t('display.light')
-            }
-            title={t('display.inherited')}
-          >
-            <SunIcon active={theme === 'light'} />
-            <MoonIcon active={theme === 'dark'} />
-          </span>
-
           <div
             className="forum-card border-brand-primary relative px-2 py-2"
             ref={nameMenuContainerRef}
