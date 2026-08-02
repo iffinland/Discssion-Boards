@@ -704,13 +704,12 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
 
   const submitPostEdit = useCallback(async () => {
     if (!editingPost) {
-      return false;
+      return { ok: false as const, error: t('post.editMissingTarget') };
     }
 
     const value = editText.trim();
     if (!value && editAttachments.length === 0) {
-      setModerationFeedback(t('post.contentRequired'));
-      return false;
+      return { ok: false as const, error: t('post.contentRequired') };
     }
 
     return handleEditPost(editingPost.id, value, editAttachments);

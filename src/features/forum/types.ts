@@ -1,3 +1,5 @@
+export type PostEditSubmitResult = { ok: true } | { ok: false; error: string };
+
 export type ForumMutationResult = {
   ok: boolean;
   error?: string;

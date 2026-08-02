@@ -38,7 +38,7 @@ type RichTextEditorProps = {
   attachments: PostAttachment[];
   onChange: (value: string) => void;
   onAttachmentsChange: (attachments: PostAttachment[]) => void;
-  onSubmit: () => void;
+  onSubmit: () => void | Promise<void>;
   onUploadImage?: (file: File) => Promise<string>;
   onUploadAttachment?: (file: File) => Promise<PostAttachment>;
   onUploadVideo?: (file: File, title?: string) => Promise<string>;
@@ -46,6 +46,7 @@ type RichTextEditorProps = {
   editorLabel?: string;
   submitLabel?: string;
   canManageAttachments?: boolean;
+  submitting?: boolean;
 };
 
 const RichTextEditor = ({
@@ -61,6 +62,7 @@ const RichTextEditor = ({
   editorLabel,
   submitLabel,
   canManageAttachments = true,
+  submitting = false,
 }: RichTextEditorProps) => {
   const { t } = useTranslation();
   const effectivePlaceholder = placeholder ?? t('post.replyPlaceholder');
@@ -82,14 +84,18 @@ const RichTextEditor = ({
   const isUploadingImage = editorInfo === t('media.uploadingImage');
   const isUploadingVideo = editorInfo === t('media.uploadingVideo');
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
 
     if (!value.trim() && attachments.length === 0) {
       return;
     }
 
-    onSubmit();
+    await onSubmit();
   };
 
   const applyFormatting = (openTag: string, closeTag: string) => {
@@ -609,7 +615,8 @@ const RichTextEditor = ({
         <p className="text-ui-muted text-xs">{t('editor.supportedTags')}</p>
         <button
           type="submit"
-          className="bg-brand-primary-solid rounded-md px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-cyan-600"
+          disabled={submitting}
+          className="bg-brand-primary-solid rounded-md px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {effectiveSubmitLabel}
         </button>

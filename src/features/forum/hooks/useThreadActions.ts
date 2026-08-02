@@ -152,14 +152,24 @@ export const useThreadActions = ({
 
   const handleEditPost = useCallback(
     async (postId: string, content: string, attachments?: PostAttachment[]) => {
-      const result = await updatePost({ postId, content, attachments });
-      if (!result.ok) {
-        setFeedback(result.error ?? 'Unable to update post.');
-        return false;
-      }
+      try {
+        const result = await updatePost({ postId, content, attachments });
+        if (!result.ok) {
+          return {
+            ok: false as const,
+            error: result.error ?? 'Unable to update post.',
+          };
+        }
 
-      setFeedback('Post updated.');
-      return true;
+        setFeedback('Post updated.');
+        return { ok: true as const };
+      } catch (error) {
+        return {
+          ok: false as const,
+          error:
+            error instanceof Error ? error.message : 'Unable to update post.',
+        };
+      }
     },
     [updatePost]
   );
