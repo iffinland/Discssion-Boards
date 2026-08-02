@@ -1146,21 +1146,30 @@ export const useForumCommands = ({
             authoritativeChanges += 1;
           }
         } catch (error) {
-          if (authoritativeChanges > 0)
+          if (authoritativeChanges > 0) {
+            setTopics((current) =>
+              current.map((topic) =>
+                topic.id === target.id ? updatedTopic : topic
+              )
+            );
+            setTopicDirectoryIndex(topicDirectoryResource.snapshot);
             return {
               ok: true,
               partial: { pending: 'moderation-operations', retryable: true },
               error:
                 'Some authoritative topic changes committed; reload before retrying.',
             };
+          }
           throw error;
         }
-        setTopics((current) =>
-          current.map((topic) =>
-            topic.id === target.id ? updatedTopic : topic
-          )
-        );
-        setTopicDirectoryIndex(topicDirectoryResource.snapshot);
+        if (authoritativeChanges > 0) {
+          setTopics((current) =>
+            current.map((topic) =>
+              topic.id === target.id ? updatedTopic : topic
+            )
+          );
+          setTopicDirectoryIndex(topicDirectoryResource.snapshot);
+        }
         return { ok: true };
       } catch (error) {
         return {
