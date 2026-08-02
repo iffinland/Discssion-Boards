@@ -151,6 +151,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     tipRecipientName,
     tipRecipientAddress,
     tipResolveError,
+    tipResolveRetryable,
     isResolvingTipRecipient,
     isSendingTip,
     isTipBalanceLoading,
@@ -167,6 +168,7 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
     closeTipModal,
     setTipAmount,
     submitTip,
+    handleRetryTipResolution,
     uploadImageForReply,
     uploadAttachmentForReply,
     uploadVideoForReply,
@@ -1280,10 +1282,12 @@ const ThreadPage = ({ onSearchQueryChange }: ThreadPageProps) => {
         recipientName={tipRecipientName}
         recipientAddress={tipRecipientAddress}
         resolveError={tipResolveError}
+        resolveRetryable={tipResolveRetryable}
         isRecoveryPending={isTipRecoveryPending}
         onClose={closeTipModal}
         onAmountChange={setTipAmount}
         onSend={() => void submitTip()}
+        onRetryResolution={handleRetryTipResolution}
       />
       {isThreadPostsLoading ? (
         <p className="text-ui-muted text-xs">{t('thread.loadingQdn')}</p>

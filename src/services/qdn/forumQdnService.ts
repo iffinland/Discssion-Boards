@@ -75,6 +75,7 @@ import {
   finalizeTipDerivedState,
   forumTipsService,
   type TipRecovery,
+  type TipRecipientResolution,
 } from './forumTipsService.js';
 import {
   combineQdnDiscoveryResults,
@@ -407,6 +408,56 @@ const assertCompleteAuthorityDiscovery = (state: V2RuntimeState) => {
     throw new Error(
       '[PARTIAL_DISCOVERY] V2 authority discovery is incomplete; authority-sensitive mutation failed closed'
     );
+};
+
+/**
+ * Resolve a tip recipient from fresh and cached V2 authority states using
+ * the safety decision model for issue #23:
+ *
+ * - Fresh entity found → verified
+ * - Fresh discovery incomplete → cached fallback allowed (temporarily-unavailable)
+ * - Fresh discovery complete + entity absent/rejected → NO cache (unverifiable)
+ *
+ * Exported as a pure function so the decision model can be unit-tested
+ * independently of the full QDN/bridge service.
+ */
+export const resolveTipRecipientFromAuthorities = (
+  freshAuthority: V2RuntimeState,
+  cachedAuthority: V2RuntimeState | null,
+  postId: string
+): TipRecipientResolution => {
+  const freshRecipient = forumTipsService.resolveRecipient(
+    freshAuthority,
+    postId
+  );
+  if (freshRecipient) return { status: 'verified', recipient: freshRecipient };
+
+  if (freshAuthority.discovery.completeness !== 'complete') {
+    if (cachedAuthority && cachedAuthority !== freshAuthority) {
+      const cachedRecipient = forumTipsService.resolveRecipient(
+        cachedAuthority,
+        postId
+      );
+      if (cachedRecipient) {
+        return {
+          status: 'temporarily-unavailable',
+          detail:
+            'V2 authority discovery is incomplete. A previously validated cached recipient is shown. Retry to refresh.',
+        };
+      }
+    }
+    return {
+      status: 'temporarily-unavailable',
+      detail:
+        'V2 authority discovery is incomplete. The post owner cannot be verified right now. Retry in a moment.',
+    };
+  }
+
+  return {
+    status: 'unverifiable',
+    reason:
+      'This legacy or unavailable Post has no approved V2 owner authority, so its tip recipient cannot be verified.',
+  };
 };
 
 const fetchTopicPayloads = async () => {
@@ -1242,12 +1293,17 @@ export const forumQdnService = {
     }
   },
 
-  async resolvePostTipRecipient(postId: string) {
+  async resolvePostTipRecipient(
+    postId: string
+  ): Promise<TipRecipientResolution> {
     const authority = await this.loadV2AuthorityState(undefined, {
       force: true,
     });
-    assertCompleteAuthorityDiscovery(authority);
-    return forumTipsService.resolveRecipient(authority, postId);
+    return resolveTipRecipientFromAuthorities(
+      authority,
+      v2AuthorityCache?.value ?? null,
+      postId
+    );
   },
 
   async submitPostTip(

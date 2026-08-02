@@ -11,10 +11,12 @@ type QortTipModalProps = {
   recipientName: string;
   recipientAddress: string | null;
   resolveError: string | null;
+  resolveRetryable: boolean;
   isRecoveryPending: boolean;
   onClose: () => void;
   onAmountChange: (value: string) => void;
   onSend: () => void;
+  onRetryResolution: () => void;
 };
 
 const QortTipModal = ({
@@ -27,10 +29,12 @@ const QortTipModal = ({
   recipientName,
   recipientAddress,
   resolveError,
+  resolveRetryable,
   isRecoveryPending,
   onClose,
   onAmountChange,
   onSend,
+  onRetryResolution,
 }: QortTipModalProps) => {
   const { t } = useTranslation();
   return (
@@ -95,20 +99,33 @@ const QortTipModal = ({
           </p>
         ) : null}
 
-        <button
-          type="button"
-          onClick={onSend}
-          disabled={isSending || isResolvingRecipient || Boolean(resolveError)}
-          className="bg-brand-primary-solid w-full rounded-md px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSending
-            ? isRecoveryPending
-              ? t('tip.retrying')
-              : t('tip.sending')
-            : isRecoveryPending
-              ? t('tip.retryReference')
-              : t('tip.sendQort')}
-        </button>
+        {resolveError && resolveRetryable ? (
+          <button
+            type="button"
+            onClick={onRetryResolution}
+            disabled={isResolvingRecipient}
+            className="bg-amber-600 w-full rounded-md px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isResolvingRecipient ? t('tip.resolving') : t('tip.retry')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={
+              isSending || isResolvingRecipient || Boolean(resolveError)
+            }
+            className="bg-brand-primary-solid w-full rounded-md px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSending
+              ? isRecoveryPending
+                ? t('tip.retrying')
+                : t('tip.sending')
+              : isRecoveryPending
+                ? t('tip.retryReference')
+                : t('tip.sendQort')}
+          </button>
+        )}
       </div>
     </AppModal>
   );

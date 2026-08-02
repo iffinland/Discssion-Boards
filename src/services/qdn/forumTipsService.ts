@@ -82,6 +82,11 @@ export type TipRecipient = {
   address: string;
 };
 
+export type TipRecipientResolution =
+  | { status: 'verified'; recipient: TipRecipient }
+  | { status: 'temporarily-unavailable'; detail: string }
+  | { status: 'unverifiable'; reason: string };
+
 export type TipSubmissionResult =
   | {
       ok: true;

@@ -27,6 +27,7 @@ export type ForumMutationResult = {
 export type ForumTipRecipientResult = {
   ok: boolean;
   error?: string;
+  retryable?: boolean;
   recipientName?: string;
   recipientAddress?: string;
 };

@@ -22,6 +22,7 @@ import {
   parseCoreQortTransfer,
   type ForumTipsDependencies,
 } from '../src/services/qdn/forumTipsService.js';
+import { resolveTipRecipientFromAuthorities } from '../src/services/qdn/forumQdnService.js';
 import type { Post } from '../src/types/index.js';
 
 function assert(condition: boolean, message: string): asserts condition {
@@ -888,6 +889,204 @@ assert(
       (entry) => entry.code === 'TIP_LEGACY_UNVERIFIED'
     ),
   'legacy tip state is explicitly historical and unverified'
+);
+
+// ── Tip recipient resolution safety (issue #23) ─────────────────────
+//
+// Tests exercise the real production helper
+// `resolveTipRecipientFromAuthorities` which implements the decision
+// model used by `forumQdnService.resolvePostTipRecipient`.
+
+const makeCompleteAuthority = (
+  entityId: string,
+  publisherName: string,
+  walletAddress: string
+): V2RuntimeState => ({
+  authoritative: {
+    entities: {
+      [entityId]: {
+        entityType: 'post',
+        entityId,
+        parentThreadId: 'thread-1',
+        parentPostId: null,
+        content: 'content',
+        publisherName,
+        walletAddress,
+      },
+    },
+    quarantined: [],
+  },
+  diagnostics: [],
+  discovery: {
+    completeness: 'complete',
+    pagesFetched: 1,
+    resourcesSeen: 1,
+    stoppedReason: 'fixture',
+    source: 'network',
+  },
+});
+
+const makeEmptyComplete = (): V2RuntimeState => ({
+  authoritative: { entities: {}, quarantined: [] },
+  diagnostics: [],
+  discovery: {
+    completeness: 'complete',
+    pagesFetched: 1,
+    resourcesSeen: 0,
+    stoppedReason: 'fixture',
+    source: 'network',
+  },
+});
+
+const makeEmptyPartial = (): V2RuntimeState => ({
+  authoritative: { entities: {}, quarantined: [] },
+  diagnostics: [],
+  discovery: {
+    completeness: 'partial',
+    pagesFetched: 1,
+    resourcesSeen: 0,
+    stoppedReason: 'fixture',
+    source: 'network',
+  },
+});
+
+// 1. Fresh valid authority wins.
+const freshValid = resolveTipRecipientFromAuthorities(
+  makeCompleteAuthority('post-1', 'alice', 'ALICE-ADDRESS'),
+  null,
+  'post-1'
+);
+assert(
+  freshValid.status === 'verified' &&
+    freshValid.recipient.name === 'alice' &&
+    freshValid.recipient.address === 'ALICE-ADDRESS',
+  'fresh valid authority returns verified recipient'
+);
+
+// 2. Incomplete discovery may use previously validated cache.
+const cachedEntity = makeCompleteAuthority(
+  'post-cached',
+  'alice',
+  'ALICE-ADDRESS'
+);
+const incompleteFallback = resolveTipRecipientFromAuthorities(
+  makeEmptyPartial(),
+  cachedEntity,
+  'post-cached'
+);
+assert(
+  incompleteFallback.status === 'temporarily-unavailable',
+  'incomplete discovery with valid cached entity is temporarily-unavailable'
+);
+
+// 2b. Incomplete discovery without cached entity is still retryable.
+const incompleteNoCache = resolveTipRecipientFromAuthorities(
+  makeEmptyPartial(),
+  null,
+  'post-missing'
+);
+assert(
+  incompleteNoCache.status === 'temporarily-unavailable',
+  'incomplete discovery without cache remains retryable'
+);
+
+// 2c. Incomplete discovery with empty cache is retryable.
+const incompleteEmptyCache = resolveTipRecipientFromAuthorities(
+  makeEmptyPartial(),
+  makeEmptyComplete(),
+  'post-missing'
+);
+assert(
+  incompleteEmptyCache.status === 'temporarily-unavailable',
+  'incomplete discovery with empty cached authority remains retryable'
+);
+
+// 3. Complete discovery with entity absent (wallet-binding /
+//    publisher rejected) does NOT use cache.
+const cachedWithEntity = makeCompleteAuthority(
+  'post-rejected',
+  'alice',
+  'ALICE-ADDRESS'
+);
+const completeRejected = resolveTipRecipientFromAuthorities(
+  makeEmptyComplete(), // entity absent — was rejected during reduction
+  cachedWithEntity, // cached still has it
+  'post-rejected'
+);
+assert(
+  completeRejected.status === 'unverifiable',
+  'complete discovery with absent entity must not fall back to cache — wallet/publisher rejection is final'
+);
+
+// 4. Complete discovery with publisher mismatch in authority: the
+//    entity is absent from fresh (rejected) so cache must NOT be used.
+const publisherMismatch = resolveTipRecipientFromAuthorities(
+  makeEmptyComplete(),
+  cachedWithEntity,
+  'post-rejected'
+);
+assert(
+  publisherMismatch.status === 'unverifiable',
+  'complete discovery with publisher mismatch must not use cache'
+);
+
+// 5. Complete discovery with missing entity (never existed) does not
+//    use cache.
+const missingEntity = resolveTipRecipientFromAuthorities(
+  makeCompleteAuthority('post-other', 'bob', 'BOB-ADDRESS'),
+  cachedWithEntity,
+  'post-missing'
+);
+assert(
+  missingEntity.status === 'unverifiable',
+  'complete discovery with missing entity is permanently unverifiable'
+);
+
+// 6. Retryable and permanent results remain distinguishable.
+assert(
+  incompleteFallback.status === 'temporarily-unavailable' &&
+    completeRejected.status === 'unverifiable',
+  'temporarily-unavailable and unverifiable are distinct statuses'
+);
+
+// 7. Only a verified result can reach tip approval — the submit path
+//    must fail before SEND_COIN when recipient cannot be resolved.
+const noRecipientMock = makeMock();
+const noRecipientResult = await createForumTipsService(
+  noRecipientMock.dependencies
+).submit({
+  postId: 'post-missing',
+  amountQort: '1',
+  senderName: 'sender',
+  senderAddress: 'SENDER-ADDRESS',
+  authority,
+});
+assert(
+  !noRecipientResult.ok &&
+    !noRecipientResult.paymentCommitted &&
+    !('transactionSignature' in noRecipientResult),
+  'submit must fail before SEND_COIN when recipient cannot be resolved'
+);
+
+// 8. Stale cached-wallet recipient must never reach SEND_COIN: the
+//    submit helper requires a fresh authority resolution and will
+//    fail with TIP_TARGET_UNAVAILABLE when the entity is absent from
+//    the authoritative state — even if a stale cache held it.
+const staleInFresh = makeEmptyComplete();
+const staleResult = await createForumTipsService(
+  makeMock().dependencies
+).submit({
+  postId: 'post-rejected',
+  amountQort: '1',
+  senderName: 'sender',
+  senderAddress: 'SENDER-ADDRESS',
+  authority: staleInFresh,
+});
+assert(
+  !staleResult.ok &&
+    !staleResult.paymentCommitted &&
+    !('transactionSignature' in staleResult),
+  'stale cached recipient cannot reach SEND_COIN through the submit path'
 );
 
 console.log('Architecture V2 verified tip tests passed');

@@ -2908,21 +2908,30 @@ export const useForumCommands = ({
       const target = posts.find((post) => post.id === postId);
       if (!target) return { ok: false, error: 'Post not found.' };
       try {
-        const recipient = await forumQdnService.resolvePostTipRecipient(postId);
-        return recipient
-          ? {
-              ok: true,
-              recipientName: recipient.name,
-              recipientAddress: recipient.address,
-            }
-          : {
-              ok: false,
-              error:
-                'This legacy or unavailable Post has no approved V2 owner authority, so its tip recipient cannot be verified.',
-            };
+        const resolution =
+          await forumQdnService.resolvePostTipRecipient(postId);
+        if (resolution.status === 'verified') {
+          return {
+            ok: true,
+            recipientName: resolution.recipient.name,
+            recipientAddress: resolution.recipient.address,
+          };
+        }
+        if (resolution.status === 'temporarily-unavailable') {
+          return {
+            ok: false,
+            retryable: true,
+            error: resolution.detail,
+          };
+        }
+        return {
+          ok: false,
+          error: resolution.reason,
+        };
       } catch (error) {
         return {
           ok: false,
+          retryable: true,
           error:
             error instanceof Error
               ? error.message

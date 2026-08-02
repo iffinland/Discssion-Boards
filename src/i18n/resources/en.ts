@@ -315,6 +315,7 @@ const en = {
     recipient: 'Recipient',
     resolving: 'Resolving wallet address...',
     unavailable: 'Wallet address unavailable',
+    retry: 'Retry',
     retrying: 'Retrying tip reference...',
     sending: 'Sending...',
     retryReference: 'RETRY TIP REFERENCE (NO PAYMENT)',

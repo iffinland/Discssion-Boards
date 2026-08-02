@@ -78,6 +78,7 @@ export const useThreadActions = ({
     null
   );
   const [tipResolveError, setTipResolveError] = useState<string | null>(null);
+  const [tipResolveRetryable, setTipResolveRetryable] = useState(false);
   const [isResolvingTipRecipient, setIsResolvingTipRecipient] = useState(false);
   const [isSendingTip, setIsSendingTip] = useState(false);
   const [qortBalance, setQortBalance] = useState<number | null>(null);
@@ -224,10 +225,12 @@ export const useThreadActions = ({
           setTipResolveError(
             result.error ?? 'Authoritative Post owner could not be resolved.'
           );
+          setTipResolveRetryable(result.retryable === true);
           return null;
         }
         setTipRecipientName(result.recipientName);
         setTipRecipientAddress(result.recipientAddress);
+        setTipResolveRetryable(false);
         return result.recipientAddress;
       } catch (error) {
         const message =
@@ -236,6 +239,7 @@ export const useThreadActions = ({
             : 'Recipient wallet address lookup failed.';
         setTipRecipientAddress(null);
         setTipResolveError(message);
+        setTipResolveRetryable(true);
         return null;
       } finally {
         setIsResolvingTipRecipient(false);
@@ -253,6 +257,7 @@ export const useThreadActions = ({
       setTipAmount(storedRecovery?.body.amountQort ?? '0');
       setTipRecipientAddress(null);
       setTipResolveError(null);
+      setTipResolveRetryable(false);
       setIsTipModalOpen(true);
       setTipRecovery(storedRecovery);
 
@@ -278,6 +283,12 @@ export const useThreadActions = ({
 
     setIsTipModalOpen(false);
   }, [isSendingTip]);
+
+  const handleRetryTipResolution = useCallback(() => {
+    const targetPostId = tipTargetPostId;
+    if (!targetPostId) return;
+    void resolveTipRecipient(targetPostId);
+  }, [resolveTipRecipient, tipTargetPostId]);
 
   const submitTip = useCallback(async () => {
     const targetPostId = tipTargetPostId;
@@ -421,6 +432,7 @@ export const useThreadActions = ({
     tipRecipientName,
     tipRecipientAddress,
     tipResolveError,
+    tipResolveRetryable,
     isResolvingTipRecipient,
     isSendingTip,
     isTipBalanceLoading,
@@ -438,6 +450,7 @@ export const useThreadActions = ({
     closeTipModal,
     setTipAmount,
     submitTip,
+    handleRetryTipResolution,
     uploadImageForReply,
     uploadAttachmentForReply,
     uploadVideoForReply,
