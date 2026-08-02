@@ -559,7 +559,12 @@ testGlobal.qdnRequest = async (payload) => {
     );
     const transaction = transactions.get(signature);
     if (!transaction) throw new Error('mock transaction unavailable');
-    return transaction;
+    // The real bridge (both q-apps.js read-only and Qortium Home platform.ts)
+    // wraps every FETCH_NODE_API response in a readNodeApiResponse envelope
+    // { body, data, ok, status, ... }.  Return the same shape so the runtime
+    // tests exercise the envelope-unwrapping in parseCoreRoleTransaction.
+    const body = JSON.stringify(transaction);
+    return { body, data: transaction, ok: true, status: 200, statusText: 'OK' };
   }
   if (action === 'PUBLISH_QDN_RESOURCE') {
     if (rejectNextPublication) {

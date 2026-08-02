@@ -328,8 +328,13 @@ const fetchResource = async (
 const parseCoreRoleTransaction = (
   raw: unknown
 ): RoleTransactionEvidence | null => {
-  if (!isObject(raw)) return null;
-  const transaction = raw as CoreArbitraryTransaction;
+  // The FETCH_NODE_API bridge handler (both the q-apps.js read-only bridge and
+  // Qortium Home's platform.ts) returns a readNodeApiResponse envelope
+  // { body, data, ok, status, ... }.  Unwrap it so the code below reads the
+  // actual Core transaction fields instead of the envelope keys.
+  const source = isObject(raw) && isObject(raw.data) ? raw.data : raw;
+  if (!isObject(source)) return null;
+  const transaction = source as CoreArbitraryTransaction;
   if (
     transaction.type !== 'ARBITRARY' ||
     transaction.method !== 'PUT' ||

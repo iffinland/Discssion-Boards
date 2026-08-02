@@ -302,30 +302,35 @@ export const parseCoreReferenceTransaction = (
   raw: unknown,
   expectedSignature: string
 ): TipEvidenceLookup<TipReferenceTransactionEvidence> => {
-  if (!isObject(raw))
+  // The FETCH_NODE_API bridge handler (both the q-apps.js read-only bridge and
+  // Qortium Home's platform.ts) returns a readNodeApiResponse envelope
+  // { body, data, ok, status, ... }.  Unwrap it so the code below reads the
+  // actual Core transaction fields instead of the envelope keys.
+  const source = isObject(raw) && isObject(raw.data) ? raw.data : raw;
+  if (!isObject(source))
     return {
       status: 'invalid',
       code: 'TIP_REFERENCE_TRANSACTION_MISMATCH',
       detail: 'Core returned malformed QDN transaction evidence',
     };
   if (
-    raw.type !== 'ARBITRARY' ||
-    raw.method !== 'PUT' ||
-    typeof raw.signature !== 'string' ||
-    raw.signature.trim() !== expectedSignature.trim() ||
-    typeof raw.creatorAddress !== 'string' ||
-    !raw.creatorAddress.trim() ||
-    typeof raw.timestamp !== 'number' ||
-    !Number.isSafeInteger(raw.timestamp) ||
-    typeof raw.name !== 'string' ||
-    !raw.name.trim() ||
-    typeof raw.identifier !== 'string' ||
-    !raw.identifier.trim() ||
-    typeof raw.approvalStatus !== 'string' ||
-    (raw.blockSequence !== undefined &&
-      raw.blockSequence !== null &&
-      (typeof raw.blockSequence !== 'number' ||
-        !Number.isSafeInteger(raw.blockSequence)))
+    source.type !== 'ARBITRARY' ||
+    source.method !== 'PUT' ||
+    typeof source.signature !== 'string' ||
+    source.signature.trim() !== expectedSignature.trim() ||
+    typeof source.creatorAddress !== 'string' ||
+    !source.creatorAddress.trim() ||
+    typeof source.timestamp !== 'number' ||
+    !Number.isSafeInteger(source.timestamp) ||
+    typeof source.name !== 'string' ||
+    !source.name.trim() ||
+    typeof source.identifier !== 'string' ||
+    !source.identifier.trim() ||
+    typeof source.approvalStatus !== 'string' ||
+    (source.blockSequence !== undefined &&
+      source.blockSequence !== null &&
+      (typeof source.blockSequence !== 'number' ||
+        !Number.isSafeInteger(source.blockSequence)))
   )
     return {
       status: 'invalid',
@@ -334,28 +339,28 @@ export const parseCoreReferenceTransaction = (
         'QDN reference publication transaction is unconfirmed or mismatched',
     };
   if (
-    raw.approvalStatus === 'REJECTED' ||
-    raw.approvalStatus === 'EXPIRED' ||
-    raw.approvalStatus === 'INVALID'
+    source.approvalStatus === 'REJECTED' ||
+    source.approvalStatus === 'EXPIRED' ||
+    source.approvalStatus === 'INVALID'
   )
     return {
       status: 'invalid',
       code: 'TIP_REFERENCE_TRANSACTION_MISMATCH',
-      detail: `QDN tip-reference publication has ${raw.approvalStatus} approval status`,
+      detail: `QDN tip-reference publication has ${source.approvalStatus} approval status`,
     };
   if (
-    typeof raw.blockHeight !== 'number' ||
-    !Number.isSafeInteger(raw.blockHeight) ||
-    raw.blockHeight <= 0 ||
-    raw.approvalStatus === 'PENDING'
+    typeof source.blockHeight !== 'number' ||
+    !Number.isSafeInteger(source.blockHeight) ||
+    source.blockHeight <= 0 ||
+    source.approvalStatus === 'PENDING'
   )
     return {
       status: 'unavailable',
       detail: 'QDN tip-reference publication is awaiting confirmation',
     };
   if (
-    raw.approvalStatus !== 'NOT_REQUIRED' &&
-    raw.approvalStatus !== 'APPROVED'
+    source.approvalStatus !== 'NOT_REQUIRED' &&
+    source.approvalStatus !== 'APPROVED'
   )
     return {
       status: 'invalid',
@@ -368,15 +373,15 @@ export const parseCoreReferenceTransaction = (
     evidence: {
       type: 'ARBITRARY',
       method: 'PUT',
-      signature: raw.signature.trim(),
-      creatorAddress: raw.creatorAddress.trim(),
-      timestamp: raw.timestamp,
-      name: raw.name.trim(),
-      identifier: raw.identifier.trim(),
-      blockHeight: raw.blockHeight,
+      signature: source.signature.trim(),
+      creatorAddress: source.creatorAddress.trim(),
+      timestamp: source.timestamp,
+      name: source.name.trim(),
+      identifier: source.identifier.trim(),
+      blockHeight: source.blockHeight,
       blockSequence:
-        typeof raw.blockSequence === 'number' ? raw.blockSequence : null,
-      approvalStatus: raw.approvalStatus,
+        typeof source.blockSequence === 'number' ? source.blockSequence : null,
+      approvalStatus: source.approvalStatus,
     },
   };
 };
