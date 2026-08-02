@@ -43,6 +43,14 @@ const PostEditModal = ({
   }, [onClose, submitting]);
 
   useEffect(() => {
+    if (isOpen) {
+      setSubmitError(null);
+      setSubmitting(false);
+      submitLockRef.current = false;
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!isOpen) {
       return;
     }

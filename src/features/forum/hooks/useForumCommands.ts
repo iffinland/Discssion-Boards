@@ -2285,6 +2285,17 @@ export const useForumCommands = ({
         return { ok: false, error: 'Only owner can edit this post.' };
       }
 
+      if (
+        target.dataProvenance === 'legacy-v1' ||
+        target.dataProvenance === 'legacy-index'
+      ) {
+        return {
+          ok: false,
+          error:
+            'This post was created before Architecture V2 was active and cannot be edited. Create a new post instead.',
+        };
+      }
+
       let v2Committed = false;
       try {
         await forumQdnService.publishV2OwnerEdit(
@@ -2319,6 +2330,17 @@ export const useForumCommands = ({
         );
         v2Committed = true;
       } catch (error) {
+        const rawMessage = error instanceof Error ? error.message : '';
+        if (
+          rawMessage.includes('target V2 entity is not authoritative') ||
+          rawMessage.includes('UNAUTHORIZED_PUBLISHER')
+        ) {
+          return {
+            ok: false,
+            error:
+              'This post cannot be edited because its authority record is missing. It may have been created before Architecture V2 was active.',
+          };
+        }
         return {
           ok: false,
           error:

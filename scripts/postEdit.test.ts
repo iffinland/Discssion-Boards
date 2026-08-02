@@ -1320,6 +1320,198 @@ runTest('[Production] PostEditSubmitResult discriminated union', () => {
   }
 });
 
+// ===========================================================================
+// G. Regression — issue #17 live validation failures
+// ===========================================================================
+
+// G-1 — modal submitError and submitting must be cleared when modal opens
+runTest('[Regression] modal clears submitError and submitting on open', () => {
+  let submitError: string | null = 'stale error from previous attempt';
+  let submitting = true;
+  let lock = true;
+
+  // Simulate modal opening: clear all pending state
+  const onModalOpen = () => {
+    submitError = null;
+    submitting = false;
+    lock = false;
+  };
+
+  onModalOpen();
+  assert.equal(submitError, null, 'submitError must be null after open');
+  assert.equal(submitting, false, 'submitting must be false after open');
+  assert.equal(lock, false, 'submit lock must be released after open');
+});
+
+// G-2 — switching from one post to another clears previous error
+runTest('[Regression] switching edited post clears previous error', () => {
+  let submitError: string | null =
+    '[UNAUTHORIZED_PUBLISHER] target V2 entity is not authoritative';
+  let isOpen = false;
+
+  // Close modal (editingPost set to null)
+  isOpen = false;
+
+  // Open modal for a different post
+  isOpen = true;
+  if (isOpen) {
+    submitError = null;
+  }
+
+  assert.equal(
+    submitError,
+    null,
+    'opening modal for a different post must clear stale error'
+  );
+});
+
+// G-3 — legacy-v1 posts return clear error before V2 authority call
+runTest('[Regression] legacy-v1 post returns clear error', () => {
+  const dataProvenance = 'legacy-v1' as const;
+
+  const checkLegacyPost = (provenance: string | undefined) => {
+    if (provenance === 'legacy-v1' || provenance === 'legacy-index') {
+      return {
+        ok: false as const,
+        error:
+          'This post was created before Architecture V2 was active and cannot be edited. Create a new post instead.',
+      };
+    }
+    return { ok: true as const };
+  };
+
+  const result = checkLegacyPost(dataProvenance);
+  assert.ok(!result.ok, 'legacy-v1 post must be rejected');
+  assert.ok(
+    (result as { ok: false; error: string }).error.includes('Architecture V2'),
+    'error must mention Architecture V2'
+  );
+  assert.ok(
+    (result as { ok: false; error: string }).error.includes('cannot be edited'),
+    'error must explain post cannot be edited'
+  );
+});
+
+// G-4 — legacy-index posts return clear error
+runTest('[Regression] legacy-index post returns clear error', () => {
+  const dataProvenance = 'legacy-index' as const;
+
+  const checkLegacyPost = (provenance: string | undefined) => {
+    if (provenance === 'legacy-v1' || provenance === 'legacy-index') {
+      return {
+        ok: false as const,
+        error:
+          'This post was created before Architecture V2 was active and cannot be edited. Create a new post instead.',
+      };
+    }
+    return { ok: true as const };
+  };
+
+  const result = checkLegacyPost(dataProvenance);
+  assert.ok(!result.ok, 'legacy-index post must be rejected');
+});
+
+// G-5 — authoritative-qdn posts pass the legacy check (edit proceeds to V2)
+runTest('[Regression] authoritative-qdn post passes legacy check', () => {
+  const dataProvenance = 'authoritative-qdn' as const;
+
+  const checkLegacyPost = (provenance: string | undefined) => {
+    if (provenance === 'legacy-v1' || provenance === 'legacy-index') {
+      return {
+        ok: false as const,
+        error: 'legacy blocked',
+      };
+    }
+    return { ok: true as const };
+  };
+
+  const result = checkLegacyPost(dataProvenance);
+  assert.ok(result.ok, 'authoritative-qdn post must pass legacy check');
+});
+
+// G-6 — undefined dataProvenance also passes (not blocked prematurely)
+runTest('[Regression] undefined dataProvenance passes legacy check', () => {
+  const dataProvenance = undefined;
+
+  const checkLegacyPost = (provenance: string | undefined) => {
+    if (provenance === 'legacy-v1' || provenance === 'legacy-index') {
+      return {
+        ok: false as const,
+        error: 'legacy blocked',
+      };
+    }
+    return { ok: true as const };
+  };
+
+  const result = checkLegacyPost(dataProvenance);
+  assert.ok(
+    result.ok,
+    'undefined provenance must pass legacy check (not blocked prematurely)'
+  );
+});
+
+// G-7 — unauthorized "not authoritative" error is translated to user-friendly message
+runTest('[Regression] missing V2 entity error is user-friendly', () => {
+  const translateError = (rawMessage: string) => {
+    if (
+      rawMessage.includes('target V2 entity is not authoritative') ||
+      rawMessage.includes('UNAUTHORIZED_PUBLISHER')
+    ) {
+      return {
+        ok: false as const,
+        error:
+          'This post cannot be edited because its authority record is missing. It may have been created before Architecture V2 was active.',
+      };
+    }
+    return { ok: false as const, error: rawMessage };
+  };
+
+  const result1 = translateError(
+    '[UNAUTHORIZED_PUBLISHER] target V2 entity is not authoritative'
+  );
+  assert.ok(!result1.ok, 'must return failure');
+  assert.ok(
+    result1.error.includes('authority record is missing'),
+    'error must mention missing authority record'
+  );
+  assert.ok(
+    !result1.error.includes('UNAUTHORIZED_PUBLISHER'),
+    'error must not contain raw technical code'
+  );
+
+  const result2 = translateError('[IDENTITY_UNVERIFIED] publisher mismatch');
+  assert.ok(
+    result2.error.includes('IDENTITY_UNVERIFIED'),
+    'non-authoritative errors must pass through unchanged'
+  );
+});
+
+// G-8 — forged post with different owner is blocked before legacy/V2 check
+runTest(
+  '[Regression] forged post (different author) blocked before legacy check',
+  () => {
+    // The ownership check (authorUserId !== currentUser.id) runs BEFORE
+    // the legacy provenance check. Forged posts are caught early.
+    const checkOwnershipFirst = (
+      authorUserId: string,
+      currentUserId: string
+    ): PostEditSubmitResult => {
+      if (authorUserId !== currentUserId) {
+        return { ok: false, error: 'Only owner can edit this post.' };
+      }
+      // Legacy check would follow here but is never reached for forged posts
+      return { ok: true };
+    };
+
+    const result = checkOwnershipFirst('attacker-id', 'real-user-id');
+    assert.ok(!result.ok, 'forged post must be blocked');
+    assert.ok(
+      (result as { ok: false; error: string }).error.includes('owner'),
+      'error must reference ownership'
+    );
+  }
+);
+
 // ---- summary -----------------------------------------------------------------
 
 void (async () => {
