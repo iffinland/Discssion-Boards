@@ -484,6 +484,8 @@ const testGlobal = globalThis as typeof globalThis & {
 testGlobal.qdnRequest = async (payload) => {
   bridgeCalls.push(payload);
   const action = String(payload.action);
+  if (action === 'GET_SELECTED_ACCOUNT')
+    return { address: PRIMARY_SYSOP_ADDRESS, name: 'root-name' };
   if (action === 'GET_ACCOUNT_NAMES') return [{ name: 'root-name' }];
   if (action === 'GET_NAME_DATA')
     return { owner: runtimeWallets[String(payload.name)] ?? null };
@@ -838,6 +840,63 @@ assert(
   'current/cached name ownership cannot replace immutable primary transaction proof'
 );
 transactions.set('runtime-bootstrap-signature', trustedBootstrapTransaction);
+
+// --- Bootstrap registry publication tests ---
+// 1. Non-SysOp cannot publish the canonical bootstrap registry.
+let nonSysOpBootstrapRejected = false;
+try {
+  await forumRolesService.publishRoleRegistry(
+    {
+      primarySysOpAddress: PRIMARY_SYSOP_ADDRESS,
+      sysOps: [],
+      admins: [],
+      moderators: [],
+      updatedAt: Date.now(),
+    },
+    'super-name'
+  );
+} catch (error) {
+  nonSysOpBootstrapRejected =
+    error instanceof Error &&
+    error.message.includes('ROLE_UNTRUSTED_PUBLISHER');
+}
+assert(
+  nonSysOpBootstrapRejected,
+  'only the primary SysOp may publish the canonical bootstrap registry'
+);
+
+// 2. publishRoleRegistry returns a sanitized registry matching the input.
+const sysOpPublished = await forumRolesService.publishRoleRegistry({
+  primarySysOpAddress: PRIMARY_SYSOP_ADDRESS,
+  sysOps: [],
+  admins: ['BOOTSTRAP-TEST-ADMIN'],
+  moderators: ['BOOTSTRAP-TEST-MODERATOR'],
+  updatedAt: Date.now(),
+});
+assert(
+  sysOpPublished.primarySysOpAddress === PRIMARY_SYSOP_ADDRESS &&
+    sysOpPublished.admins.includes('BOOTSTRAP-TEST-ADMIN') &&
+    sysOpPublished.moderators.includes('BOOTSTRAP-TEST-MODERATOR'),
+  'publishRoleRegistry returns a sanitized registry matching the input'
+);
+
+// 3. Sanitization prevents duplicate entries across role tiers.
+const sanitized = await forumRolesService.publishRoleRegistry({
+  primarySysOpAddress: PRIMARY_SYSOP_ADDRESS,
+  sysOps: ['DUPE-ADDRESS'],
+  admins: ['DUPE-ADDRESS', 'ANOTHER-ADMIN'],
+  moderators: ['ANOTHER-ADMIN', 'A-MODERATOR'],
+  updatedAt: Date.now(),
+});
+assert(
+  sanitized.sysOps.includes('DUPE-ADDRESS') &&
+    !sanitized.admins.includes('DUPE-ADDRESS') &&
+    sanitized.admins.includes('ANOTHER-ADMIN') &&
+    !sanitized.moderators.includes('ANOTHER-ADMIN') &&
+    sanitized.moderators.includes('A-MODERATOR'),
+  'canonical registry sanitization prevents tier overlap'
+);
+
 delete testGlobal.qdnRequest;
 
 console.log('Architecture V2 role persistence tests passed');

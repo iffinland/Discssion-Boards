@@ -418,6 +418,11 @@ const en = {
     accessCustomHelp:
       'Listed wallet addresses can create sub-topics; admins retain management access.',
     roleUpdated: '{{role}} role updated successfully.',
+    roleBootstrapMissing:
+      'Canonical role bootstrap trust is not established. Only the primary SysOp can publish the bootstrap registry.',
+    roleBootstrapAction: 'Bootstrap Role Trust',
+    roleBootstrapSuccess: 'Canonical role bootstrap trust established.',
+    roleBootstrapFailed: 'Unable to establish canonical role bootstrap trust.',
   },
   editor: {
     tools: 'Text Formatting',

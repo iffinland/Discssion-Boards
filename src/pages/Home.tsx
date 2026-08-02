@@ -185,6 +185,7 @@ const Home = ({ searchQuery }: HomeProps) => {
     createTopic,
     reorderTopics,
     updateTopicSettings,
+    bootstrapRoleRegistry,
     upsertRoleAssignment,
     removeRoleAssignment,
     retryLoadData,
@@ -218,6 +219,7 @@ const Home = ({ searchQuery }: HomeProps) => {
     'SuperAdmin' | 'Admin' | 'Moderator'
   >('Admin');
   const [roleFeedback, setRoleFeedback] = useState<string | null>(null);
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
   const [roleNamesByAddress, setRoleNamesByAddress] = useState<
     Record<string, string>
   >({});
@@ -989,6 +991,23 @@ const Home = ({ searchQuery }: HomeProps) => {
     );
   };
 
+  const handleBootstrapRoleRegistry = async () => {
+    setIsBootstrapping(true);
+    setRoleFeedback(null);
+    try {
+      const result = await bootstrapRoleRegistry();
+      setRoleFeedback(
+        result.ok
+          ? t('moderation.roleBootstrapSuccess')
+          : (result.error ?? t('moderation.roleBootstrapFailed'))
+      );
+    } catch {
+      setRoleFeedback(t('moderation.roleBootstrapFailed'));
+    } finally {
+      setIsBootstrapping(false);
+    }
+  };
+
   useEffect(() => {
     if (assignableRoleOptions.some((option) => option.value === roleType)) {
       return;
@@ -1648,7 +1667,22 @@ const Home = ({ searchQuery }: HomeProps) => {
             </div>
 
             {roleFeedback ? (
-              <p className="text-ui-muted mt-3 text-xs">{roleFeedback}</p>
+              <div className="mt-3 space-y-2">
+                <p className="text-ui-muted text-xs">{roleFeedback}</p>
+                {isSysOp &&
+                roleFeedback.includes('ROLE_BOOTSTRAP_TRUST_FAILURE') ? (
+                  <button
+                    type="button"
+                    onClick={handleBootstrapRoleRegistry}
+                    disabled={isBootstrapping}
+                    className="bg-brand-primary-solid rounded-md px-3 py-2 text-xs font-semibold text-slate-900 disabled:opacity-50"
+                  >
+                    {isBootstrapping
+                      ? '...'
+                      : t('moderation.roleBootstrapAction')}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </article>
         </section>

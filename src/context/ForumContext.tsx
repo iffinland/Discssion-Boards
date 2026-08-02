@@ -146,6 +146,7 @@ type ForumActionsContextValue = {
     poll?: ForumPollDraft | null;
     nativePollRecovery?: import('../services/architectureV2/types').NativePollRecovery;
   }) => Promise<ForumMutationResult>;
+  bootstrapRoleRegistry: () => Promise<ForumMutationResult>;
   upsertRoleAssignment: (input: {
     address: string;
     role: 'SuperAdmin' | 'Admin' | 'Moderator';
@@ -269,6 +270,7 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
     updateSubTopicOwnerContent,
     updateSubTopicSettings,
     toggleSubTopicSolved,
+    bootstrapRoleRegistry,
     upsertRoleAssignment,
     removeRoleAssignment,
     createPost,
@@ -492,6 +494,7 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       updateSubTopicOwnerContent,
       updateSubTopicSettings,
       toggleSubTopicSolved,
+      bootstrapRoleRegistry,
       upsertRoleAssignment,
       removeRoleAssignment,
       createPost,
@@ -521,6 +524,7 @@ export const ForumProvider = ({ children }: { children: ReactNode }) => {
       updateSubTopicOwnerContent,
       updateSubTopicSettings,
       toggleSubTopicSolved,
+      bootstrapRoleRegistry,
       upsertRoleAssignment,
       removeRoleAssignment,
       createPost,

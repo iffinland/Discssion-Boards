@@ -1697,6 +1697,45 @@ export const useForumCommands = ({
     ]
   );
 
+  const bootstrapRoleRegistry =
+    useCallback(async (): Promise<ForumMutationResult> => {
+      if (!isAuthenticated || !authenticatedAddress) {
+        return { ok: false, error: 'Authenticate with Qortium first.' };
+      }
+
+      if (
+        !isSysOpRole(currentUser.role) ||
+        authenticatedAddress !== roleRegistry.primarySysOpAddress
+      ) {
+        return {
+          ok: false,
+          error:
+            'Only the configured primary SysOp may establish the canonical role bootstrap trust.',
+        };
+      }
+
+      try {
+        const published =
+          await forumRolesService.publishRoleRegistry(roleRegistry);
+        setRoleRegistry(published);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to publish canonical role bootstrap registry.',
+        };
+      }
+    }, [
+      authenticatedAddress,
+      currentUser.role,
+      isAuthenticated,
+      roleRegistry,
+      setRoleRegistry,
+    ]);
+
   const removeRoleAssignment = useCallback(
     async (address: string): Promise<ForumMutationResult> => {
       const normalizedAddress = address.trim();
@@ -3121,6 +3160,7 @@ export const useForumCommands = ({
     updateSubTopicOwnerContent,
     updateSubTopicSettings,
     toggleSubTopicSolved,
+    bootstrapRoleRegistry,
     upsertRoleAssignment,
     removeRoleAssignment,
     createPost,
