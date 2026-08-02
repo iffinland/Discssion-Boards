@@ -40,7 +40,7 @@
     "test:release-metadata": "node scripts/releaseMetadata.test.mjs",
     "validate:manifest": "node scripts/releaseMetadata.mjs validate-manifest",
     "verify:version": "node scripts/releaseMetadata.mjs verify-version",
-    "verify": "npm run lint && npm run format:check && npm run validate:manifest && npm run verify:version && npm run test:release-metadata && npm run test:architecture-v2 && npm run test:architecture-v2-runtime && npm run test:architecture-v2-reactions && npm run test:architecture-v2-polls && npm run test:architecture-v2-moderation && npm run test:architecture-v2-roles && npm run test:architecture-v2-tips && npm run test:architecture-v2-pagination && npm run test:architecture-v2-access && npm run test:qortium-bridge-publication && npm run test:qortium-home-display && npm run test:startup && npm run test:richtext && npm run build"
+    "verify": "npm run lint && npm run format:check && npm run validate:manifest && npm run verify:version && npm run test:release-metadata && npm run test:architecture-v2 && npm run test:architecture-v2-runtime && npm run test:architecture-v2-reactions && npm run test:architecture-v2-polls && npm run test:architecture-v2-moderation && npm run test:architecture-v2-roles && npm run test:architecture-v2-tips && npm run test:architecture-v2-pagination && npm run test:architecture-v2-access && npm run test:qortium-bridge-publication && npm run test:qortium-home-display && npm run test:startup && npm run test:richtext && npm run test:post-edit && npm run build"
   },
   "engines": {
     "node": "24.x",

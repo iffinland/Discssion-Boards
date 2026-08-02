@@ -91,10 +91,6 @@ const RichTextEditor = ({
       return;
     }
 
-    if (!value.trim() && attachments.length === 0) {
-      return;
-    }
-
     await onSubmit();
   };
 

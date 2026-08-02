@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppModal from '../../../components/common/AppModal';
 import RichTextEditor from '../../../components/forum/RichTextEditor';
 import type { PostAttachment } from '../../../types';
@@ -33,6 +33,7 @@ const PostEditModal = ({
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const submitLockRef = useRef(false);
 
   const handleClose = useCallback(() => {
     if (submitting) {
@@ -58,10 +59,11 @@ const PostEditModal = ({
   }, [isOpen, submitting]);
 
   const handleSubmit = async () => {
-    if (submitting) {
+    if (submitting || submitLockRef.current) {
       return;
     }
 
+    submitLockRef.current = true;
     setSubmitError(null);
     setSubmitting(true);
     try {
@@ -77,6 +79,7 @@ const PostEditModal = ({
       );
     } finally {
       setSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 

@@ -162,7 +162,11 @@ export const useThreadActions = ({
           };
         }
 
-        setFeedback('Post updated.');
+        if (result.partial) {
+          setFeedback(result.error ?? 'Post updated with pending follow-up.');
+        } else {
+          setFeedback('Post updated.');
+        }
         return { ok: true as const };
       } catch (error) {
         return {

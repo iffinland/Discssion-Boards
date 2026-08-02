@@ -2285,6 +2285,7 @@ export const useForumCommands = ({
         return { ok: false, error: 'Only owner can edit this post.' };
       }
 
+      let v2Committed = false;
       try {
         await forumQdnService.publishV2OwnerEdit(
           {
@@ -2316,6 +2317,7 @@ export const useForumCommands = ({
                   },
           }
         );
+        v2Committed = true;
       } catch (error) {
         return {
           ok: false,
@@ -2335,62 +2337,64 @@ export const useForumCommands = ({
         editedAt: updatedAt,
       };
 
-      try {
-        const nextPosts = posts.map((post) =>
+      const nextPosts = posts.map((post) =>
+        post.id === input.postId ? updatedPost : post
+      );
+      const postResource = forumQdnService.buildPostPublishResource(
+        updatedPost,
+        currentUser.username
+      );
+      const threadIndexResource = buildThreadIndexResource(
+        updatedPost.subTopicId,
+        nextPosts
+      );
+      const fragmentResource =
+        forumSearchIndexService.buildV2IndexFragmentPublishResource(
+          {
+            entityType: 'post',
+            entityId: updatedPost.id,
+            parentThreadId: updatedPost.subTopicId,
+            parentPostId: updatedPost.parentPostId,
+            publisherName: currentUser.username,
+            walletAddress: authenticatedAddress ?? '',
+            content: updatedPost.content,
+            attachments: updatedPost.attachments,
+            pollReference: isNativePostPoll(updatedPost.poll)
+              ? toPersistedNativePollReference(updatedPost.poll)
+              : null,
+          },
+          currentUser.username,
+          isRestrictedUiAccess(targetSubTopic.access)
+            ? 'locator-only'
+            : 'content-hint'
+        );
+
+      recordRecentPostMutation(updatedPost);
+      writeThreadIndexCache(
+        updatedPost.subTopicId,
+        threadIndexResource.snapshot
+      );
+      setPosts((current) => {
+        const next = current.map((post) =>
           post.id === input.postId ? updatedPost : post
         );
-        const postResource = forumQdnService.buildPostPublishResource(
-          updatedPost,
-          currentUser.username
-        );
-        const threadIndexResource = buildThreadIndexResource(
+        threadPostCache.write(
           updatedPost.subTopicId,
-          nextPosts
+          next.filter((post) => post.subTopicId === updatedPost.subTopicId)
         );
-        const fragmentResource =
-          forumSearchIndexService.buildV2IndexFragmentPublishResource(
-            {
-              entityType: 'post',
-              entityId: updatedPost.id,
-              parentThreadId: updatedPost.subTopicId,
-              parentPostId: updatedPost.parentPostId,
-              publisherName: currentUser.username,
-              walletAddress: authenticatedAddress ?? '',
-              content: updatedPost.content,
-              attachments: updatedPost.attachments,
-              pollReference: isNativePostPoll(updatedPost.poll)
-                ? toPersistedNativePollReference(updatedPost.poll)
-                : null,
-            },
-            currentUser.username,
-            isRestrictedUiAccess(targetSubTopic.access)
-              ? 'locator-only'
-              : 'content-hint'
-          );
+        return next;
+      });
+      setThreadSearchIndexes((current) => ({
+        ...current,
+        [updatedPost.subTopicId]: threadIndexResource.snapshot,
+      }));
+
+      try {
         const followup = await publishCompatibilityAndDerivedFragment(
           postResource.resource,
           fragmentResource.resource
         );
 
-        recordRecentPostMutation(updatedPost);
-        writeThreadIndexCache(
-          updatedPost.subTopicId,
-          threadIndexResource.snapshot
-        );
-        setPosts((current) => {
-          const next = current.map((post) =>
-            post.id === input.postId ? updatedPost : post
-          );
-          threadPostCache.write(
-            updatedPost.subTopicId,
-            next.filter((post) => post.subTopicId === updatedPost.subTopicId)
-          );
-          return next;
-        });
-        setThreadSearchIndexes((current) => ({
-          ...current,
-          [updatedPost.subTopicId]: threadIndexResource.snapshot,
-        }));
         if (followup.compatibilityFailed)
           return {
             ok: true,
@@ -2408,6 +2412,14 @@ export const useForumCommands = ({
           };
         return { ok: true };
       } catch (error) {
+        if (v2Committed) {
+          return {
+            ok: true,
+            partial: { pending: 'compatibility', retryable: true },
+            error:
+              'V2 post edit committed; legacy compatibility publication is pending.',
+          };
+        }
         return {
           ok: false,
           error:
