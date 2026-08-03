@@ -217,34 +217,39 @@ export const parseCoreQortTransfer = (
   raw: unknown,
   expectedSignature: string
 ): TipEvidenceLookup<QortTransferEvidence> => {
-  if (!isObject(raw))
+  // The FETCH_NODE_API bridge handler (both the q-apps.js read-only bridge and
+  // Qortium Home's platform.ts) returns a readNodeApiResponse envelope
+  // { body, data, ok, status, ... }.  Unwrap it so the code below reads the
+  // actual Core transaction fields instead of the envelope keys.
+  const source = isObject(raw) && isObject(raw.data) ? raw.data : raw;
+  if (!isObject(source))
     return {
       status: 'invalid',
       code: 'TIP_TRANSACTION_INVALID',
       detail: 'Core returned a malformed transaction response',
     };
-  if (raw.type !== 'TRANSFER_ASSET' || raw.assetId !== 0)
+  if (source.type !== 'TRANSFER_ASSET' || source.assetId !== 0)
     return {
       status: 'invalid',
       code: 'TIP_WRONG_TRANSACTION_TYPE',
       detail: 'referenced transaction is not a native QORT TRANSFER_ASSET',
     };
-  const amountQort = normalizeQortAmount(raw.amount);
+  const amountQort = normalizeQortAmount(source.amount);
   if (
-    typeof raw.signature !== 'string' ||
-    raw.signature.trim() !== expectedSignature.trim() ||
-    typeof raw.creatorAddress !== 'string' ||
-    !raw.creatorAddress.trim() ||
-    typeof raw.recipient !== 'string' ||
-    !raw.recipient.trim() ||
+    typeof source.signature !== 'string' ||
+    source.signature.trim() !== expectedSignature.trim() ||
+    typeof source.creatorAddress !== 'string' ||
+    !source.creatorAddress.trim() ||
+    typeof source.recipient !== 'string' ||
+    !source.recipient.trim() ||
     !amountQort ||
-    typeof raw.timestamp !== 'number' ||
-    !Number.isSafeInteger(raw.timestamp) ||
-    (raw.blockSequence !== undefined &&
-      raw.blockSequence !== null &&
-      (typeof raw.blockSequence !== 'number' ||
-        !Number.isSafeInteger(raw.blockSequence))) ||
-    typeof raw.approvalStatus !== 'string'
+    typeof source.timestamp !== 'number' ||
+    !Number.isSafeInteger(source.timestamp) ||
+    (source.blockSequence !== undefined &&
+      source.blockSequence !== null &&
+      (typeof source.blockSequence !== 'number' ||
+        !Number.isSafeInteger(source.blockSequence))) ||
+    typeof source.approvalStatus !== 'string'
   )
     return {
       status: 'invalid',
@@ -252,28 +257,28 @@ export const parseCoreQortTransfer = (
       detail: 'referenced QORT transfer is unconfirmed, rejected, or malformed',
     };
   if (
-    raw.approvalStatus === 'REJECTED' ||
-    raw.approvalStatus === 'EXPIRED' ||
-    raw.approvalStatus === 'INVALID'
+    source.approvalStatus === 'REJECTED' ||
+    source.approvalStatus === 'EXPIRED' ||
+    source.approvalStatus === 'INVALID'
   )
     return {
       status: 'invalid',
       code: 'TIP_TRANSACTION_INVALID',
-      detail: `referenced QORT transfer has ${raw.approvalStatus} approval status`,
+      detail: `referenced QORT transfer has ${source.approvalStatus} approval status`,
     };
   if (
-    typeof raw.blockHeight !== 'number' ||
-    !Number.isSafeInteger(raw.blockHeight) ||
-    raw.blockHeight <= 0 ||
-    raw.approvalStatus === 'PENDING'
+    typeof source.blockHeight !== 'number' ||
+    !Number.isSafeInteger(source.blockHeight) ||
+    source.blockHeight <= 0 ||
+    source.approvalStatus === 'PENDING'
   )
     return {
       status: 'unavailable',
       detail: 'referenced QORT transfer exists but is awaiting confirmation',
     };
   if (
-    raw.approvalStatus !== 'NOT_REQUIRED' &&
-    raw.approvalStatus !== 'APPROVED'
+    source.approvalStatus !== 'NOT_REQUIRED' &&
+    source.approvalStatus !== 'APPROVED'
   )
     return {
       status: 'invalid',
@@ -284,16 +289,16 @@ export const parseCoreQortTransfer = (
     status: 'found',
     evidence: {
       type: 'TRANSFER_ASSET',
-      signature: raw.signature.trim(),
-      creatorAddress: raw.creatorAddress.trim(),
-      recipient: raw.recipient.trim(),
+      signature: source.signature.trim(),
+      creatorAddress: source.creatorAddress.trim(),
+      recipient: source.recipient.trim(),
       amountQort,
       assetId: 0,
-      timestamp: raw.timestamp,
-      blockHeight: raw.blockHeight,
+      timestamp: source.timestamp,
+      blockHeight: source.blockHeight,
       blockSequence:
-        typeof raw.blockSequence === 'number' ? raw.blockSequence : null,
-      approvalStatus: raw.approvalStatus,
+        typeof source.blockSequence === 'number' ? source.blockSequence : null,
+      approvalStatus: source.approvalStatus,
     },
   };
 };

@@ -18,6 +18,7 @@ import { publishQdnFileResource } from '../qortium/qdnFilePublication.js';
 import {
   getUserAccount,
   resolveNameWalletAddress,
+  resolveNameWalletAddressUncached,
 } from '../qortium/walletService.js';
 import { perfDebugTimeStart } from '../perf/perfDebug.js';
 import {
@@ -1449,6 +1450,12 @@ export const forumQdnService = {
     const results = discovery.items;
     const records: V2RuntimeRecord[] = [];
     const diagnostics: V2RuntimeState['diagnostics'] = [];
+    // When force-refreshing (e.g. tip-recipient resolution), bypass the
+    // 5-minute name-address cache so a stale null entry cannot poison
+    // wallet-binding validation and cause V2 entity rejection (#23).
+    const resolveName = options?.force
+      ? (name: string) => resolveNameWalletAddressUncached(name)
+      : (name: string) => resolveNameWalletAddress(name);
     const walletByName = new Map<string, string | null>();
     if (!identity) {
       await mapWithConcurrency(
@@ -1457,7 +1464,7 @@ export const forumQdnService = {
           try {
             walletByName.set(
               name.trim().toLowerCase(),
-              await resolveNameWalletAddress(name)
+              await resolveName(name)
             );
           } catch {
             walletByName.set(name.trim().toLowerCase(), null);
