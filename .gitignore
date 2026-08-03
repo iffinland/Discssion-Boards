@@ -27,3 +27,8 @@ coverage
 *.sln
 *.sw?
 .codex
+
+# Local build artifacts
+*.zip
+*.zip.sha256
+build-provenance.txt
